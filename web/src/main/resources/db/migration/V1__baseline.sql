@@ -2,6 +2,8 @@
 -- On that existing database Flyway only records this file as done (baseline-on-migrate);
 -- on an empty database (a teammate's laptop, the tests) it creates them.
 -- Written to run on MySQL 8 and on H2 in MySQL mode.
+-- Keys are left unnamed on purpose: MySQL then names them exactly as it did for Alembic
+-- (email, user_id, school_courses_ibfk_1, ...), so later migrations can refer to them on every database.
 
 CREATE TABLE users (
     id INT NOT NULL AUTO_INCREMENT,
@@ -10,7 +12,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uq_users_email UNIQUE (email)
+    UNIQUE (email)
 );
 
 CREATE TABLE school_sync_devices (
@@ -22,8 +24,8 @@ CREATE TABLE school_sync_devices (
     last_seen_at DATETIME NULL,
     revoked_at DATETIME NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uq_school_sync_devices_token_hash UNIQUE (token_hash),
-    CONSTRAINT fk_school_sync_devices_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    UNIQUE (token_hash),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_sync_devices_user_id ON school_sync_devices (user_id);
 
@@ -32,7 +34,7 @@ CREATE TABLE school_sync_settings (
     interval_hours INT NOT NULL,
     sync_requested_at DATETIME NULL,
     PRIMARY KEY (user_id),
-    CONSTRAINT fk_school_sync_settings_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE school_sync_runs (
@@ -47,8 +49,8 @@ CREATE TABLE school_sync_runs (
     error_message VARCHAR(500) NULL,
     sections JSON NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_sync_runs_device FOREIGN KEY (device_id) REFERENCES school_sync_devices (id) ON DELETE SET NULL,
-    CONSTRAINT fk_school_sync_runs_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (device_id) REFERENCES school_sync_devices (id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_sync_runs_user_id ON school_sync_runs (user_id);
 CREATE INDEX ix_school_sync_runs_user_started ON school_sync_runs (user_id, started_at);
@@ -63,8 +65,8 @@ CREATE TABLE school_changes (
     created_at DATETIME NOT NULL,
     seen_at DATETIME NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_changes_run FOREIGN KEY (sync_run_id) REFERENCES school_sync_runs (id) ON DELETE CASCADE,
-    CONSTRAINT fk_school_changes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (sync_run_id) REFERENCES school_sync_runs (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_changes_sync_run_id ON school_changes (sync_run_id);
 CREATE INDEX ix_school_changes_user_id ON school_changes (user_id);
@@ -79,7 +81,7 @@ CREATE TABLE school_courses (
     credits DECIMAL(4, 1) NULL,
     lecturer VARCHAR(255) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_courses_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_courses_user_id ON school_courses (user_id);
 
@@ -91,8 +93,8 @@ CREATE TABLE school_class_meetings (
     end_at DATETIME NOT NULL,
     room VARCHAR(50) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_class_meetings_course FOREIGN KEY (course_id) REFERENCES school_courses (id) ON DELETE CASCADE,
-    CONSTRAINT fk_school_class_meetings_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (course_id) REFERENCES school_courses (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_class_meetings_course_id ON school_class_meetings (course_id);
 CREATE INDEX ix_school_class_meetings_user_id ON school_class_meetings (user_id);
@@ -110,7 +112,7 @@ CREATE TABLE school_exams (
     room VARCHAR(50) NULL,
     notes VARCHAR(500) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_exams_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_exams_user_id ON school_exams (user_id);
 CREATE INDEX ix_school_exams_user_start ON school_exams (user_id, start_at);
@@ -126,8 +128,8 @@ CREATE TABLE school_tuition (
     status_text VARCHAR(255) NULL,
     items JSON NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uq_school_tuition_user_term UNIQUE (user_id, term_code),
-    CONSTRAINT fk_school_tuition_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    UNIQUE (user_id, term_code),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_tuition_user_id ON school_tuition (user_id);
 
@@ -143,7 +145,7 @@ CREATE TABLE school_events (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_events_user_id ON school_events (user_id);
 CREATE INDEX ix_school_events_user_start ON school_events (user_id, start_at);
@@ -156,7 +158,7 @@ CREATE TABLE school_bb_courses (
     name VARCHAR(255) NOT NULL,
     url VARCHAR(500) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_bb_courses_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_bb_courses_user_id ON school_bb_courses (user_id);
 
@@ -170,8 +172,8 @@ CREATE TABLE school_bb_announcements (
     posted_at DATETIME NULL,
     url VARCHAR(500) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_bb_announcements_course FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
-    CONSTRAINT fk_school_bb_announcements_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_bb_announcements_course_id ON school_bb_announcements (course_id);
 CREATE INDEX ix_school_bb_announcements_user_id ON school_bb_announcements (user_id);
@@ -190,8 +192,8 @@ CREATE TABLE school_bb_assignments (
     feedback TEXT NULL,
     url VARCHAR(500) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_bb_assignments_course FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
-    CONSTRAINT fk_school_bb_assignments_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_bb_assignments_course_id ON school_bb_assignments (course_id);
 CREATE INDEX ix_school_bb_assignments_user_due ON school_bb_assignments (user_id, due_at);
@@ -208,8 +210,8 @@ CREATE TABLE school_bb_materials (
     created_at DATETIME NULL,
     url VARCHAR(500) NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT fk_school_bb_materials_course FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
-    CONSTRAINT fk_school_bb_materials_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (course_id) REFERENCES school_bb_courses (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX ix_school_bb_materials_course_id ON school_bb_materials (course_id);
 CREATE INDEX ix_school_bb_materials_user_id ON school_bb_materials (user_id);
