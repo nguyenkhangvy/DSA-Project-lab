@@ -1,0 +1,26 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Log in · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <section class="card narrow">
+    <h1>Log in</h1>
+    <p th:if="${param.error}" class="flash flash-error">Email or password is incorrect.</p>
+    <form method="post" th:action="@{/auth/login}" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="button">Log in</button>
+    </form>
+    <p>No account yet? <a th:href="@{/auth/register}">Create one</a>.</p>
+  </section>
+</main>
+</body>
+</html>

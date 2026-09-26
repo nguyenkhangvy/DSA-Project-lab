@@ -1,0 +1,16 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Something went wrong · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <section class="card narrow">
+    <h1 th:text="${status == 404} ? 'Page not found' : 'Something went wrong'">Page not found</h1>
+    <p th:if="${status == 404}">That page doesn't exist, or it isn't yours.</p>
+    <p th:unless="${status == 404}">Please go back and try again.</p>
+    <p><a th:href="@{/}">Back to the start page</a></p>
+  </section>
+</main>
+</body>
+</html>

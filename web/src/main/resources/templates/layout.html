@@ -1,0 +1,31 @@
+<!doctype html>
+<!--/* The shared page: header, menu, one-time messages. A page uses it with
+     <html th:replace="~{layout :: page(~{::title}, ~{::main})}"> and fills in its own <title> and <main>. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="page(title, content)">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:replace="${title}">School-Life-Assistant</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" th:href="@{/}">School-Life-Assistant</a>
+    <nav class="site-nav" sec:authorize="isAuthenticated()">
+      <th:block th:each="item : ${navItems}">
+        <a th:if="${item.path != null}" th:href="@{${item.path}}" th:text="${item.label}">School</a>
+        <span th:if="${item.path == null}" class="nav-soon" title="Coming soon" th:text="${item.label}">Health</span>
+      </th:block>
+      <form method="post" th:action="@{/auth/logout}" class="inline">
+        <button type="submit" class="link-button">Log out</button>
+      </form>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p th:each="flash : ${flashes}" th:class="|flash flash-${flash.category}|" th:text="${flash.text}">Saved.</p>
+    <th:block th:replace="${content}"></th:block>
+  </main>
+</body>
+</html>

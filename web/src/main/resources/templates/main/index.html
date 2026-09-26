@@ -1,0 +1,22 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1 th:text="|Hi, ${displayName}|">Hi, An</h1>
+  <div class="module-grid">
+    <th:block th:each="item : ${navItems}">
+      <a th:if="${item.path != null}" class="card module-card" th:href="@{${item.path}}">
+        <h2 th:text="${item.label}">School</h2>
+      </a>
+      <div th:if="${item.path == null}" class="card module-card is-soon">
+        <h2 th:text="${item.label}">Health</h2>
+        <p>Coming soon</p>
+      </div>
+    </th:block>
+  </div>
+</main>
+</body>
+</html>
