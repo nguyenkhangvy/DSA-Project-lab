@@ -44,6 +44,15 @@ class LoginTest {
     }
 
     @Test
+    void anEmailPastedWithANonBreakingSpaceStillLogsIn() throws Exception {
+        savedUser("an@example.com", WerkzeugPasswordEncoderTest.SCRYPT);
+
+        mvc.perform(post("/auth/login").with(csrf())
+                        .param("email", " an@example.com ").param("password", "correct-horse-8"))
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
     void aVietnamesePasswordWorksEndToEnd() throws Exception {
         savedUser("an@example.com", WerkzeugPasswordEncoderTest.SCRYPT_VIETNAMESE);
 

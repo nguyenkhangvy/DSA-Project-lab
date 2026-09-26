@@ -37,7 +37,7 @@ public class RegisterForm {
     }
 
     public void setDisplayName(String displayName) {
-        this.displayName = displayName == null ? "" : displayName.strip();
+        this.displayName = displayName == null ? "" : AppUserDetailsService.stripSpaces(displayName);
     }
 
     public String getPassword() {
