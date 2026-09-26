@@ -1,5 +1,6 @@
 package vn.edu.hcmiu.sla.core;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -26,22 +27,24 @@ class LayoutTest {
 
     static final AppUser AN = new AppUser(1, "an@example.com", "An", "x");
 
+    /** The real site, with whichever modules exist: nothing here depends on which ones (see NavigationTest). */
     @Nested
     @SpringBootTest
     @AutoConfigureMockMvc
-    class WithoutModules {
+    class Pages {
 
         @Autowired
         MockMvc mvc;
 
         @Test
-        void theDashboardGreetsYouAndShowsEveryModuleAsComingSoon() throws Exception {
-            mvc.perform(get("/").with(user(AN)))
+        void theDashboardGreetsYouWithOneCardPerModule() throws Exception {
+            String page = mvc.perform(get("/").with(user(AN)))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("Hi, An")))
-                    .andExpect(content().string(containsString("<span class=\"nav-soon\" title=\"Coming soon\">Expense</span>")))
-                    .andExpect(content().string(containsString("Coming soon")))
-                    .andExpect(content().string(containsString("href=\"/css/style.css\"")));
+                    .andExpect(content().string(containsString("href=\"/css/style.css\"")))
+                    .andReturn().getResponse().getContentAsString();
+
+            assertThat(page.split("class=\"card module-card", -1)).hasSize(4); // School, Expense, Health
         }
 
         @Test
@@ -78,8 +81,7 @@ class LayoutTest {
         void aModuleThatRegistersItselfGetsALinkAndACard() throws Exception {
             mvc.perform(get("/").with(user(AN)))
                     .andExpect(content().string(containsString("<a href=\"/school\">School</a>")))
-                    .andExpect(content().string(containsString("<a class=\"card module-card\" href=\"/school\">")))
-                    .andExpect(content().string(containsString("title=\"Coming soon\">Health</span>")));
+                    .andExpect(content().string(containsString("<a class=\"card module-card\" href=\"/school\">")));
         }
     }
 
@@ -90,7 +92,7 @@ class LayoutTest {
         Flash.success(redirect, "Device renamed.");
         Flash.error(redirect, "A device name is required.");
 
-        org.assertj.core.api.Assertions.assertThat(redirect.getFlashAttributes().get("flashes")).isEqualTo(List.of(
+        assertThat(redirect.getFlashAttributes().get("flashes")).isEqualTo(List.of(
                 new Flash("message", "Device renamed."), new Flash("error", "A device name is required.")));
     }
 }
