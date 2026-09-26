@@ -3,7 +3,7 @@
 **Date:** 2026-09-26
 **Scope:** rebuild the website (login, shared layout, School module, sync API) in Java with Spring Boot, so the teammates can build the Expense and Health modules in Java; the laptop sync agent stays in Python
 **Owner:** Nguyen Khang Vy
-**Status:** Design approved in conversation, waiting for review of this document
+**Status:** Stage 1 built (see docs/superpowers/plans/2026-09-26-java-stage1-foundation.md); stages 2–3 to come
 **Builds on:** [EduSoft-first Phase 1](2026-09-25-edusoft-first-phase1-design.md), [Blackboard](2026-09-26-blackboard-design.md), [Class changes and To submit](2026-09-26-class-changes-and-to-submit-design.md). Every behaviour those documents describe stays the same; only the website's language and framework change.
 
 ---
@@ -39,7 +39,7 @@ Each stage gets its own implementation plan; this document covers all three.
 ## 3. Project layout and technology
 
 - A new folder **`web/`** holds a Maven project with the **Maven wrapper** (`web/mvnw`, `web/mvnw.cmd`), so nobody installs Maven. Java 17 (installed on the student's laptop: 17.0.12).
-- **Spring Boot 3.3**, dependencies: `spring-boot-starter-web`, `-thymeleaf`, `-security`, `-data-jpa`, `-validation`, `flyway-core` + `flyway-mysql`, `mysql-connector-j`, `bcprov` (BouncyCastle, for scrypt passwords, §4.2). Tests: `spring-boot-starter-test`, `spring-security-test`, `h2`.
+- **Spring Boot 4.1.1** (the current release; Spring Boot 4 splits its starters): `spring-boot-starter-webmvc`, `-thymeleaf` (with `thymeleaf-extras-springsecurity6`), `-security`, `-data-jpa`, `-validation`, `-flyway` + `flyway-mysql`, `mysql-connector-j`, `bcprov-jdk18on` 1.86 (BouncyCastle, for scrypt passwords, §4.2). Tests: the matching `-test` starters and `h2`.
 - **Base package `vn.edu.hcmiu.sla`**, one package per module:
   - `core`: settings, security, layout/menu, current-user helper, time helpers, error pages
   - `auth`: the `users` table, register, login, logout
@@ -84,7 +84,7 @@ Each stage gets its own implementation plan; this document covers all three.
 - **Flyway** owns the tables from now on.
   - `V1__baseline.sql` creates exactly today's tables: `users` and every `school_…` table, with the same columns, types (scores `DOUBLE`), keys and indexes as after Alembic revision `7d2f4b9c1e30`. It is written so it runs on MySQL and on H2 in MySQL mode (tests).
   - `spring.flyway.baseline-on-migrate=true`, `baseline-version=1`: on the student's existing database Flyway records V1 as done and changes nothing; on an empty database (a teammate's laptop, tests) V1 creates everything. So the teammates don't need Python to run the website.
-  - New tables come as `V2__…`, `V3__…` (e.g. `V2__expense_tables.sql`).
+  - New tables come in migrations named by date, e.g. `V20261001_1__expense_tables.sql`; `spring.flyway.out-of-order=true` lets files that teammates made in parallel arrive in any order.
 - JPA checks the tables at startup (`ddl-auto=validate`) and never changes them.
 - **During stages 1–2 the Python website changes no tables**, so Alembic and Flyway never compete. The `alembic_version` table is dropped at the switch.
 
