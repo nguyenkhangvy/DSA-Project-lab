@@ -98,7 +98,7 @@ In `web/`: `.\mvnw.cmd test` (PowerShell) or `./mvnw test` (Git Bash). They use 
 
 Example: Expense. Everything goes under `web/src/main/`.
 
-1. **A table.** A migration named by today's date, `resources/db/migration/V20261001_1__expense_tables.sql` (`_2`, `_3` for more on the same day):
+1. **A table.** A migration named `V<date>_<module>_<number>__<what>.sql`. The module number (School = 1, Expense = 2, Health = 3) means two teammates never pick the same version: `resources/db/migration/V20261001_2_1__expense_tables.sql` (then `…_2_2__…`, `…_2_3__…` for more Expense migrations that day). `MigrationNamingTest` checks every name. After renaming or deleting a migration, run `.\mvnw.cmd clean`; otherwise the old copy stays in `target/`:
 
    ```sql
    CREATE TABLE expense_items (

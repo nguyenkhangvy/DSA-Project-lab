@@ -84,7 +84,7 @@ Each stage gets its own implementation plan; this document covers all three.
 - **Flyway** owns the tables from now on.
   - `V1__baseline.sql` creates exactly today's tables: `users` and every `school_…` table, with the same columns, types (scores `DOUBLE`), keys and indexes as after Alembic revision `7d2f4b9c1e30`. It is written so it runs on MySQL and on H2 in MySQL mode (tests).
   - `spring.flyway.baseline-on-migrate=true`, `baseline-version=1`: on the student's existing database Flyway records V1 as done and changes nothing; on an empty database (a teammate's laptop, tests) V1 creates everything. So the teammates don't need Python to run the website.
-  - New tables come in migrations named by date, e.g. `V20261001_1__expense_tables.sql`; `spring.flyway.out-of-order=true` lets files that teammates made in parallel arrive in any order.
+  - New tables come in migrations named `V<date>_<module>_<number>__<what>.sql`, with module 1 = School, 2 = Expense, 3 = Health (e.g. `V20261001_2_1__expense_tables.sql`), so two teammates never pick the same version; a test checks the names, and `spring.flyway.out-of-order=true` lets files made in parallel arrive in any order.
 - JPA checks the tables at startup (`ddl-auto=validate`) and never changes them.
 - **During stages 1–2 the Python website changes no tables**, so Alembic and Flyway never compete. The `alembic_version` table is dropped at the switch.
 
