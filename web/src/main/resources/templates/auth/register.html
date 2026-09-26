@@ -1,0 +1,37 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Create account · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <section class="card narrow">
+    <h1>Create account</h1>
+    <form method="post" th:action="@{/auth/register}" th:object="${form}" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" th:field="*{email}" autocomplete="email">
+        <p class="field-error" th:each="error : ${#fields.errors('email')}" th:text="${error}">Invalid email address.</p>
+      </div>
+      <div class="field">
+        <label for="displayName">Display name</label>
+        <input id="displayName" type="text" th:field="*{displayName}" autocomplete="nickname">
+        <p class="field-error" th:each="error : ${#fields.errors('displayName')}" th:text="${error}">This field is required.</p>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" th:field="*{password}" autocomplete="new-password">
+        <p class="field-error" th:each="error : ${#fields.errors('password')}" th:text="${error}">Too short.</p>
+      </div>
+      <div class="field">
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" type="password" th:field="*{confirm}" autocomplete="new-password">
+        <p class="field-error" th:each="error : ${#fields.errors('confirm')}" th:text="${error}">Passwords don't match.</p>
+      </div>
+      <button type="submit" class="button">Create account</button>
+    </form>
+    <p>Already have an account? <a th:href="@{/auth/login}">Log in</a>.</p>
+  </section>
+</main>
+</body>
+</html>
