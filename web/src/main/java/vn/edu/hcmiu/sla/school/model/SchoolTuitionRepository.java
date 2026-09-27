@@ -1,5 +1,6 @@
 package vn.edu.hcmiu.sla.school.model;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,6 @@ public interface SchoolTuitionRepository extends JpaRepository<SchoolTuition, In
     @Modifying
     @Query("delete from SchoolTuition t where t.userId = :userId and t.termCode = :termCode")
     void deleteTerm(Integer userId, String termCode);
+
+    List<SchoolTuition> findByUserIdOrderByTermCodeDesc(Integer userId);
 }

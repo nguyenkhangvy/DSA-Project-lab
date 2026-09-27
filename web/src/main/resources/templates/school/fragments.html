@@ -1,0 +1,56 @@
+<!doctype html>
+<!--/* Pieces shared by the School pages: the school menu, the sync status card, and one class or exam. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* The school menu; current is the page's name: overview, timetable, courses, exams, tuition or devices. */-->
+<nav th:fragment="subnav(current)" class="subnav" aria-label="School pages">
+  <a th:href="@{/school}" th:attr="aria-current=${current == 'overview' ? 'page' : null}">Overview</a>
+  <a th:href="@{/school/timetable}" th:attr="aria-current=${current == 'timetable' ? 'page' : null}">Timetable</a>
+  <a th:href="@{/school/courses}" th:attr="aria-current=${current == 'courses' ? 'page' : null}">Courses</a>
+  <a th:href="@{/school/exams}" th:attr="aria-current=${current == 'exams' ? 'page' : null}">Exams</a>
+  <a th:href="@{/school/tuition}" th:attr="aria-current=${current == 'tuition' ? 'page' : null}">Tuition</a>
+  <a th:href="@{/school/devices}" th:attr="aria-current=${current == 'devices' ? 'page' : null}">Devices</a>
+</nav>
+
+<!--/* Needs ${status} (SyncStatus.Status) and ${systemLines}. */-->
+<section th:fragment="status-card" th:class="|card status-card status-${status.state}|" aria-live="polite">
+  <p class="status-headline" th:text="${status.headline}">Synced at 14:05</p>
+  <p class="status-detail" th:if="${status.detail != null}" th:text="${status.detail}">What to do.</p>
+  <ul class="system-lines" th:if="${!systemLines.isEmpty()}">
+    <li th:each="line : ${systemLines}" th:class="|system-${line.state}|"><strong th:text="|${line.name}:|">EduSoft:</strong>
+      <th:block th:text="${line.text}">synced at 14:05</th:block></li>
+  </ul>
+  <p class="status-detail" th:if="${status.lastSyncedAt != null and status.state != 'success' and status.state != 'partial'}"
+     th:text="|Last good sync: ${@schoolFormat.when(status.lastSyncedAt)}|">Last good sync: Tue 29/09 08:00</p>
+  <p class="status-warning" th:if="${status.laptopWarning != null}" th:text="${status.laptopWarning}">Your laptop…</p>
+  <form th:if="${status.state != 'no_device'}" method="post" th:action="@{/school/sync-now}">
+    <button type="submit" class="button">Sync now</button>
+  </form>
+</section>
+
+<!--/* One class or exam (Schedule.Item). A class changed by an announcement gets a badge and a link to it. */-->
+<li th:fragment="item(item)" th:with="look=${item.change == 'cancelled' ? 'cancelled' : 'changed'}"
+    th:class="|item item-${item.kind}${item.change != null ? ' item-' + look : ''}|">
+  <span class="item-time" th:text="${item.allDay ? 'All day' : @schoolFormat.clock(item.startAt)
+      + (item.endAt != null ? '–' + @schoolFormat.clock(item.endAt) : '')}">08:00–10:30</span>
+  <span class="item-title">
+    <th:block th:if="${item.change != null}"><span th:class="|badge badge-${look}|"
+        th:text="${@schoolFormat.changeLabel(item.change)}">Online</span> </th:block>
+    <th:block th:if="${item.label != null}"><strong th:text="|${item.label}:|">Final exam:</strong> </th:block><th:block
+        th:text="${item.title}">Web Application Development</th:block>
+  </span>
+  <span class="item-meta">
+    <th:block th:text="${item.code}">IT093IU</th:block>
+    <th:block th:if="${item.room != null and !item.room.isEmpty() and item.change != 'online'}">
+      · <span th:if="${item.room.toUpperCase().startsWith('ONLINE')}" class="badge">Online</span><th:block
+          th:unless="${item.room.toUpperCase().startsWith('ONLINE')}" th:text="${item.room}">A2.508</th:block>
+    </th:block>
+    <th:block th:if="${item.bbCourseId != null}">
+      · <a th:href="@{/school/courses/{id}(id=${item.bbCourseId})}">See announcement</a>
+    </th:block>
+  </span>
+</li>
+
+</body>
+</html>

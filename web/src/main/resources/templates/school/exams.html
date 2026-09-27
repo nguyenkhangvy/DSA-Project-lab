@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Exams · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Exams</h1>
+  <nav th:replace="~{school/fragments :: subnav('exams')}"></nav>
+
+  <section class="card">
+    <h2>Upcoming</h2>
+    <ul class="exam-list" th:unless="${upcoming.isEmpty()}">
+      <li th:each="exam : ${upcoming}">
+        <strong th:text="${exam.courseName}">Web Application Development</strong>
+        <span class="muted" th:text="${exam.courseCode}">IT093IU</span><br>
+        <th:block th:text="|${labels.getOrDefault(exam.examType, 'Exam')} · ${@schoolFormat.date(exam.startAt)} at ${@schoolFormat.clock(exam.startAt)}|">
+          Final exam · 12/12/2026 at 08:00</th:block>
+        <th:block th:if="${exam.durationMin != null}" th:text="| · ${exam.durationMin} min|"> · 90 min</th:block>
+        <th:block th:if="${exam.room != null and !exam.room.isEmpty()}" th:text="| · room ${exam.room}|"> · room A1.101</th:block>
+        <th:block th:if="${exam.notes != null and !exam.notes.isEmpty()}"><br><span class="muted"
+            th:text="${exam.notes}">Bring your student card.</span></th:block>
+      </li>
+    </ul>
+    <p th:if="${upcoming.isEmpty()}">No exams published yet for this semester. EduSoft usually publishes midterm and final exam
+      schedules later in the semester; they'll appear here after the next sync.</p>
+  </section>
+
+  <section class="card" th:unless="${past.isEmpty()}">
+    <h2>Past</h2>
+    <ul class="exam-list is-past">
+      <li th:each="exam : ${past}"
+          th:text="|${exam.courseName} · ${labels.getOrDefault(exam.examType, 'Exam')} · ${@schoolFormat.date(exam.startAt)}|">
+        Web Application Development · Midterm exam · 28/10/2026</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

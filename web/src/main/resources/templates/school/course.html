@@ -1,0 +1,60 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title th:text="|${course.name} · School-Life-Assistant|">Course · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1 th:text="${course.name}">Web Application Development</h1>
+  <nav th:replace="~{school/fragments :: subnav('courses')}"></nav>
+  <p><a th:href="${course.url}" target="_blank" rel="noopener noreferrer">Open in Blackboard ↗</a></p>
+
+  <section class="card">
+    <h2>Announcements</h2>
+    <article class="bb-item" th:each="a : ${announcements}">
+      <h3 th:text="${a.title}">No class on Thursday</h3>
+      <p class="muted" th:text="${a.postedAt != null ? @schoolFormat.when(a.postedAt) : ''}">Mon 28/09 09:00</p>
+      <p class="bb-text" th:text="${a.text}">Class is cancelled.</p>
+      <p><a th:href="${a.url}" target="_blank" rel="noopener noreferrer">Open in Blackboard ↗</a></p>
+    </article>
+    <p class="muted" th:if="${announcements.isEmpty()}">No announcements.</p>
+  </section>
+
+  <section class="card">
+    <h2>Assignments &amp; grades</h2>
+    <article th:each="a : ${assignments}"
+             th:with="overdue=${a.dueAt != null and a.dueAt.isBefore(now) and a.status == 'not_graded'}"
+             th:class="|bb-item${overdue ? ' is-overdue' : ''}|">
+      <h3 th:text="${a.name}">Lab 3</h3>
+      <p>
+        <th:block th:if="${a.dueAt != null}">Due <th:block th:text="${@schoolFormat.when(a.dueAt)}">Fri 02/10 23:59</th:block><th:block
+            th:if="${overdue}"> <span class="badge badge-warning">Overdue</span></th:block></th:block><th:block
+            th:if="${a.dueAt == null}">No due date</th:block>
+        · <th:block th:switch="${a.status}"><th:block th:case="'graded'">Grade: <strong
+            th:text="${@schoolFormat.grade(a)}">8.5/10</strong></th:block><th:block
+            th:case="'needs_grading'">Submitted, waiting for a grade</th:block><th:block
+            th:case="'exempt'">Exempt</th:block><th:block th:case="*">Not graded yet</th:block></th:block>
+      </p>
+      <p class="bb-text muted" th:if="${a.feedback != null and !a.feedback.isEmpty()}"
+         th:text="|Feedback: ${a.feedback}|">Feedback: Good work</p>
+      <p><a th:href="${a.url}" target="_blank" rel="noopener noreferrer">Open in Blackboard ↗</a></p>
+    </article>
+    <p class="muted" th:if="${assignments.isEmpty()}">No assignments.</p>
+  </section>
+
+  <section class="card">
+    <h2>Materials</h2>
+    <ul class="bb-materials" th:unless="${materials.isEmpty()}">
+      <li th:each="m : ${materials}">
+        <strong th:text="${m.title}">Week 5 slides.pdf</strong>
+        <span class="muted"><th:block th:text="${m.kind}">file</th:block><th:block th:if="${!m.path.isEmpty()}"
+            th:text="| · ${m.path}|"> · Week 5</th:block><th:block th:if="${m.createdAt != null}"
+            th:text="| · added ${@schoolFormat.date(m.createdAt)}|"> · added 28/09/2026</th:block></span>
+        · <a th:href="${m.url}" target="_blank" rel="noopener noreferrer">Open in Blackboard ↗</a>
+      </li>
+    </ul>
+    <p class="muted" th:if="${materials.isEmpty()}">No materials.</p>
+  </section>
+</main>
+</body>
+</html>

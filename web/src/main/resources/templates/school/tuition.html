@@ -1,0 +1,38 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Tuition · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Tuition</h1>
+  <nav th:replace="~{school/fragments :: subnav('tuition')}"></nav>
+
+  <section class="card pay-card">
+    <div>
+      <h2>Pay your tuition</h2>
+      <p class="muted">Opens IU's official payment site, IUPay, in a new tab.</p>
+    </div>
+    <a class="button" href="https://iupay.hcmiu.edu.vn/search/dhqt" target="_blank" rel="noopener noreferrer">
+      Pay on IUPay ↗
+    </a>
+  </section>
+
+  <section class="card" th:each="row : ${rows}">
+    <h2 th:text="|Semester ${row.termCode}|">Semester 20261</h2>
+    <dl class="facts">
+      <dt>Amount due</dt><dd th:text="|${@schoolFormat.money(row.amountDue)} VND|">12,500,000 VND</dd>
+      <dt>Paid</dt><dd th:text="|${@schoolFormat.money(row.amountPaid)} VND|">0 VND</dd>
+      <dt>Balance</dt><dd><strong th:text="|${@schoolFormat.money(row.balance)} VND|">12,500,000 VND</strong></dd>
+      <dt>Due date</dt><dd th:text="${row.dueDate != null ? @schoolFormat.day(row.dueDate) : 'not shown by EduSoft'}">15/10/2026</dd>
+      <th:block th:if="${row.statusText != null and !row.statusText.isEmpty()}"><dt>Status</dt><dd
+          th:text="${row.statusText}">Chưa đóng</dd></th:block>
+    </dl>
+  </section>
+  <section class="card" th:if="${rows.isEmpty()}">
+    <p>No tuition information yet. The tuition part of the sync isn't finished: EduSoft's tuition
+       report still has to be located.</p>
+  </section>
+</main>
+</body>
+</html>

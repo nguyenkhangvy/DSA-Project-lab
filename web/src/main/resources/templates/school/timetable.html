@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Timetable · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Timetable</h1>
+  <nav th:replace="~{school/fragments :: subnav('timetable')}"></nav>
+
+  <p class="legend">
+    <span class="legend-item legend-class">Class</span>
+    <span class="legend-item legend-exam">Exam</span>
+    <span class="legend-item legend-due">Deadline</span>
+    <span class="legend-item legend-changed">Online / make-up</span>
+    <span class="legend-item legend-cancelled">Cancelled</span>
+    <span class="muted">All times are Vietnam time.</span>
+  </p>
+
+  <div class="card calendar-card">
+    <div id="calendar" th:attr="data-feed=@{/school/api/calendar}"></div>
+    <noscript>The calendar needs JavaScript. Your classes for today and tomorrow are on the Overview page.</noscript>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js"
+          integrity="sha384-WDvnzcla8X1CQM97EnYyl4OoTCvmMFp5lBiVNO3IjVdvLMOUjwt+iuYb/Mru5A9v"
+          crossorigin="anonymous"></script>
+  <script th:src="@{/js/timetable.js}"></script>
+</main>
+</body>
+</html>

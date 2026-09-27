@@ -43,6 +43,12 @@ public class SyncRuns {
                 () -> settings.save(new SchoolSyncSettings(userId, SchoolSyncSettings.DEFAULT_INTERVAL_HOURS)));
     }
 
+    /** "Sync now": the laptop's next check-in is told a sync is due. */
+    @Transactional
+    public void requestSync(Integer userId, LocalDateTime now) {
+        settings(userId).setSyncRequestedAt(now);
+    }
+
     /** The newest run, or the newest with one of these statuses. */
     @Transactional(readOnly = true)
     public Optional<SchoolSyncRun> latestRun(Integer userId, String... statuses) {

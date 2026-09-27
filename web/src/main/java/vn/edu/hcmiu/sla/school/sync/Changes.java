@@ -312,7 +312,7 @@ public final class Changes {
     }
 
     /** Like Python's f"{value:g}": 6 significant digits, no trailing zeros (8.5, 10, 6.66667, 1e+06). */
-    static String number(double value) {
+    public static String number(double value) {
         BigDecimal rounded = new BigDecimal(value).round(new MathContext(6, RoundingMode.HALF_EVEN));
         int exponent = rounded.precision() - rounded.scale() - 1;
         if (rounded.signum() != 0 && (exponent < -4 || exponent >= 6)) {
@@ -322,14 +322,19 @@ public final class Changes {
         return rounded.signum() == 0 ? "0" : rounded.stripTrailingZeros().toPlainString();
     }
 
+    /** "8.5/10", "8.5", the grade's text, or "graded". */
+    public static String grade(Double score, Double pointsPossible, String gradeText) {
+        if (score != null && pointsPossible != null && pointsPossible != 0) {
+            return number(score) + "/" + number(pointsPossible);
+        }
+        if (score != null) {
+            return number(score);
+        }
+        return orElse(gradeText, "graded");
+    }
+
     private static String grade(BbItem item) {
-        if (item.score() != null && item.pointsPossible() != null && item.pointsPossible() != 0) {
-            return number(item.score()) + "/" + number(item.pointsPossible());
-        }
-        if (item.score() != null) {
-            return number(item.score());
-        }
-        return orElse(item.gradeText(), "graded");
+        return grade(item.score(), item.pointsPossible(), item.gradeText());
     }
 
     private static String bbCounts(List<BbItem> items) {

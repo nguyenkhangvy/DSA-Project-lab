@@ -1,0 +1,22 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Courses · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Courses</h1>
+  <nav th:replace="~{school/fragments :: subnav('courses')}"></nav>
+  <div class="module-grid" th:unless="${courses.isEmpty()}">
+    <a th:each="course : ${courses}" class="card module-card" th:href="@{/school/courses/{id}(id=${course.id})}">
+      <h2 th:text="${course.name}">Web Application Development</h2>
+      <p class="muted"
+         th:text="|${course.courseCode ?: ''} · ${course.announcements} announcements · ${course.assignments} assignments|">
+        IT093IU · 3 announcements · 2 assignments</p>
+    </a>
+  </div>
+  <section class="card" th:if="${courses.isEmpty()}"><p>No Blackboard courses yet. Set up Blackboard on your laptop with
+    <code>sla-agent setup --blackboard</code>; your courses appear after the next sync.</p></section>
+</main>
+</body>
+</html>

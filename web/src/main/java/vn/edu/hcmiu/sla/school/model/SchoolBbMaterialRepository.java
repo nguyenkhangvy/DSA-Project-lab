@@ -13,4 +13,6 @@ public interface SchoolBbMaterialRepository extends JpaRepository<SchoolBbMateri
     @Modifying
     @Query("delete from SchoolBbMaterial m where m.userId = :userId")
     void deleteAllOfUser(Integer userId);
+
+    List<SchoolBbMaterial> findByCourseIdOrderById(Integer courseId);
 }

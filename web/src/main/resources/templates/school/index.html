@@ -1,0 +1,67 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>School · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>School</h1>
+  <nav th:replace="~{school/fragments :: subnav('overview')}"></nav>
+  <section th:replace="~{school/fragments :: status-card}"></section>
+
+  <div class="two-columns">
+    <section class="card">
+      <h2>Today <span class="muted" th:text="${@schoolFormat.dayLabel(today)}">Tue 29/09</span></h2>
+      <ul class="items" th:unless="${todayItems.isEmpty()}">
+        <!--/* th:replace runs before th:each on one element, so the loop is on a block around it. */-->
+        <th:block th:each="item : ${todayItems}"><li th:replace="~{school/fragments :: item(${item})}"></li></th:block>
+      </ul>
+      <p class="muted" th:if="${todayItems.isEmpty()}">No classes or exams today.</p>
+      <h2>Tomorrow</h2>
+      <ul class="items" th:unless="${tomorrowItems.isEmpty()}">
+        <th:block th:each="item : ${tomorrowItems}"><li th:replace="~{school/fragments :: item(${item})}"></li></th:block>
+      </ul>
+      <p class="muted" th:if="${tomorrowItems.isEmpty()}">No classes or exams tomorrow.</p>
+      <p><a th:href="@{/school/timetable}">Open the calendar →</a></p>
+    </section>
+
+    <section class="card">
+      <h2>To submit</h2>
+      <ul class="items" th:unless="${toSubmit.isEmpty()}">
+        <li th:each="a : ${toSubmit}" th:with="overdue=${a.dueAt.isBefore(now)}"
+            th:class="|item item-due${overdue ? ' is-overdue' : ''}|">
+          <span class="item-time"><th:block th:text="${@schoolFormat.when(a.dueAt)}">Fri 02/10 23:59</th:block><th:block
+              th:if="${overdue}"> <span class="badge badge-overdue">Overdue</span></th:block></span>
+          <span class="item-title" th:text="${a.name}">Lab 3</span>
+          <span class="item-meta"><th:block th:text="${a.course.name}">Web Application Development</th:block> ·
+            <a th:href="${a.url}" target="_blank" rel="noopener noreferrer">Open assignment ↗</a></span>
+        </li>
+      </ul>
+      <p class="muted" th:if="${toSubmit.isEmpty()}">Nothing left to submit.</p>
+
+      <h2>Latest announcements</h2>
+      <ul class="changes" th:unless="${latestAnnouncements.isEmpty()}">
+        <li th:each="a : ${latestAnnouncements}"><a th:href="@{/school/courses/{id}(id=${a.course.id})}"
+            th:text="${a.course.name}">Web Application Development</a>: <th:block th:text="${a.title}">No class</th:block>
+          <span class="muted" th:text="${@schoolFormat.preview(a.text)}">Class is cancelled.</span></li>
+      </ul>
+      <p class="muted" th:if="${latestAnnouncements.isEmpty()}">No announcements yet.</p>
+
+      <h2>Next exam</h2>
+      <p th:if="${nextExam != null}"><strong th:text="${nextExam.courseName}">Web Application Development</strong>
+        (<th:block th:text="${nextExam.examType}">final</th:block>)<br>
+        <th:block th:text="|${@schoolFormat.date(nextExam.startAt)} at ${@schoolFormat.clock(nextExam.startAt)}|">12/12/2026
+          at 08:00</th:block><th:block th:if="${nextExam.room != null}" th:text="| · ${nextExam.room}|"> · A1.101</th:block></p>
+      <p class="muted" th:if="${nextExam == null}">No upcoming exams published yet.</p>
+
+      <h2>What changed</h2>
+      <ul class="changes" th:unless="${changes.isEmpty()}">
+        <li th:each="change : ${changes}" th:class="|change change-${change.kind}|" th:text="${change.summary}">
+          IT093IU Web Application Development: room A2.307 → A2.508</li>
+      </ul>
+      <p class="muted" th:if="${changes.isEmpty()}">Nothing yet. Changes appear here after each sync.</p>
+    </section>
+  </div>
+</main>
+</body>
+</html>
