@@ -1,0 +1,69 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Devices · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Devices</h1>
+  <nav th:replace="~{school/fragments :: subnav('devices')}"></nav>
+  <p>A device is a laptop running <code>sla-agent</code>. It keeps your EduSoft password in Windows
+     Credential Manager and uploads only your timetable, exams and tuition.</p>
+
+  <th:block th:if="${newKey != null}">
+    <section class="card key-card">
+      <h2>Your new device key</h2>
+      <p><strong>Copy it now. It won't be shown again.</strong> Then run <code>sla-agent setup</code>
+         on the laptop and paste it when asked.</p>
+      <div class="key-row">
+        <code id="new-key" class="key" th:text="${newKey}">sla_…</code>
+        <button type="button" class="button" id="copy-key">Copy</button>
+      </div>
+    </section>
+    <script>
+      document.getElementById("copy-key").addEventListener("click", function () {
+        var key = document.getElementById("new-key").textContent;
+        navigator.clipboard.writeText(key).then(function () {
+          document.getElementById("copy-key").textContent = "Copied";
+        });
+      });
+    </script>
+  </th:block>
+
+  <section class="card">
+    <h2>Add a device</h2>
+    <form method="post" th:action="@{/school/devices}" th:object="${form}" novalidate>
+      <div class="field">
+        <label for="name">Device name</label>
+        <input id="name" type="text" th:field="*{name}" placeholder="e.g. My laptop">
+        <p class="field-error" th:each="error : ${#fields.errors('name')}" th:text="${error}">This field is required.</p>
+      </div>
+      <button type="submit" class="button">Add device</button>
+    </form>
+  </section>
+
+  <section class="card" th:unless="${devices.isEmpty()}">
+    <h2>Your devices</h2>
+    <ul class="device-list">
+      <li class="device" th:each="device : ${devices}">
+        <div>
+          <strong th:text="${device.name}">My laptop</strong>
+          <span class="muted" th:text="|Last check-in: ${@schoolFormat.when(device.lastSeenAt)}|">Last check-in: never</span>
+        </div>
+        <div class="device-actions">
+          <form method="post" th:action="@{/school/devices/{id}/rename(id=${device.id})}" class="inline-form">
+            <label class="visually-hidden" th:for="|rename-${device.id}|">New name</label>
+            <input th:id="|rename-${device.id}|" name="name" th:value="${device.name}" maxlength="100" required>
+            <button type="submit" class="link-button">Rename</button>
+          </form>
+          <form method="post" th:action="@{/school/devices/{id}/revoke(id=${device.id})}" class="inline-form"
+                onsubmit="return confirm('Cancel this device? It will stop syncing immediately.');">
+            <button type="submit" class="link-button danger">Cancel device</button>
+          </form>
+        </div>
+      </li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

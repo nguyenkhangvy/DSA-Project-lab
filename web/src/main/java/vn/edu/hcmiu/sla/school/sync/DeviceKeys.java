@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -58,6 +59,33 @@ public class DeviceKeys {
         String rawKey = newRawKey();
         SchoolSyncDevice device = devices.save(new SchoolSyncDevice(userId, name, hashKey(rawKey), now));
         return new NewDevice(device, rawKey);
+    }
+
+    /** The devices that can still sync, oldest first. Cancelled ones stay (sync history refers to them). */
+    @Transactional(readOnly = true)
+    public List<SchoolSyncDevice> active(Integer userId) {
+        return devices.findByUserIdAndRevokedAtIsNullOrderByCreatedAtAscIdAsc(userId);
+    }
+
+    /** The user's device, or empty for another user's or an unknown one. */
+    @Transactional(readOnly = true)
+    public Optional<SchoolSyncDevice> own(Integer userId, int deviceId) {
+        return devices.findByIdAndUserId(deviceId, userId);
+    }
+
+    @Transactional
+    public Optional<SchoolSyncDevice> rename(Integer userId, int deviceId, String name) {
+        Optional<SchoolSyncDevice> device = devices.findByIdAndUserId(deviceId, userId);
+        device.ifPresent(found -> found.setName(name));
+        return device;
+    }
+
+    /** Cancels the device: its key stops working at once. */
+    @Transactional
+    public Optional<SchoolSyncDevice> revoke(Integer userId, int deviceId, LocalDateTime now) {
+        Optional<SchoolSyncDevice> device = devices.findByIdAndUserId(deviceId, userId);
+        device.filter(found -> found.getRevokedAt() == null).ifPresent(found -> found.setRevokedAt(now));
+        return device;
     }
 
     /** The active device for this key, or empty. */
