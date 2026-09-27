@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 /** On an empty database (a teammate's laptop), Flyway's V1 creates every table the Python site had. */
 @SpringBootTest
@@ -47,22 +48,42 @@ class MigrationTest {
                 "flyway_schema_history");
     }
 
-    @Test
-    void theSwitchRemovesAlembicsTableFromTheDatabaseThePythonSiteMade() throws Exception {
-        // Like the student's database: made by the Python site, with Alembic's alembic_version table.
-        DriverManagerDataSource pythonMade = new DriverManagerDataSource(
+    /** Like the student's database: every table the Python site made (V1's), and Alembic's alembic_version. */
+    static DataSource pythonMadeDatabase() throws Exception {
+        DriverManagerDataSource database = new DriverManagerDataSource(
                 "jdbc:h2:mem:python-made-" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
                 "sa", "");
-        try (Connection connection = pythonMade.getConnection(); Statement sql = connection.createStatement()) {
+        try (Connection connection = database.getConnection(); Statement sql = connection.createStatement()) {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/migration/V1__baseline.sql"));
             sql.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, PRIMARY KEY (version_num))");
             sql.execute("INSERT INTO alembic_version VALUES ('7d2f4b9c1e30')");
         }
+        return database;
+    }
 
-        // The site's own Flyway settings: record V1 as done on an existing database, then run what is newer.
-        Flyway.configure().dataSource(pythonMade).baselineOnMigrate(true).baselineVersion("1").outOfOrder(true)
-                .load().migrate();
+    /** The site's own Flyway settings: record V1 as done on an existing database, then run what is newer. */
+    static void migrate(DataSource database, String... locations) {
+        Flyway.configure().dataSource(database).locations(locations).baselineOnMigrate(true).baselineVersion("1")
+                .outOfOrder(true).load().migrate();
+    }
+
+    @Test
+    void theSwitchRemovesAlembicsTableFromTheDatabaseThePythonSiteMade() throws Exception {
+        DataSource pythonMade = pythonMadeDatabase();
+
+        migrate(pythonMade, "classpath:db/migration");
 
         assertThat(tables(pythonMade)).contains("flyway_schema_history").doesNotContain("alembic_version");
+    }
+
+    @Test
+    void laterMigrationsWorkOnTheDatabaseThePythonSiteMade() throws Exception {
+        // db/later (test files only) has a migration like a teammate's first one: a new table with a key to users.
+        DataSource pythonMade = pythonMadeDatabase();
+
+        migrate(pythonMade, "classpath:db/migration", "classpath:db/later");
+
+        assertThat(tables(pythonMade)).contains("later_items");
     }
 
     @Test
