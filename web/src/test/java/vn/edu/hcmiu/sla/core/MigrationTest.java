@@ -5,16 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.sql.DataSource;
 
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /** On an empty database (a teammate's laptop), Flyway's V1 creates every table the Python site had. */
 @SpringBootTest
@@ -23,21 +27,42 @@ class MigrationTest {
     @Autowired
     DataSource dataSource;
 
-    @Test
-    void anEmptyDatabaseGetsEveryTable() throws Exception {
+    static Set<String> tables(DataSource database) throws Exception {
         Set<String> tables = new HashSet<>();
-        try (Connection connection = dataSource.getConnection();
+        try (Connection connection = database.getConnection();
              ResultSet rows = connection.getMetaData().getTables(connection.getCatalog(), null, "%", new String[] {"TABLE"})) {
             while (rows.next()) {
                 tables.add(rows.getString("TABLE_NAME").toLowerCase(Locale.ROOT));
             }
         }
+        return tables;
+    }
 
-        assertThat(tables).contains(
+    @Test
+    void anEmptyDatabaseGetsEveryTable() throws Exception {
+        assertThat(tables(dataSource)).contains(
                 "users", "school_sync_devices", "school_sync_settings", "school_sync_runs", "school_changes",
                 "school_courses", "school_class_meetings", "school_exams", "school_tuition", "school_events",
                 "school_bb_courses", "school_bb_announcements", "school_bb_assignments", "school_bb_materials",
                 "flyway_schema_history");
+    }
+
+    @Test
+    void theSwitchRemovesAlembicsTableFromTheDatabaseThePythonSiteMade() throws Exception {
+        // Like the student's database: made by the Python site, with Alembic's alembic_version table.
+        DriverManagerDataSource pythonMade = new DriverManagerDataSource(
+                "jdbc:h2:mem:python-made-" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+                "sa", "");
+        try (Connection connection = pythonMade.getConnection(); Statement sql = connection.createStatement()) {
+            sql.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, PRIMARY KEY (version_num))");
+            sql.execute("INSERT INTO alembic_version VALUES ('7d2f4b9c1e30')");
+        }
+
+        // The site's own Flyway settings: record V1 as done on an existing database, then run what is newer.
+        Flyway.configure().dataSource(pythonMade).baselineOnMigrate(true).baselineVersion("1").outOfOrder(true)
+                .load().migrate();
+
+        assertThat(tables(pythonMade)).contains("flyway_schema_history").doesNotContain("alembic_version");
     }
 
     @Test
