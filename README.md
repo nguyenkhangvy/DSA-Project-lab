@@ -72,7 +72,7 @@ The tests use a throwaway in-memory database by default, so they never touch you
 
 ## The Java website (`web/`)
 
-The website is moving to Java (Spring Boot), so the whole team can work in Java. See [the design](docs/superpowers/specs/2026-09-26-java-website-design.md). Until the switch, the Python site above is the one in daily use; the Java site runs next to it on port **8080**, on the same database and `.env`. So far it has login, the shared layout, and the School module's sync API for the laptop agent; the School pages come next.
+The website is moving to Java (Spring Boot), so the whole team can work in Java. See [the design](docs/superpowers/specs/2026-09-26-java-website-design.md). Until the switch, the Python site above is the one in daily use; the Java site runs next to it on port **8080**, on the same database and `.env`. So far it has login, the shared layout, and the School module: the sync API for the laptop agent and the School pages. The laptop agent still syncs into the Python site until the switch.
 
 ### What you need
 
