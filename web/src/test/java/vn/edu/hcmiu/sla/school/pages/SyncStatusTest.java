@@ -1,0 +1,223 @@
+package vn.edu.hcmiu.sla.school.pages;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import vn.edu.hcmiu.sla.school.pages.SyncStatus.RunInfo;
+import vn.edu.hcmiu.sla.school.pages.SyncStatus.Status;
+import vn.edu.hcmiu.sla.school.pages.SyncStatus.SystemLine;
+
+/** Java twin of tests/test_school_sync_status.py. */
+class SyncStatusTest {
+
+    // UTC. 07:05 UTC = 14:05 in Vietnam.
+    static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 1, 7, 30);
+
+    static LocalDateTime at(String hhmm) {
+        return hhmm == null ? null : LocalDateTime.of(NOW.toLocalDate(), LocalTime.parse(hhmm));
+    }
+
+    static RunInfo run(String status, String started, String finished, String errorCode,
+            Map<String, Map<String, String>> sections) {
+        return new RunInfo(status, at(started), at(finished), errorCode, null, sections);
+    }
+
+    static RunInfo run(String status) {
+        return run(status, "07:00", "07:05", null, null);
+    }
+
+    static Status status(RunInfo latest, LocalDateTime requested, boolean hasDevice, LocalDateTime lastSeen,
+            LocalDateTime lastGood) {
+        return SyncStatus.describe(NOW, 12, requested, latest, lastGood, hasDevice, lastSeen);
+    }
+
+    static Status status(RunInfo latest) {
+        return status(latest, null, true, NOW, null);
+    }
+
+    static final Map<String, String> OK = Map.of("status", "ok");
+
+    static Map<String, String> bad(String code) {
+        return Map.of("status", "failed", "error_code", code, "error_message", "x");
+    }
+
+    /** Parts in the order given, as the agent sends them. */
+    @SafeVarargs
+    static Map<String, Map<String, String>> parts(Map.Entry<String, Map<String, String>>... entries) {
+        Map<String, Map<String, String>> sections = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, String>> entry : entries) {
+            sections.put(entry.getKey(), entry.getValue());
+        }
+        return sections;
+    }
+
+    static Map<String, Map<String, String>> edu() {
+        return parts(Map.entry("timetable", OK), Map.entry("exams", OK), Map.entry("tuition", OK));
+    }
+
+    @Test
+    void noDeviceYetPointsToTheDevicesPage() {
+        Status result = status(null, null, false, null, null);
+
+        assertThat(result.state()).isEqualTo("no_device");
+        assertThat(result.detail()).contains("Devices page");
+        assertThat(result.laptopWarning()).isNull();
+    }
+
+    @Test
+    void neverSynced() {
+        assertThat(status(null).state()).isEqualTo("never");
+    }
+
+    @Test
+    void aSuccessfulSyncShowsVietnamTime() {
+        Status result = status(run("success"), null, true, NOW, LocalDateTime.of(2026, 10, 1, 7, 5));
+
+        assertThat(List.of(result.state(), result.headline())).containsExactly("success", "Synced at 14:05");
+        assertThat(result.lastSyncedAt()).isEqualTo(LocalDateTime.of(2026, 10, 1, 7, 5));
+    }
+
+    @Test
+    void aSyncFromAnEarlierDayShowsTheDate() {
+        RunInfo earlier = new RunInfo("success", LocalDateTime.of(2026, 9, 29, 7, 0), LocalDateTime.of(2026, 9, 29, 7, 5),
+                null, null, null);
+
+        assertThat(status(earlier).headline()).isEqualTo("Synced on 29/09 14:05");
+    }
+
+    @Test
+    void running() {
+        assertThat(status(run("running", "07:25", null, null, null)).state()).isEqualTo("syncing");
+    }
+
+    @Test
+    void aRunStuckFor20MinutesShowsAsFailed() {
+        assertThat(status(run("running", "07:10", null, null, null)).state()).isEqualTo("failed");
+    }
+
+    @Test
+    void syncNowWaitingForTheLaptop() {
+        assertThat(status(run("success"), at("07:20"), true, NOW, null).state()).isEqualTo("requested");
+    }
+
+    @Test
+    void aRequestAlreadyServedIsNotShown() {
+        assertThat(status(run("success"), at("06:00"), true, NOW, null).state()).isEqualTo("success");
+    }
+
+    @Test
+    void wrongPasswordPausesAndSaysHowToFixIt() {
+        Status result = status(run("failed", "07:00", "07:05", "bad_credentials", null));
+
+        assertThat(result.state()).isEqualTo("paused");
+        assertThat(result.detail()).contains("sla-agent setup");
+    }
+
+    @Test
+    void extraVerificationPausesAndSuggestsImport() {
+        Status result = status(run("failed", "07:00", "07:05", "extra_verification", null));
+
+        assertThat(result.state()).isEqualTo("paused");
+        assertThat(result.detail()).contains("sla-agent import");
+    }
+
+    @Test
+    void aNetworkFailureWillRetry() {
+        Status result = status(run("failed", "07:00", "07:05", "network", null));
+
+        assertThat(result.state()).isEqualTo("failed");
+        assertThat(result.detail()).contains("automatically");
+    }
+
+    @Test
+    void allPartsFailedUsesTheirError() {
+        Status result = status(run("failed", "07:00", "07:05", null,
+                parts(Map.entry("timetable", bad("edusoft_changed")), Map.entry("tuition", bad("edusoft_changed")))));
+
+        assertThat(result.state()).isEqualTo("failed");
+        assertThat(result.headline()).contains("changed");
+    }
+
+    @Test
+    void partialNamesThePartsThatFailed() {
+        Status result = status(run("partial", "07:00", "07:05", null,
+                parts(Map.entry("timetable", OK), Map.entry("tuition", bad("edusoft_changed")))),
+                null, true, NOW, LocalDateTime.of(2026, 10, 1, 7, 5));
+
+        assertThat(List.of(result.state(), result.headline())).containsExactly("partial", "Partly synced at 14:05");
+        assertThat(result.detail()).contains("tuition").doesNotContain("timetable");
+    }
+
+    @Test
+    void partsAreNamedInTheSameOrderWhateverOrderTheDatabaseKeptThemIn() {
+        // MySQL gives JSON keys back shortest first: exams, tuition, timetable.
+        Status result = status(run("partial", "07:00", "07:05", null, parts(Map.entry("exams", bad("edusoft_changed")),
+                Map.entry("tuition", OK), Map.entry("timetable", bad("edusoft_changed")))));
+
+        assertThat(result.detail()).startsWith("Couldn't read: timetable, exam schedule.");
+    }
+
+    @Test
+    void laptopThatNeverCheckedIn() {
+        assertThat(status(null, null, true, null, null).laptopWarning()).contains("hasn't checked in yet");
+    }
+
+    @Test
+    void laptopSilentForMoreThanTwiceTheInterval() {
+        assertThat(status(null, null, true, LocalDateTime.of(2026, 9, 30, 7, 0), null).laptopWarning())
+                .isEqualTo("Your laptop hasn't checked in since Wed 30/09 14:00.");
+    }
+
+    @Test
+    void laptopSeenRecentlyGivesNoWarning() {
+        assertThat(status(null, null, true, LocalDateTime.of(2026, 9, 30, 20, 0), null).laptopWarning()).isNull();
+    }
+
+    // ---- One line per system ------------------------------------------------------
+
+    @Test
+    void oneLinePerSystemFromTheLatestRunThatIncludedIt() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("blackboard", bad("bad_credentials"));
+
+        List<SystemLine> lines = SyncStatus.systemLines(List.of(run("partial", "07:00", "07:05", null, sections)), NOW);
+
+        assertThat(lines).extracting(SystemLine::name, SystemLine::state)
+                .containsExactly(tuple("EduSoft", "ok"),
+                        tuple("Blackboard", "paused"));
+        assertThat(lines.get(0).text()).isEqualTo("synced at 14:05");
+        assertThat(lines.get(1).text()).contains("sla-agent setup --blackboard");
+    }
+
+    @Test
+    void aSystemNeverSyncedHasNoLine() {
+        assertThat(SyncStatus.systemLines(List.of(run("success", "07:00", "07:05", null, edu())), NOW))
+                .extracting(SystemLine::name).containsExactly("EduSoft");
+    }
+
+    @Test
+    void aPartFailureIsShownAsPartlySynced() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("tuition", bad("edusoft_changed"));
+
+        assertThat(SyncStatus.systemLines(List.of(run("partial", "07:00", "07:05", null, sections)), NOW))
+                .containsExactly(new SystemLine("EduSoft", "partial", "synced at 14:05, but couldn't read: tuition"));
+    }
+
+    @Test
+    void blackboardFailureHeadlineNamesBlackboard() {
+        Status result = status(run("failed", "07:00", "07:05", null, parts(Map.entry("blackboard", bad("bad_credentials")))));
+
+        assertThat(result.state()).isEqualTo("paused");
+        assertThat(result.headline()).contains("Blackboard");
+        assertThat(result.detail()).contains("sla-agent setup --blackboard");
+    }
+}

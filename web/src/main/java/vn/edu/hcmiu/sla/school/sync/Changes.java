@@ -5,9 +5,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +19,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import vn.edu.hcmiu.sla.school.VietnamTime;
+
 /**
  * The "What changed" feed: compare old and new data, describe the differences. The Java twin of
  * app/school/services/changes.py, with the same wording.
@@ -34,13 +33,8 @@ public final class Changes {
     private Changes() {
     }
 
-    static final ZoneOffset VIETNAM = ZoneOffset.ofHours(7);
     static final int MAX_DATES = 3;
     static final int MATERIALS_NAMED = 3; // titles named in a "new materials" line
-
-    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("EEE dd/MM HH:mm", Locale.ENGLISH);
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     /** One feed line. kind is added, removed or changed. */
     public record Change(String kind, String summary) {
@@ -79,13 +73,9 @@ public final class Changes {
     public record BbState(List<String> courses, List<BbItem> items) {
     }
 
-    static OffsetDateTime toVietnam(LocalDateTime utc) {
-        return utc.atOffset(ZoneOffset.UTC).withOffsetSameInstant(VIETNAM);
-    }
-
     /** "Tue 29/09 08:00" in Vietnam time. */
-    static String when(LocalDateTime utc) {
-        return WHEN.format(toVietnam(utc));
+    private static String when(LocalDateTime utc) {
+        return VietnamTime.when(utc);
     }
 
     private static String dates(Collection<LocalDateTime> moments) {
@@ -107,7 +97,7 @@ public final class Changes {
     }
 
     private static String day(LocalDate value) {
-        return DAY.format(value);
+        return VietnamTime.fullDate(value);
     }
 
     private static String money(long vnd) {
@@ -217,7 +207,7 @@ public final class Changes {
                     .filter(pair -> !pair.before().endAt().equals(pair.after().endAt()))
                     .forEach(pair -> changes.add(new Change("changed", label + ": class on "
                             + when(pair.after().startAt()) + " now ends at "
-                            + TIME.format(toVietnam(pair.after().endAt())))));
+                            + VietnamTime.clock(pair.after().endAt()))));
         });
         return changes;
     }
