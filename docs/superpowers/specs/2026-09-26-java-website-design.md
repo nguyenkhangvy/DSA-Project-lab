@@ -3,7 +3,7 @@
 **Date:** 2026-09-26
 **Scope:** rebuild the website (login, shared layout, School module, sync API) in Java with Spring Boot, so the teammates can build the Expense and Health modules in Java; the laptop sync agent stays in Python
 **Owner:** Nguyen Khang Vy
-**Status:** Stage 1 built (see docs/superpowers/plans/2026-09-26-java-stage1-foundation.md); stages 2–3 to come
+**Status:** Stage 1 built (see docs/superpowers/plans/2026-09-26-java-stage1-foundation.md); stage 2a, the sync API and saving, built (docs/superpowers/plans/2026-09-27-java-stage2a-sync-api.md); stage 2b (School pages) and stage 3 to come
 **Builds on:** [EduSoft-first Phase 1](2026-09-25-edusoft-first-phase1-design.md), [Blackboard](2026-09-26-blackboard-design.md), [Class changes and To submit](2026-09-26-class-changes-and-to-submit-design.md). Every behaviour those documents describe stays the same; only the website's language and framework change.
 
 ---

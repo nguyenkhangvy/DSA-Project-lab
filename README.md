@@ -72,7 +72,7 @@ The tests use a throwaway in-memory database by default, so they never touch you
 
 ## The Java website (`web/`)
 
-The website is moving to Java (Spring Boot), so the whole team can work in Java. See [the design](docs/superpowers/specs/2026-09-26-java-website-design.md). Until the switch, the Python site above is the one in daily use; the Java site runs next to it on port **8080**, on the same database and `.env`.
+The website is moving to Java (Spring Boot), so the whole team can work in Java. See [the design](docs/superpowers/specs/2026-09-26-java-website-design.md). Until the switch, the Python site above is the one in daily use; the Java site runs next to it on port **8080**, on the same database and `.env`. So far it has login, the shared layout, and the School module's sync API for the laptop agent; the School pages come next.
 
 ### What you need
 
@@ -93,6 +93,10 @@ Git Bash: `cd web && ./mvnw spring-boot:run`. Open http://127.0.0.1:8080 and sto
 ### Tests
 
 In `web/`: `.\mvnw.cmd test` (PowerShell) or `./mvnw test` (Git Bash). They use an in-memory database, never yours.
+
+### The laptop agent's data format
+
+The laptop agent uploads its data in the format set by `contract/sla_contract/schema.py`. The Java site reads it with `web/src/main/java/vn/edu/hcmiu/sla/school/sync/SyncContract.java`, so change the two together. `contract/samples/` holds example uploads that both the Python and the Java tests check: every file there must be accepted, every file in `contract/samples/invalid/` refused. When the format changes, update or add a sample.
 
 ### Adding your module in Java
 
