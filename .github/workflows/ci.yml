@@ -6,26 +6,9 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  agent:
+    # The laptop sync agent and the data format it uploads (Python). The website is the web job below.
     runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: school_life_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-
-    env:
-      # CI-only throwaway database; not a real secret.
-      TEST_DATABASE_URL: mysql+pymysql://root:root@127.0.0.1:3306/school_life_test?charset=utf8mb4
 
     steps:
       - uses: actions/checkout@v5
@@ -37,15 +20,7 @@ jobs:
 
       - run: pip install -r requirements-dev.txt
 
-      - name: Migrations apply and roll back on MySQL
-        env:
-          SECRET_KEY: ci-only
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-        run: |
-          flask db upgrade
-          flask db downgrade base
-
-      - name: Tests (on MySQL)
+      - name: Agent and data-format tests
         run: pytest
 
   web:

@@ -1,7 +1,8 @@
--r requirements.txt
-
-# Laptop sync agent (see agent/) and its libraries
+# The laptop sync agent (agent/), the data format it uploads (contract/), and their tests.
+# The website is in web/ (Java); it needs no Python.
+-e ./contract
 -e ./agent
+pydantic==2.13.5
 requests==2.34.2
 beautifulsoup4==4.15.0
 keyring==25.7.0

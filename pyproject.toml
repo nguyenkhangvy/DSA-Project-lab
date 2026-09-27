@@ -1,4 +1,3 @@
 [tool.pytest.ini_options]
-testpaths = ["tests", "agent/tests"]
+testpaths = ["contract/tests", "agent/tests"]
 addopts = "-q"
-filterwarnings = ["error::DeprecationWarning:app.*"]

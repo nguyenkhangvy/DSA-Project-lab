@@ -1,11 +1,31 @@
+"""The agent's data format: what it accepts and refuses. contract/samples/ holds example uploads that the
+Java website's tests check too (web/src/test/java/vn/edu/hcmiu/sla/school/sync/SyncContractTest.java)."""
+
 import copy
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
 from sla_contract.schema import FinishRun
-from tests.helpers import BB, SAMPLES, blackboard_payload, full_payload
+
+SAMPLES = Path(__file__).resolve().parents[1] / "samples"
+BB = "https://blackboard.hcmiu.edu.vn"
+
+
+def _sample(name):
+    return json.loads((SAMPLES / name).read_text(encoding="utf-8"))
+
+
+# A complete, valid upload from the agent. Times are Vietnam time (+07:00).
+def full_payload():
+    return _sample("finish-edusoft.json")
+
+
+# A valid Blackboard section as the agent uploads it.
+def blackboard_payload():
+    return _sample("finish-blackboard.json")["blackboard"]["data"]
 
 
 def test_a_complete_upload_is_accepted():
