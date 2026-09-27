@@ -1,5 +1,6 @@
 package vn.edu.hcmiu.sla.school.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,9 @@ public interface SchoolBbAssignmentRepository extends JpaRepository<SchoolBbAssi
     @Modifying
     @Query("delete from SchoolBbAssignment a where a.userId = :userId")
     void deleteAllOfUser(Integer userId);
+
+    /** Deadlines in [start, end), soonest first, with their course. */
+    @Query("select a from SchoolBbAssignment a join fetch a.course where a.userId = :userId "
+            + "and a.dueAt >= :start and a.dueAt < :end order by a.dueAt, a.id")
+    List<SchoolBbAssignment> findDue(Integer userId, LocalDateTime start, LocalDateTime end);
 }

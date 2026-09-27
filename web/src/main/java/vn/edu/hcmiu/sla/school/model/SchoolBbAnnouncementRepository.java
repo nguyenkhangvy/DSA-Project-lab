@@ -13,4 +13,7 @@ public interface SchoolBbAnnouncementRepository extends JpaRepository<SchoolBbAn
     @Modifying
     @Query("delete from SchoolBbAnnouncement a where a.userId = :userId")
     void deleteAllOfUser(Integer userId);
+
+    @Query("select a from SchoolBbAnnouncement a join fetch a.course where a.userId = :userId")
+    List<SchoolBbAnnouncement> findWithCourse(Integer userId);
 }
