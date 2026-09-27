@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "blackboard": {
+    "status": "ok",
+    "data": {
+      "courses": [
+        {
+          "bb_id": "_101_1",
+          "name": "Web Application Development",
+          "url": "https://evil.example/course"
+        }
+      ]
+    }
+  }
+}

@@ -2,6 +2,10 @@
 
 Both sides import this file, so they always agree on the format. Unknown
 fields are rejected: only what is listed here can leave the laptop.
+
+The Java website reads the same format with
+web/src/main/java/vn/edu/hcmiu/sla/school/sync/SyncContract.java: change both
+together. contract/samples/ holds example uploads that both test suites check.
 """
 
 from datetime import date

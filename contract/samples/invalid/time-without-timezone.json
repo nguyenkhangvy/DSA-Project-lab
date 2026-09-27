@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "exams": {
+    "status": "ok",
+    "data": {
+      "term_code": "20261",
+      "exams": [
+        {
+          "course_code": "IT093IU",
+          "course_name": "Web Application Development",
+          "exam_type": "final",
+          "start_at": "2026-12-12T08:00:00"
+        }
+      ]
+    }
+  }
+}

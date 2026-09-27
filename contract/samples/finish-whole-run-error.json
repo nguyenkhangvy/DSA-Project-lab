@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "error_code": "bad_credentials",
+  "error_message": "EduSoft rejected the password"
+}

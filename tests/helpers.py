@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 
 from app.config import load_config
 
@@ -63,78 +65,20 @@ def api(client, method, path, key=None, json=None, **kwargs):
     return client.open(f"/api/school/sync{path}", method=method, headers=headers, json=json, **kwargs)
 
 
-# A complete, valid upload from the agent. Times are Vietnam time (+07:00).
-def full_payload():
-    return {
-        "schema_version": 1,
-        "timetable": {
-            "status": "ok",
-            "data": {
-                "term_code": "20261",
-                "term_name": "Semester 1, 2026-2027",
-                "courses": [
-                    {
-                        "course_code": "IT093IU",
-                        "course_name": "Web Application Development",
-                        "group": "01",
-                        "credits": 4,
-                        "lecturer": "Nguyen Van A",
-                        "meetings": [
-                            {
-                                "start_at": "2026-09-29T08:00:00+07:00",
-                                "end_at": "2026-09-29T10:30:00+07:00",
-                                "room": "A2.307",
-                            }
-                        ],
-                    }
-                ],
-            },
-        },
-        "exams": {
-            "status": "ok",
-            "data": {
-                "term_code": "20261",
-                "exams": [
-                    {
-                        "course_code": "IT093IU",
-                        "course_name": "Web Application Development",
-                        "exam_type": "final",
-                        "start_at": "2026-12-12T08:00:00+07:00",
-                        "duration_min": 90,
-                        "room": "A1.101",
-                    }
-                ],
-            },
-        },
-        "tuition": {
-            "status": "ok",
-            "data": {
-                "term_code": "20261",
-                "amount_due": 12500000,
-                "amount_paid": 0,
-                "balance": 12500000,
-                "due_date": "2026-10-15",
-                "status_text": "Chưa đóng",
-            },
-        },
-    }
-
-
-# A valid Blackboard section as the agent uploads it.
+# Uploads from contract/samples/, which the Java website's tests read too.
+SAMPLES = Path(__file__).resolve().parents[1] / "contract" / "samples"
 BB = "https://blackboard.hcmiu.edu.vn"
 
 
+def _sample(name):
+    return json.loads((SAMPLES / name).read_text(encoding="utf-8"))
+
+
+# A complete, valid upload from the agent. Times are Vietnam time (+07:00).
+def full_payload():
+    return _sample("finish-edusoft.json")
+
+
+# A valid Blackboard section as the agent uploads it.
 def blackboard_payload():
-    return {
-        "courses": [{
-            "bb_id": "_101_1", "course_code": "IT093IU", "name": "Web Application Development",
-            "url": f"{BB}/webapps/blackboard/execute/launcher?type=Course&id=_101_1&url=",
-            "announcements": [{"bb_id": "_501_1", "title": "No class on Thursday", "text": "Class is cancelled.",
-                               "posted_at": "2026-09-28T02:00:00+00:00", "url": f"{BB}/x"}],
-            "assignments": [{"bb_id": "_701_1", "name": "Lab 3", "due_at": "2026-10-02T16:59:00+00:00",
-                             "points_possible": 10, "score": 8.5, "grade_text": "8.5", "status": "graded",
-                             "feedback": "Good work", "url": f"{BB}/x"}],
-            "materials": [{"bb_id": "_902_1", "title": "Week 5 slides.pdf", "kind": "file", "path": "Week 5",
-                           "created_at": "2026-09-28T01:00:00+00:00", "url": f"{BB}/x"}],
-        }],
-    }
+    return _sample("finish-blackboard.json")["blackboard"]["data"]

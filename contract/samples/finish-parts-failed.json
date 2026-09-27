@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "timetable": {
+    "status": "ok",
+    "data": {
+      "term_code": "20261",
+      "term_name": "Semester 1, 2026-2027",
+      "courses": [
+        {
+          "course_code": "IT093IU",
+          "course_name": "Web Application Development",
+          "group": "01",
+          "credits": 4,
+          "lecturer": "Nguyen Van A",
+          "meetings": [
+            {
+              "start_at": "2026-09-29T08:00:00+07:00",
+              "end_at": "2026-09-29T10:30:00+07:00",
+              "room": "A2.307"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "exams": {
+    "status": "failed",
+    "error_code": "edusoft_changed",
+    "error_message": "Exam table not found"
+  },
+  "tuition": {
+    "status": "failed",
+    "error_code": "network",
+    "error_message": "EduSoft timed out"
+  },
+  "blackboard": {
+    "status": "failed",
+    "error_code": "source_changed",
+    "error_message": "Unexpected format"
+  }
+}

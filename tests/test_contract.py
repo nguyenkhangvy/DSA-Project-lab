@@ -1,10 +1,11 @@
 import copy
+import json
 
 import pytest
 from pydantic import ValidationError
 
 from sla_contract.schema import FinishRun
-from tests.helpers import BB, blackboard_payload, full_payload
+from tests.helpers import BB, SAMPLES, blackboard_payload, full_payload
 
 
 def test_a_complete_upload_is_accepted():
@@ -151,3 +152,17 @@ def test_a_failed_blackboard_part_can_say_its_format_changed():
     })
 
     assert finish.overall_status() == "partial"
+
+
+# ---- contract/samples/: the Java website's tests check the same files ----------
+
+
+@pytest.mark.parametrize("path", sorted(SAMPLES.glob("*.json")), ids=lambda path: path.name)
+def test_every_shared_sample_is_accepted(path):
+    FinishRun.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+@pytest.mark.parametrize("path", sorted((SAMPLES / "invalid").glob("*.json")), ids=lambda path: path.name)
+def test_every_shared_invalid_sample_is_refused(path):
+    with pytest.raises(ValidationError):
+        FinishRun.model_validate(json.loads(path.read_text(encoding="utf-8")))

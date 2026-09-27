@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "timetable": {
+    "status": "ok",
+    "data": {
+      "term_code": "20261",
+      "courses": [
+        {
+          "course_code": "IT093IU",
+          "course_name": "Web Application Development",
+          "meetings": [
+            {
+              "start_at": "2026-09-29T08:00:00+07:00",
+              "end_at": "2026-09-29T07:00:00+07:00"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
