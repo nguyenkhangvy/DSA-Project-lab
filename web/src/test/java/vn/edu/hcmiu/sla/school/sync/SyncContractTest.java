@@ -271,6 +271,22 @@ class SyncContractTest {
     }
 
     @Test
+    void textLimitsCountCharactersLikePydanticNotJavaUnits() {
+        // An emoji is one character for the agent's Python, which cuts announcements to 5000 characters,
+        // but two UTF-16 units for Java's String.length().
+        Map<String, Object> data = blackboardPayload();
+        at(data, "courses", 0, "announcements", 0).put("text", "📢" + "x".repeat(4999));
+        at(data, "courses", 0, "announcements", 0).put("title", "📌" + "t".repeat(254));
+
+        var announcement = read(new HashMap<>(Map.of("blackboard", ok(data)))).blackboard().data().courses().get(0)
+                .announcements().get(0);
+
+        assertThat(announcement.text().codePointCount(0, announcement.text().length())).isEqualTo(5000);
+        at(data, "courses", 0, "announcements", 0).put("text", "📢" + "x".repeat(5000));
+        assertRefused(new HashMap<>(Map.of("blackboard", ok(data))));
+    }
+
+    @Test
     void numbersAreNotTextAndFractionsAreNotWholeNumbers() {
         Map<String, Object> numberAsText = fullPayload();
         at(numberAsText, "timetable", "data", "courses", 0).put("course_code", 93);

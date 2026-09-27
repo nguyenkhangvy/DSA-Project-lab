@@ -22,6 +22,7 @@ import jakarta.validation.constraints.Size;
  *
  * <p>{@link SyncJson} reads it: field names are snake_case in JSON (course_code), unknown fields are
  * refused so nothing extra can leave the laptop, text is trimmed, and times must carry their offset.
+ * Text limits use {@link Chars} (characters, as pydantic counts them); list limits use {@code @Size}.
  */
 public final class SyncContract {
 
@@ -38,7 +39,7 @@ public final class SyncContract {
     // ---- EduSoft ----------------------------------------------------------------
 
     public record ClassMeeting(@NotNull OffsetDateTime startAt, @NotNull OffsetDateTime endAt,
-            @Size(max = 50) String room) {
+            @Chars(max = 50) String room) {
 
         @AssertTrue(message = "end_at must be after start_at")
         boolean isEndAfterStart() {
@@ -47,11 +48,11 @@ public final class SyncContract {
     }
 
     public record Course(
-            @NotNull @Size(min = 1, max = 20) String courseCode,
-            @NotNull @Size(min = 1, max = 255) String courseName,
-            @Size(max = 20) String group,
+            @NotNull @Chars(min = 1, max = 20) String courseCode,
+            @NotNull @Chars(min = 1, max = 255) String courseName,
+            @Chars(max = 20) String group,
             @PositiveOrZero @DecimalMax("50") Double credits,
-            @Size(max = 255) String lecturer,
+            @Chars(max = 255) String lecturer,
             @Size(max = 200) List<@Valid ClassMeeting> meetings) {
 
         public Course {
@@ -60,38 +61,38 @@ public final class SyncContract {
     }
 
     public record Timetable(
-            @NotNull @Size(min = 1, max = 20) String termCode,
-            @Size(max = 100) String termName,
+            @NotNull @Chars(min = 1, max = 20) String termCode,
+            @Chars(max = 100) String termName,
             @NotNull @Size(max = 40) List<@Valid Course> courses) {
     }
 
     public record Exam(
-            @NotNull @Size(min = 1, max = 20) String courseCode,
-            @NotNull @Size(min = 1, max = 255) String courseName,
+            @NotNull @Chars(min = 1, max = 20) String courseCode,
+            @NotNull @Chars(min = 1, max = 255) String courseName,
             @NotNull @Pattern(regexp = "midterm|final|other") String examType,
             @NotNull OffsetDateTime startAt,
             @Min(1) @Max(600) Integer durationMin,
-            @Size(max = 50) String room,
-            @Size(max = 500) String notes) {
+            @Chars(max = 50) String room,
+            @Chars(max = 500) String notes) {
     }
 
     public record Exams(
-            @NotNull @Size(min = 1, max = 20) String termCode,
+            @NotNull @Chars(min = 1, max = 20) String termCode,
             @NotNull @Size(max = 60) List<@Valid Exam> exams) {
     }
 
     /** Amounts are VND. */
-    public record TuitionItem(@NotNull @Size(min = 1, max = 255) String description, @NotNull Long amount) {
+    public record TuitionItem(@NotNull @Chars(min = 1, max = 255) String description, @NotNull Long amount) {
     }
 
     /** Amounts are VND; a negative balance means overpaid. */
     public record Tuition(
-            @NotNull @Size(min = 1, max = 20) String termCode,
+            @NotNull @Chars(min = 1, max = 20) String termCode,
             @NotNull @PositiveOrZero Long amountDue,
             @NotNull @PositiveOrZero Long amountPaid,
             @NotNull Long balance,
             LocalDate dueDate,
-            @Size(max = 255) String statusText,
+            @Chars(max = 255) String statusText,
             @Size(max = 60) List<@Valid TuitionItem> items) {
 
         public Tuition {
@@ -102,11 +103,11 @@ public final class SyncContract {
     // ---- Blackboard -------------------------------------------------------------
 
     public record BbAnnouncement(
-            @NotNull @Size(min = 1, max = 64) String bbId,
-            @NotNull @Size(min = 1, max = 255) String title,
-            @Size(max = 5000) String text,
+            @NotNull @Chars(min = 1, max = 64) String bbId,
+            @NotNull @Chars(min = 1, max = 255) String title,
+            @Chars(max = 5000) String text,
             OffsetDateTime postedAt,
-            @NotNull @Size(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
+            @NotNull @Chars(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
 
         public BbAnnouncement {
             text = text == null ? "" : text;
@@ -114,24 +115,24 @@ public final class SyncContract {
     }
 
     public record BbAssignment(
-            @NotNull @Size(min = 1, max = 64) String bbId,
-            @NotNull @Size(min = 1, max = 255) String name,
+            @NotNull @Chars(min = 1, max = 64) String bbId,
+            @NotNull @Chars(min = 1, max = 255) String name,
             OffsetDateTime dueAt,
             @PositiveOrZero Double pointsPossible,
             Double score,
-            @Size(max = 50) String gradeText,
+            @Chars(max = 50) String gradeText,
             @NotNull @Pattern(regexp = "not_graded|needs_grading|graded|exempt") String status,
-            @Size(max = 1000) String feedback,
-            @NotNull @Size(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
+            @Chars(max = 1000) String feedback,
+            @NotNull @Chars(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
     }
 
     public record BbMaterial(
-            @NotNull @Size(min = 1, max = 64) String bbId,
-            @NotNull @Size(min = 1, max = 255) String title,
+            @NotNull @Chars(min = 1, max = 64) String bbId,
+            @NotNull @Chars(min = 1, max = 255) String title,
             @NotNull @Pattern(regexp = "file|folder|link|document|other") String kind,
-            @Size(max = 500) String path,
+            @Chars(max = 500) String path,
             OffsetDateTime createdAt,
-            @NotNull @Size(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
+            @NotNull @Chars(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url) {
 
         public BbMaterial {
             path = path == null ? "" : path;
@@ -139,10 +140,10 @@ public final class SyncContract {
     }
 
     public record BbCourse(
-            @NotNull @Size(min = 1, max = 64) String bbId,
-            @Size(min = 1, max = 20) String courseCode,
-            @NotNull @Size(min = 1, max = 255) String name,
-            @NotNull @Size(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url,
+            @NotNull @Chars(min = 1, max = 64) String bbId,
+            @Chars(min = 1, max = 20) String courseCode,
+            @NotNull @Chars(min = 1, max = 255) String name,
+            @NotNull @Chars(max = 500) @Pattern(regexp = BLACKBOARD_URL) String url,
             @Size(max = 300) List<@Valid BbAnnouncement> announcements,
             @Size(max = 300) List<@Valid BbAssignment> assignments,
             @Size(max = 1000) List<@Valid BbMaterial> materials) {
@@ -164,7 +165,7 @@ public final class SyncContract {
             @NotNull @Pattern(regexp = "ok|failed") String status,
             @Valid T data,
             @Pattern(regexp = ERROR_CODES) String errorCode,
-            @Size(min = 1, max = 500) String errorMessage) {
+            @Chars(min = 1, max = 500) String errorMessage) {
 
         @AssertTrue(message = "an ok part carries only data; a failed part carries only error_code and error_message")
         boolean isComplete() {
@@ -183,7 +184,7 @@ public final class SyncContract {
     public record FinishRun(
             Integer schemaVersion,
             @Pattern(regexp = ERROR_CODES) String errorCode,
-            @Size(min = 1, max = 500) String errorMessage,
+            @Chars(min = 1, max = 500) String errorMessage,
             @Valid Section<Timetable> timetable,
             @Valid Section<Exams> exams,
             @Valid Section<Tuition> tuition,
