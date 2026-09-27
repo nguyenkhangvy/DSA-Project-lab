@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import vn.edu.hcmiu.sla.core.Text;
+
 /** The register page's fields, with the same rules and messages as the Python site. */
 public class RegisterForm {
 
@@ -37,7 +39,7 @@ public class RegisterForm {
     }
 
     public void setDisplayName(String displayName) {
-        this.displayName = displayName == null ? "" : AppUserDetailsService.stripSpaces(displayName);
+        this.displayName = displayName == null ? "" : Text.strip(displayName);
     }
 
     public String getPassword() {
