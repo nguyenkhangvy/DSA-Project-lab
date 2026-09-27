@@ -17,6 +17,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.persistence.EntityManager;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +58,9 @@ import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 class IngestTest {
 
     static final Sort BY_ID = Sort.by("id");
+
+    @Autowired
+    EntityManager db;
 
     @Autowired
     UserRepository users;
@@ -107,11 +112,20 @@ class IngestTest {
         userId = makeUser("an@example.com");
     }
 
-    /** Opens a run for this user and finishes it with this upload, as the agent would; returns its status. */
+    /**
+     * Opens a run for this user and finishes it with this upload, as the agent would; returns its status.
+     * Like a real request, it starts from what the database holds and writes everything out at the end,
+     * so a second sync compares with rows read back from the database, not with objects still in memory.
+     */
     String sync(Integer userId, Object payload) {
+        db.flush();
+        db.clear();
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         SchoolSyncRun run = runs.save(new SchoolSyncRun(userId, null, "manual", now));
-        return ingest.finishRun(run.getId(), json.read(bytes(payload), FinishRun.class), now);
+        String status = ingest.finishRun(run.getId(), json.read(bytes(payload), FinishRun.class), now);
+        db.flush();
+        db.clear();
+        return status;
     }
 
     static Map<String, Object> payloadWithCourse(String code, String name, String term, String start, String end,
