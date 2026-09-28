@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +39,7 @@ class MailboxTest {
         List<String> categories = List.of();
         boolean lecturer;
         List<LocalDate> dates = List.of();
+        LocalDate registerBy;
         boolean sorted = true;
 
         Mail(String key, int hoursAgo, String... categories) {
@@ -72,21 +74,33 @@ class MailboxTest {
             return this;
         }
 
+        Mail registerBy(int daysFromToday) {
+            this.registerBy = TODAY.plusDays(daysFromToday);
+            return this;
+        }
+
         Mail unsorted() {
             this.sorted = false;
             return this;
         }
 
         SchoolMail row() {
-            return new SchoolMail(1, key, "00" + key.hashCode(), thread, NOW.minusHours(hoursAgo), "Sender", sender,
-                    subject, categories, lecturer, dates, sorted, null);
+            SchoolMail row = new SchoolMail(1, key, "00" + key.hashCode(), thread, NOW.minusHours(hoursAgo), "Sender",
+                    sender, subject, categories, lecturer, dates, sorted, null);
+            row.setRegisterBy(registerBy);
+            return row;
         }
     }
 
-    static View build(Map<String, SchoolMailChoice> choices, Map<String, List<Session>> sessions, Mail... mails) {
+    static View build(Map<String, SchoolMailChoice> choices, Map<String, List<Session>> sessions,
+            Set<String> joinedKeys, Mail... mails) {
         List<SchoolMail> rows = new ArrayList<>(Arrays.stream(mails).map(Mail::row).toList());
         rows.sort(Comparator.comparing(SchoolMail::getReceivedAt).reversed());
-        return Mailbox.build(rows, choices, sessions, NOW_IN_VIETNAM);
+        return Mailbox.build(rows, choices, sessions, joinedKeys, NOW_IN_VIETNAM);
+    }
+
+    static View build(Map<String, SchoolMailChoice> choices, Map<String, List<Session>> sessions, Mail... mails) {
+        return build(choices, sessions, Set.of(), mails);
     }
 
     static View build(Map<String, SchoolMailChoice> choices, Mail... mails) {
@@ -340,6 +354,44 @@ class MailboxTest {
 
         assertThat(List.of("talk", "survey", "over", "undated", "invoice")).map(k -> view.card(k).doneWhenOpened())
                 .containsExactly(false, false, true, true, true);
+    }
+
+    @Test
+    void anEventWhoseRegistrationClosedIsPastUnlessJoined() {
+        Map<String, List<Session>> sessions = Map.of("closing", List.of(session(2, "09:45", null)));
+        Mail closing = new Mail("closing", 1, "event", "training_points").on(2).registerBy(-6);
+
+        View notJoined = build(Map.of(), sessions, closing);
+        View joined = build(Map.of(), sessions, Set.of("closing"), closing);
+
+        assertThat(keys(box(notJoined, "events").past())).containsExactly("closing");
+        assertThat(keys(box(joined, "events").cards())).containsExactly("closing");
+        assertThat(List.of(notJoined.card("closing").closed(), notJoined.card("closing").registerBy()))
+                .containsExactly(true, TODAY.minusDays(6));
+    }
+
+    @Test
+    void registrationIsOpenThroughItsDeadline() {
+        Card card = build(new Mail("talk", 1, "event").on(3).registerBy(0)).card("talk");
+
+        assertThat(List.of(card.closed(), card.past())).containsExactly(false, false);
+    }
+
+    @Test
+    void aThreadKeepsItsLatestDeadline() {
+        Card card = build(new Mail("reminder", 1, "event").thread("T").on(4),
+                new Mail("first", 30, "event").thread("T").on(4).registerBy(-1),
+                new Mail("extended", 10, "event").thread("T").registerBy(2)).card("reminder");
+
+        assertThat(List.of(card.registerBy(), card.closed(), card.past())).containsExactly(TODAY.plusDays(2), false,
+                false);
+    }
+
+    @Test
+    void onlyEventsAndSchoolTasksCloseWithTheirRegistration() {
+        View view = build(new Mail("invoice", 1, "money").registerBy(-3));
+
+        assertThat(keys(box(view, "money").cards())).containsExactly("invoice");
     }
 
     @Test

@@ -107,7 +107,7 @@ public class MailboxController {
                 .collect(Collectors.groupingBy(s -> s.getMail().getMailKey(),
                         Collectors.mapping(s -> new Session(s.getDay(), s.getStart(), s.getEnd()), Collectors.toList())));
         return Mailbox.build(mails.findByUserIdOrderByReceivedAtDescIdDesc(userId), byKey, sessionsByKey,
-                nowInVietnam());
+                joined.mailKeysOf(userId), nowInVietnam());
     }
 
     /** The user's card whose newest email has this key, else 404. */

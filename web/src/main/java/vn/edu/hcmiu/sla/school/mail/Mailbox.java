@@ -12,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
@@ -69,13 +71,16 @@ public final class Mailbox {
      * One card: a thread, or the same email sent more than once. key, entryId, sender, subject and time come
      * from its newest email; keys are all its emails' keys. sessions: an event or school task's sessions that
      * haven't ended (none for other cards). nextDate: the day of the first of them, or else the earliest date
-     * from today on. past: every session has ended, or (without sessions) every date is over. suggested: the
-     * student moved it to Event or School task and the rules gave it neither, so its sessions are only suggestions.
+     * from today on. past: every session has ended, or (without sessions) every date is over, or (an event or
+     * school task) its registration closed and the student joined none of its sessions. suggested: the student
+     * moved it to Event or School task and the rules gave it neither, so its sessions are only suggestions.
+     * registerBy: the latest registration deadline of its emails, or null; closed: that day is before today.
      */
     public record Card(String key, List<String> keys, String entryId, String senderName, String subject,
             LocalDateTime receivedAt, List<String> categories, boolean fromLecturer, boolean moved,
             List<LocalDate> dates, List<Session> sessions, LocalDate nextDate, boolean past, boolean sorted,
-            boolean opened, boolean done, int messages, int copies, boolean suggested) {
+            boolean opened, boolean done, int messages, int copies, boolean suggested, LocalDate registerBy,
+            boolean closed) {
 
         public boolean trainingPoints() {
             return categories.contains("training_points");
@@ -183,7 +188,7 @@ public final class Mailbox {
     }
 
     private static Card card(Group group, Map<String, SchoolMailChoice> choices, Map<String, List<Session>> sessions,
-            LocalDateTime now) {
+            Set<String> joinedKeys, LocalDateTime now) {
         List<SchoolMail> mails = group.mails();
         SchoolMail newest = mails.get(0);
         SchoolMailChoice moved = mails.stream().map(m -> choices.get(m.getMailKey()))
@@ -198,12 +203,18 @@ public final class Mailbox {
         List<Session> all = eventLike(categories) ? sessionsOf(mails, sessions) : List.of();
         List<Session> ahead = all.stream().filter(s -> s.endAt().isAfter(now)).toList();
         LocalDate next = all.isEmpty() ? dates.ceiling(now.toLocalDate()) : ahead.isEmpty() ? null : ahead.get(0).day();
-        boolean past = all.isEmpty() ? !dates.isEmpty() && next == null : ahead.isEmpty();
+        LocalDate registerBy = mails.stream().map(SchoolMail::getRegisterBy).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null);
+        boolean closed = registerBy != null && registerBy.isBefore(now.toLocalDate());
+        boolean joined = mails.stream().anyMatch(m -> joinedKeys.contains(m.getMailKey()));
+        boolean past = (all.isEmpty() ? !dates.isEmpty() && next == null : ahead.isEmpty())
+                || (eventLike(categories) && closed && !joined);
         return new Card(newest.getMailKey(), mails.stream().map(SchoolMail::getMailKey).toList(), newest.getEntryId(),
                 newest.getSenderName(), newest.getSubject(), newest.getReceivedAt(), categories, fromLecturer,
                 moved != null, List.copyOf(dates), ahead, next, past, newest.isSorted(),
                 newestChoice != null && newestChoice.isOpened(), newestChoice != null && newestChoice.isDone(),
-                mails.size(), group.copies(), eventLike(categories) && !eventLike(newest.getCategories()));
+                mails.size(), group.copies(), eventLike(categories) && !eventLike(newest.getCategories()), registerBy,
+                closed);
     }
 
     private static final Comparator<Card> NEWEST_FIRST = Comparator.comparing(Card::receivedAt).reversed();
@@ -224,16 +235,25 @@ public final class Mailbox {
         return "other";
     }
 
-    /** The whole tab. mails: newest first; choices and sessions by mail key; now in Vietnam (wall clock). */
+    /** The whole tab, for a student who joined no events. */
     public static View build(List<SchoolMail> mails, Map<String, SchoolMailChoice> choices,
             Map<String, List<Session>> sessions, LocalDateTime now) {
+        return build(mails, choices, sessions, Set.of(), now);
+    }
+
+    /**
+     * The whole tab. mails: newest first; choices and sessions by mail key; joinedKeys: the emails with a joined
+     * session; now in Vietnam (wall clock).
+     */
+    public static View build(List<SchoolMail> mails, Map<String, SchoolMailChoice> choices,
+            Map<String, List<Session>> sessions, Set<String> joinedKeys, LocalDateTime now) {
         Map<String, List<Card>> byBox = new LinkedHashMap<>();
         for (String box : List.of("lecturers", "tasks", "money", "events", "other")) {
             byBox.put(box, new ArrayList<>());
         }
         List<Card> done = new ArrayList<>();
         for (Group group : groups(mails)) {
-            Card card = card(group, choices, sessions, now);
+            Card card = card(group, choices, sessions, joinedKeys, now);
             (card.done() ? done : byBox.get(boxOf(card))).add(card);
         }
         done.sort(NEWEST_FIRST);

@@ -84,6 +84,9 @@
     <span class="tag" th:if="${card.copies > 1}" th:text="|sent ${card.copies}×|">sent 2×</span>
     <span class="tag" th:if="${card.copies <= 1 and card.messages > 1}" th:text="|${card.messages} messages|">3
       messages</span>
+    <span class="tag tag-register" th:if="${card.eventLike and card.registerBy != null and !card.closed and !card.past}"
+          th:text="|Register by ${@schoolFormat.dayLabel(card.registerBy)}|">Register by Tue 22/09</span>
+    <span class="tag" th:if="${card.eventLike and card.closed and card.past}">Registration closed</span>
   </span>
   <span class="mail-when" th:text="${showNext and card.nextDate != null
       ? 'Next: ' + @schoolFormat.dayLabel(card.nextDate) : @schoolFormat.when(card.receivedAt)}">Next: Tue 29/09</span>

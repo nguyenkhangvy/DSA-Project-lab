@@ -325,6 +325,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .mail-row.is-opened .mail-subject { color: var(--muted); }
 .mail-extra { display: flex; gap: 4px; white-space: nowrap; }
 .tag { padding: 0 6px; font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; }
+.tag-register { color: #7a5200; border-color: #e0b64a; }
 .mail-when { color: var(--muted); font-size: 0.9rem; white-space: nowrap; text-align: right;
   font-variant-numeric: tabular-nums; }
 .mail-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; white-space: nowrap;

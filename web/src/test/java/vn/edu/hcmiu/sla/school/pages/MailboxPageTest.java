@@ -31,6 +31,7 @@ import vn.edu.hcmiu.sla.school.TestClock;
 import vn.edu.hcmiu.sla.school.model.SchoolMail;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 
@@ -244,6 +245,43 @@ class MailboxPageTest {
         assertThat(box(page(), "tasks")).contains("Re: Slide bài tập").contains(">Task</span>");
         assertThat(choices.findByUserId(an.id())).extracting(SchoolMailChoice::getMailKey)
                 .containsExactlyInAnyOrder(LAB_QUESTION, LAB_REPLY);
+    }
+
+    /** An event on `day` whose registration closes on `registerBy`. */
+    void event(AppUser who, String key, String subject, LocalDate day, LocalDate registerBy) {
+        SchoolMail mail = new SchoolMail(who.id(), key, "00A1" + key.substring(0, 4).toUpperCase(), null,
+                NOW.minusHours(20), "P.CTSV [OSS]", "oss@hcmiu.edu.vn", subject, List.of("event", "training_points"),
+                false, List.of(day), true, null);
+        mail.setRegisterBy(registerBy);
+        db.persist(mail);
+        db.flush();
+    }
+
+    @Test
+    void theRowSaysUntilWhenRegistrationIsOpen() throws Exception {
+        inbox(an);
+        event(an, "e".repeat(64), "Lễ Bế mạc HTSV", LocalDate.of(2026, 10, 2), LocalDate.of(2026, 9, 29));
+
+        assertThat(box(page(), "events")).contains("<span class=\"tag tag-register\">Register by Tue 29/09</span>");
+    }
+
+    @Test
+    void anEventWhoseRegistrationClosedGoesToPastUnlessJoined() throws Exception {
+        inbox(an);
+        String closing = "e".repeat(64);
+        event(an, closing, "Lễ Bế mạc HTSV", LocalDate.of(2026, 9, 30), LocalDate.of(2026, 9, 22));
+
+        String events = box(page(), "events");
+        assertThat(events.substring(0, events.indexOf("<details"))).doesNotContain("Bế mạc");
+        assertThat(events.substring(events.indexOf("<details"))).contains("Lễ Bế mạc HTSV")
+                .contains(">Registration closed</span>");
+
+        db.persist(new SchoolMailJoined(an.id(), closing, LocalDate.of(2026, 9, 30), java.time.LocalTime.of(9, 45),
+                null, "Lễ Bế mạc HTSV", null, true, false, NOW));
+        db.flush();
+        events = box(page(), "events");
+        assertThat(events.substring(0, events.indexOf("<details") < 0 ? events.length() : events.indexOf("<details")))
+                .contains("Lễ Bế mạc HTSV").doesNotContain("Registration closed");
     }
 
     @Test
