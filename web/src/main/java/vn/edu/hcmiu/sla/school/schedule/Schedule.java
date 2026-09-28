@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,14 +25,19 @@ import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolCourseRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolExamRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
+import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Announced;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.ClassChange;
+import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Emailed;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Posted;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Slot;
+import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Source;
 
 /**
  * Classes and exams for a day or a week, with day boundaries in Vietnam time. Classes changed by a
- * Blackboard announcement (online, cancelled, make-up) are marked here, so every page shows them the same
- * way. The Java twin of app/school/services/schedule.py.
+ * Blackboard announcement or a lecturer's email (online, cancelled, make-up) are marked here, so every page
+ * shows them the same way. The Java twin of app/school/services/schedule.py.
  */
 @Service
 public class Schedule {
@@ -42,14 +48,14 @@ public class Schedule {
 
     /**
      * A class or an exam on the timetable. Times are UTC; endAt may be empty. label: "Final exam" for exams.
-     * change: online / cancelled / makeup, from a Blackboard announcement, with bbCourseId the app's page for
-     * the course that announced it. allDay: a make-up class announced without a time.
+     * change: online / cancelled / makeup, from a Blackboard announcement or a lecturer's email, with source the
+     * app's page where it was announced. allDay: a make-up class announced without a time.
      */
     public record Item(String kind, LocalDateTime startAt, LocalDateTime endAt, String code, String title, String room,
-            String label, String change, Integer bbCourseId, boolean allDay) {
+            String label, String change, Source source, boolean allDay) {
 
-        Item changed(String change, Integer bbCourseId, String room) {
-            return new Item(kind, startAt, endAt, code, title, room, label, change, bbCourseId, allDay);
+        Item changed(String change, Source source, String room) {
+            return new Item(kind, startAt, endAt, code, title, room, label, change, source, allDay);
         }
     }
 
@@ -65,14 +71,17 @@ public class Schedule {
     private final SchoolCourseRepository courses;
     private final SchoolBbAnnouncementRepository announcements;
     private final SchoolBbAssignmentRepository assignments;
+    private final SchoolMailChangeRepository mailChanges;
 
     public Schedule(SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolCourseRepository courses,
-            SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments) {
+            SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments,
+            SchoolMailChangeRepository mailChanges) {
         this.meetings = meetings;
         this.exams = exams;
         this.courses = courses;
         this.announcements = announcements;
         this.assignments = assignments;
+        this.mailChanges = mailChanges;
     }
 
     /** Classes and exams starting in [startUtc, endUtc), with announced changes, in time order. */
@@ -101,12 +110,39 @@ public class Schedule {
         return assignments.findDue(userId, startUtc, endUtc);
     }
 
+    /** A Blackboard announcement's title, as compared with a Blackboard email's: case and outer spaces ignored. */
+    private record Titled(String code, String title) {
+
+        static Titled of(String code, String title) {
+            return new Titled(code, title.strip().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    /**
+     * Changes from Blackboard announcements and lecturers' emails. An email that is Blackboard's copy of an
+     * announcement stored here (same course code and title) is skipped, whichever arrived first.
+     */
     private Map<Slot, ClassChange> announcedChanges(Integer userId) {
-        List<Posted> posted = announcements.findWithCourse(userId).stream()
-                .map(a -> new Posted(a.getCourse().getCourseCode(), a.getCourse().getId(), a.getTitle(), a.getText(),
-                        a.getPostedAt()))
-                .toList();
-        return ClassChanges.changesFrom(posted);
+        List<Posted> posted = new ArrayList<>();
+        Set<Titled> titles = new HashSet<>();
+        announcements.findWithCourse(userId).forEach(a -> {
+            posted.add(new Posted(a.getCourse().getCourseCode(), Source.course(a.getCourse().getId()), a.getTitle(),
+                    a.getText(), a.getPostedAt()));
+            if (a.getCourse().getCourseCode() != null) {
+                titles.add(Titled.of(a.getCourse().getCourseCode(), a.getTitle()));
+            }
+        });
+        List<Emailed> emailed = new ArrayList<>();
+        for (SchoolMailChange c : mailChanges.findOfUser(userId)) {
+            String copyOf = c.getMail().getBlackboardTitle();
+            if (copyOf != null && titles.contains(Titled.of(c.getCourseCode(), copyOf))) {
+                continue;
+            }
+            emailed.add(new Emailed(c.getCourseCode(), Source.email(c.getMail().getMailKey()),
+                    c.getMail().getReceivedAt(), new Announced(c.getKind(), c.getDay(), c.getStart(), c.getEnd(),
+                            c.getRoom())));
+        }
+        return ClassChanges.changesFrom(posted, emailed);
     }
 
     /** Each timetable course's name and its most common class length (the first name and length seen win). */
@@ -150,7 +186,7 @@ public class Schedule {
                 classDays.add(new CourseDay(item.code(), day));
                 ClassChange change = changes.get(new Slot(item.code(), day, "class"));
                 if (change != null && (change.kind().equals("online") || change.kind().equals("cancelled"))) {
-                    item = item.changed(change.kind(), change.bbCourseId(),
+                    item = item.changed(change.kind(), change.source(),
                             change.kind().equals("online") ? "Online" : item.room());
                 }
             }
@@ -166,7 +202,7 @@ public class Schedule {
                 LocalDateTime dayStart = VietnamTime.dayStart(change.day());
                 if (!dayStart.isBefore(startUtc) && dayStart.isBefore(endUtc)) {
                     result.add(new Item("class", dayStart, null, change.code(), course.name(), change.room(), null,
-                            "makeup", change.bbCourseId(), true));
+                            "makeup", change.source(), true));
                 }
                 continue;
             }
@@ -176,7 +212,7 @@ public class Schedule {
                     : startAt.plus(course.usual());
             if (!startAt.isBefore(startUtc) && startAt.isBefore(endUtc)) {
                 result.add(new Item("class", startAt, endAt, change.code(), course.name(), change.room(), null,
-                        "makeup", change.bbCourseId(), false));
+                        "makeup", change.source(), false));
             }
         }
         result.sort(Comparator.comparing(Item::startAt).thenComparing(Item::kind));

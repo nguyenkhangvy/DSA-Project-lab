@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -333,5 +335,89 @@ class CalendarFeedTest {
         announce(data.user("binh@example.com"), "MA026IU", "ONLINE CLASS ON SEPTEMBER 24", "", POSTED);
 
         assertThat(classes()).singleElement().extracting(e -> e.get("classNames")).isEqualTo(List.of("event-class"));
+    }
+
+    // ---- Class changes from lecturers' emails ----------------------------------------
+
+    static final String KEY = "e".repeat(64);
+    static final LocalDate SEPT_24 = LocalDate.of(2026, 9, 24);
+
+    @Test
+    void anEmailsChangeMarksTheClassAndLinksToTheEmail() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED, null), "MA026IU", "online", SEPT_24, null, null,
+                null));
+
+        Map<String, Object> event = classes().get(0);
+
+        assertThat(event.get("title")).isEqualTo("Online: " + PROBABILITY);
+        assertThat(event.get("url")).isEqualTo("/school/mailbox#mail-" + KEY);
+    }
+
+    @Test
+    void aBlackboardCopyIsSkippedWhenTheAnnouncementIsStoredWhicheverCameFirst() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        Integer courseId = announce(an, "MA026IU", "Online class on September 24", "", POSTED);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED.minusMinutes(5), " online class on september 24 "),
+                "MA026IU", "online", SEPT_24, null, null, null));
+
+        Map<String, Object> event = classes().get(0);
+
+        assertThat(classes()).hasSize(1);
+        assertThat(event.get("url")).isEqualTo("/school/courses/" + courseId);
+    }
+
+    @Test
+    void aBlackboardCopyCountsWhileBlackboardHasNotSyncedIt() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED, "Online class on September 24"), "MA026IU",
+                "online", SEPT_24, null, null, null));
+
+        assertThat(classes()).extracting(e -> props(e).get("change")).containsExactly("online");
+    }
+
+    @Test
+    void theSameChangeSentBothWaysIsOneClass() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        announce(an, "MA026IU", "Online class on September 24", "", POSTED);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED.plusHours(1), null), "MA026IU", "online",
+                SEPT_24, null, null, null));
+
+        assertThat(classes()).hasSize(1);
+        assertThat(classes().get(0).get("url")).isEqualTo("/school/mailbox#mail-" + KEY);
+    }
+
+    @Test
+    void aNewerEmailOverridesAnOlderAnnouncement() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        announce(an, "MA026IU", "Online class on September 24", "", POSTED);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED.plusHours(3), null), "MA026IU", "cancelled",
+                SEPT_24, null, null, null));
+
+        assertThat(classes()).extracting(e -> props(e).get("change")).containsExactly("cancelled");
+    }
+
+    @Test
+    void aMakeUpByEmailKeepsTheCancellationByAnnouncement() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        announce(an, "MA026IU", "Cancel class on September 24", "", POSTED);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED.plusHours(3), null), "MA026IU", "makeup",
+                LocalDate.of(2026, 9, 26), LocalTime.of(8, 0), LocalTime.of(9, 40), "A2.401"));
+
+        List<Map<String, Object>> week = classes();
+
+        assertThat(week).extracting(e -> props(e).get("change")).containsExactly("cancelled", "makeup");
+        assertThat(week.get(1).get("start")).isEqualTo("2026-09-26T08:00:00");
+        assertThat(props(week.get(1)).get("room")).isEqualTo("A2.401");
+    }
+
+    @Test
+    void anotherUsersEmailsNeverChangeMyClasses() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        AppUser binh = data.user("binh@example.com");
+        data.save(data.emailChange(data.lecturerEmail(binh, KEY, POSTED, null), "MA026IU", "cancelled", SEPT_24, null,
+                null, null));
+
+        assertThat(classes()).extracting(e -> props(e).get("change")).containsOnlyNulls();
     }
 }

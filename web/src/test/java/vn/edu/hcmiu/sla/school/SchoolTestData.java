@@ -2,6 +2,7 @@ package vn.edu.hcmiu.sla.school;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import jakarta.persistence.EntityManager;
@@ -14,6 +15,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolBbCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolBbMaterial;
 import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
+import vn.edu.hcmiu.sla.school.model.SchoolMail;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
 import vn.edu.hcmiu.sla.school.model.SchoolTuition;
 
 /** Rows for School page tests, saved straight into the test database. All times are UTC. */
@@ -87,5 +90,26 @@ public final class SchoolTestData {
         db.persist(course);
         db.flush();
         return course.getId();
+    }
+
+    /**
+     * A lecturer's email as the laptop sorted it; add class changes with {@link #emailChange}, then {@link #save}.
+     * blackboardTitle: set when it is Blackboard's copy of an announcement.
+     */
+    public SchoolMail lecturerEmail(AppUser user, String key, LocalDateTime receivedAt, String blackboardTitle) {
+        return new SchoolMail(user.id(), key, "00A1", null, receivedAt, "Tran Van An", "tvan@hcmiu.edu.vn",
+                blackboardTitle != null ? "Course_S1: " + blackboardTitle : "Class notice", List.of("class"), true,
+                List.of(), false, true, blackboardTitle);
+    }
+
+    public SchoolMail emailChange(SchoolMail mail, String code, String kind, LocalDate day, LocalTime start,
+            LocalTime end, String room) {
+        mail.getChanges().add(new SchoolMailChange(mail, code, kind, day, start, end, room));
+        return mail;
+    }
+
+    public void save(SchoolMail mail) {
+        db.persist(mail);
+        db.flush();
     }
 }

@@ -27,6 +27,7 @@ import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Announced;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.ClassChange;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Posted;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Slot;
+import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Source;
 
 /** Java twin of tests/test_school_class_changes.py. postedAt values are UTC. */
 class ClassChangesTest {
@@ -245,7 +246,7 @@ class ClassChangesTest {
     // ---- Changes by course and day -------------------------------------------------
 
     static Posted row(String title, LocalDateTime posted) {
-        return new Posted("MA026IU", 5, title, "", posted);
+        return new Posted("MA026IU", Source.course(5), title, "", posted);
     }
 
     @Test
@@ -255,7 +256,7 @@ class ClassChangesTest {
                 row("Online class on 24/9", LocalDateTime.of(2026, 9, 20, 0, 0))));
 
         assertThat(changes).containsExactly(Map.entry(new Slot("MA026IU", LocalDate.of(2026, 9, 24), "class"),
-                new ClassChange("MA026IU", 5, "cancelled", LocalDate.of(2026, 9, 24), null, null, null)));
+                new ClassChange("MA026IU", Source.course(5), "cancelled", LocalDate.of(2026, 9, 24), null, null, null)));
     }
 
     @Test
@@ -271,7 +272,7 @@ class ClassChangesTest {
     @Test
     void announcementsWithoutACourseCodeOrTimeAreSkipped() {
         assertThat(ClassChanges.changesFrom(List.of(row("Online class on 24/9", null),
-                new Posted(null, 5, "Online class on 24/9", "", POSTED)))).isEmpty();
+                new Posted(null, Source.course(5), "Online class on 24/9", "", POSTED)))).isEmpty();
     }
 
     @Test

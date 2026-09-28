@@ -30,7 +30,7 @@
   </form>
 </section>
 
-<!--/* One class or exam (Schedule.Item). A class changed by an announcement gets a badge and a link to it. */-->
+<!--/* One class or exam (Schedule.Item). A class changed by an announcement or email gets a badge and a link to it. */-->
 <li th:fragment="item(item)" th:with="look=${item.change == 'cancelled' ? 'cancelled' : 'changed'}"
     th:class="|item item-${item.kind}${item.change != null ? ' item-' + look : ''}|">
   <span class="item-time" th:text="${item.allDay ? 'All day' : @schoolFormat.clock(item.startAt)
@@ -47,8 +47,8 @@
       · <span th:if="${item.room.toUpperCase().startsWith('ONLINE')}" class="badge">Online</span><th:block
           th:unless="${item.room.toUpperCase().startsWith('ONLINE')}" th:text="${item.room}">A2.508</th:block>
     </th:block>
-    <th:block th:if="${item.bbCourseId != null}">
-      · <a th:href="@{/school/courses/{id}(id=${item.bbCourseId})}">See announcement</a>
+    <th:block th:if="${item.source != null}">
+      · <a th:href="@{${item.source.link}}" th:text="${item.source.text}">See announcement</a>
     </th:block>
   </span>
 </li>

@@ -98,8 +98,23 @@ public final class ClassChanges {
         }
     }
 
-    /** A change for one course: code "MA026IU", bbCourseId the app's page for the course that posted it. */
-    public record ClassChange(String code, int bbCourseId, String kind, LocalDate day, LocalTime start, LocalTime end,
+    /**
+     * Where a change links to: the course page for a Blackboard announcement ("See announcement"), or the email
+     * in Mailbox for a lecturer's email ("See email").
+     */
+    public record Source(String link, String text) {
+
+        public static Source course(int bbCourseId) {
+            return new Source("/school/courses/" + bbCourseId, "See announcement");
+        }
+
+        public static Source email(String mailKey) {
+            return new Source("/school/mailbox#mail-" + mailKey, "See email");
+        }
+    }
+
+    /** A change for one course, code "MA026IU", and where it was announced. */
+    public record ClassChange(String code, Source source, String kind, LocalDate day, LocalTime start, LocalTime end,
             String room) {
     }
 
@@ -108,7 +123,11 @@ public final class ClassChanges {
     }
 
     /** An announcement with its course: what {@link #changesFrom} reads. postedAt is UTC. */
-    public record Posted(String code, int bbCourseId, String title, String text, LocalDateTime postedAt) {
+    public record Posted(String code, Source source, String title, String text, LocalDateTime postedAt) {
+    }
+
+    /** A change the laptop already read from a lecturer's email. postedAt (when it arrived) is UTC. */
+    public record Emailed(String code, Source source, LocalDateTime postedAt, Announced change) {
     }
 
     /** Reads one announcement; tests swap in a reader that fails. */
@@ -286,28 +305,41 @@ public final class ClassChanges {
      * posting time are skipped, and so is one that can't be read.
      */
     public static Map<Slot, ClassChange> changesFrom(List<Posted> announcements) {
-        return changesFrom(announcements, ClassChanges::readAnnouncement);
+        return changesFrom(announcements, List.of());
+    }
+
+    /** Announcements and emailed changes together: the newest wins in each slot, whichever it came from. */
+    public static Map<Slot, ClassChange> changesFrom(List<Posted> announcements, List<Emailed> emailed) {
+        return changesFrom(announcements, emailed, ClassChanges::readAnnouncement);
     }
 
     static Map<Slot, ClassChange> changesFrom(List<Posted> announcements, Reader reader) {
-        Map<Slot, ClassChange> changes = new LinkedHashMap<>();
-        List<Posted> dated = announcements.stream()
-                .filter(a -> a.code() != null && !a.code().isEmpty() && a.postedAt() != null)
-                .sorted(Comparator.comparing(Posted::postedAt))
-                .toList();
-        for (Posted a : dated) {
-            List<Announced> announced;
-            try {
-                announced = reader.read(a.title(), a.text(), a.postedAt());
-            } catch (RuntimeException error) { // one unreadable announcement must never break a page
-                log.warn("Couldn't read an announcement for class changes", error);
+        return changesFrom(announcements, List.of(), reader);
+    }
+
+    static Map<Slot, ClassChange> changesFrom(List<Posted> announcements, List<Emailed> emailed, Reader reader) {
+        List<Emailed> all = new ArrayList<>();
+        for (Posted a : announcements) {
+            if (a.code() == null || a.code().isEmpty() || a.postedAt() == null) {
                 continue;
             }
-            for (Announced one : announced) {
-                String slot = one.kind().equals("makeup") ? "makeup" : "class";
-                changes.put(new Slot(a.code(), one.day(), slot), new ClassChange(a.code(), a.bbCourseId(), one.kind(),
-                        one.day(), one.start(), one.end(), one.room()));
+            try {
+                for (Announced one : reader.read(a.title(), a.text(), a.postedAt())) {
+                    all.add(new Emailed(a.code(), a.source(), a.postedAt(), one));
+                }
+            } catch (RuntimeException error) { // one unreadable announcement must never break a page
+                log.warn("Couldn't read an announcement for class changes", error);
             }
+        }
+        emailed.stream().filter(e -> e.code() != null && !e.code().isEmpty() && e.postedAt() != null).forEach(all::add);
+        all.sort(Comparator.comparing(Emailed::postedAt)); // stable: at the same time, emails come after announcements
+
+        Map<Slot, ClassChange> changes = new LinkedHashMap<>();
+        for (Emailed e : all) {
+            Announced one = e.change();
+            String slot = one.kind().equals("makeup") ? "makeup" : "class";
+            changes.put(new Slot(e.code(), one.day(), slot), new ClassChange(e.code(), e.source(), one.kind(), one.day(),
+                    one.start(), one.end(), one.room()));
         }
         return changes;
     }

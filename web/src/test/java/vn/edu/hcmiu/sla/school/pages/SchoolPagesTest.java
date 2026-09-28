@@ -337,4 +337,18 @@ class SchoolPagesTest {
         assertThat(linkTo(html, BB)).contains("target=\"_blank\"", "rel=\"noopener noreferrer\"");
         assertThat(html.split("Open in Blackboard ↗", -1)).hasSize(5); // the course and its three items
     }
+
+    @Test
+    void aClassChangedByEmailLinksToTheEmailInMailbox() throws Exception {
+        clock.set(LocalDateTime.of(2026, 9, 29, 0, 0)); // Tue 29/09 07:00 in Vietnam
+        data.course(an, "IT093IU", "Web Application Development", WEB_TUESDAY);
+        String key = "f".repeat(64);
+        data.save(data.emailChange(data.lecturerEmail(an, key, LocalDateTime.of(2026, 9, 28, 2, 0), null), "IT093IU",
+                "online", LocalDate.of(2026, 9, 29), null, null, null));
+
+        String html = page("/school");
+
+        assertThat(linkTo(html, "/school/mailbox#mail-" + key)).isNotEmpty();
+        assertThat(html).contains(">See email</a>");
+    }
 }

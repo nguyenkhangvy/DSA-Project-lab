@@ -101,8 +101,8 @@ public class CalendarController {
         if (item.change() != null) {
             props.put("change", item.change());
         }
-        if (item.bbCourseId() != null) {
-            event.put("url", "/school/courses/" + item.bbCourseId());
+        if (item.source() != null) {
+            event.put("url", item.source().link());
         }
         return event;
     }
