@@ -49,6 +49,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoinedRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailSessionRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
@@ -120,6 +122,9 @@ class IngestTest {
 
     @Autowired
     SchoolMailSessionRepository mailSessions;
+
+    @Autowired
+    SchoolMailJoinedRepository mailJoined;
 
     @Autowired
     SchoolMailChoiceRepository mailChoices;
@@ -453,6 +458,19 @@ class IngestTest {
         assertThat(syncOutlook(userId, ok(data))).isEqualTo("success");
 
         assertThat(mails.count()).isEqualTo(3);
+    }
+
+    @Test
+    void joinedSessionsStayAfterASyncEvenWhenTheirEmailIsGone() {
+        syncOutlook(userId, ok(outlookPayload()));
+        mailJoined.save(new SchoolMailJoined(userId, KEY_2, LocalDate.of(2026, 10, 2), LocalTime.of(8, 0), null,
+                "Workshop", "Hall A2", true, false, LocalDateTime.of(2026, 9, 28, 1, 0)));
+        Map<String, Object> data = outlookPayload();
+        list(data, "emails").subList(1, 3).clear();
+
+        syncOutlook(userId, ok(data));
+
+        assertThat(mailJoined.findAll()).extracting(SchoolMailJoined::getMailKey).containsExactly(KEY_2);
     }
 
     @Test

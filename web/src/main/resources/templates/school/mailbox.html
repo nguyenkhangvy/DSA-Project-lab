@@ -91,11 +91,19 @@
     <a href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer"
        th:attr="data-opened=@{/school/mailbox/{key}/opened(key=${card.key})}">Web ↗</a>
     <a th:href="@{/school/mailbox/{key}/edit(key=${card.key})}">Move…</a>
+    <a th:if="${card.eventLike}" th:href="@{/school/mailbox/{key}/join(key=${card.key})}">Join…</a>
     <form class="inline mail-done" method="post" th:action="@{/school/mailbox/{key}/done(key=${card.key})}"><button
         type="submit" class="done-button">✓ Done</button></form>
     <form class="inline mail-undo" method="post" th:action="@{/school/mailbox/{key}/undone(key=${card.key})}"><span
         class="muted">Done ✓</span> <button type="submit" class="done-button">Undo</button></form>
   </span>
+  <!--/* th:if runs before th:with on one element, so the sessions are looked up on a block around it. */-->
+  <th:block th:with="found=${lines == null ? null : lines.get(card.key)}"><span class="mail-sessions"
+      th:if="${found != null and !found.isEmpty()}"><th:block th:each="line, i : ${found}"><span
+      class="session"><th:block th:text="${line.when}">Tue 29/09 13:00–14:00</th:block>
+    <span th:if="${line.joined}" class="mark mark-joined">Joined</span><span th:unless="${line.joined}"
+        th:class="${line.mark.conflict ? 'mark mark-conflict' : 'mark mark-free'}" th:text="${line.mark.text}">✓ No
+      conflict</span></span><th:block th:unless="${i.last}"> · </th:block></th:block></span></th:block>
 </li>
 
 </body>

@@ -329,6 +329,21 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 }
 .done-button:hover { color: var(--accent-text); background: var(--accent); }
 .mail-row.is-done .mail-done, .mail-row:not(.is-done) .mail-undo { display: none; }
+.mail-sessions { grid-column: 2 / -1; font-size: 0.85rem; color: var(--muted); }
+.mark { font-weight: 600; }
+.mark-conflict { color: var(--error); }
+.mark-free { color: #1d6b3a; }
+.mark-joined { padding: 0 6px; color: #1d6b3a; background: #e2f3e7; border-radius: 4px; }
+.join-card { max-width: 560px; margin: 0 auto; }
+.join-sessions, .join-add { margin: 0 0 14px; padding: 0; border: 0; }
+.join-sessions legend, .join-add legend { margin-bottom: 6px; font-weight: 600; }
+.join-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 4px 0; }
+.join-add-fields { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.join-add-fields label { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; }
+.join-add-fields input {
+  padding: 6px 8px; font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+}
 .mailbox-box details { margin-top: 6px; }
 .mailbox-box summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; }
 @media (max-width: 700px) {
@@ -343,6 +358,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
   .mail-text { display: block; grid-area: text; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mail-text .mail-sender::after { content: " · "; font-weight: 400; color: var(--muted); }
   .mail-actions { grid-area: actions; gap: 12px; }
+  .mail-sessions { grid-column: 1 / -1; }
 }
 .field select {
   width: 100%;

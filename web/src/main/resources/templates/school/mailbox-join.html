@@ -1,0 +1,54 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Join… · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Join…</h1>
+  <nav th:replace="~{school/fragments :: subnav('mailbox')}"></nav>
+
+  <section class="card join-card">
+    <p><strong th:text="${card.subject.isEmpty() ? '(no subject)' : card.subject}">[THƯ MỜI] Workshop</strong><br>
+      <span class="muted" th:text="${card.senderName}">P.CTSV [OSS]</span></p>
+    <p class="field-error" th:if="${error != null}" th:text="${error}">Choose a day that isn't over yet.</p>
+
+    <form method="post" th:action="@{/school/mailbox/{key}/join(key=${card.key})}" th:object="${form}">
+      <fieldset class="join-sessions">
+        <legend th:text="${card.suggested ? 'Found in this email' : 'Sessions'}">Sessions</legend>
+        <p class="muted" th:if="${lines.isEmpty()}">No times found in this email. Add one below.</p>
+        <label class="check join-line" th:each="line : ${lines}">
+          <input type="checkbox" name="sessions" th:value="${line.id}" th:checked="${form.sessions.contains(line.id)}">
+          <span th:text="${line.when}">Tue 29/09 13:00–14:00</span>
+          <span th:class="${line.mark.conflict ? 'mark mark-conflict' : 'mark mark-free'}"
+                th:text="${line.mark.text}">✓ No conflict</span>
+          <span class="muted" th:unless="${line.found}">added by you</span>
+        </label>
+      </fieldset>
+      <fieldset class="join-add">
+        <legend>Add a session</legend>
+        <div class="join-add-fields">
+          <label>Day <input type="date" th:field="*{day}"></label>
+          <label>Start <input type="time" th:field="*{start}"></label>
+          <label>End (optional) <input type="time" th:field="*{end}"></label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <label for="place">Place (optional)</label>
+        <input id="place" type="text" maxlength="100" th:field="*{place}" placeholder="e.g. Hall A2">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button">Save</button>
+        <a th:href="@{/school/mailbox}">Cancel</a>
+      </div>
+    </form>
+
+    <form method="post" th:action="@{/school/mailbox/{key}/leave(key=${card.key})}" class="mail-automatic"
+          th:if="${anyJoined}">
+      <button type="submit" class="link-button danger">Leave event</button>
+      <span class="muted">(its sessions leave your Timetable)</span>
+    </form>
+  </section>
+</main>
+</body>
+</html>

@@ -69,12 +69,13 @@ public final class Mailbox {
      * One card: a thread, or the same email sent more than once. key, entryId, sender, subject and time come
      * from its newest email; keys are all its emails' keys. sessions: an event or school task's sessions that
      * haven't ended (none for other cards). nextDate: the day of the first of them, or else the earliest date
-     * from today on. past: every session has ended, or (without sessions) every date is over.
+     * from today on. past: every session has ended, or (without sessions) every date is over. suggested: the
+     * student moved it to Event or School task and the rules gave it neither, so its sessions are only suggestions.
      */
     public record Card(String key, List<String> keys, String entryId, String senderName, String subject,
             LocalDateTime receivedAt, List<String> categories, boolean fromLecturer, boolean moved,
             List<LocalDate> dates, List<Session> sessions, LocalDate nextDate, boolean past, boolean sorted,
-            boolean opened, boolean done, int messages, int copies) {
+            boolean opened, boolean done, int messages, int copies, boolean suggested) {
 
         public boolean trainingPoints() {
             return categories.contains("training_points");
@@ -202,7 +203,7 @@ public final class Mailbox {
                 newest.getSenderName(), newest.getSubject(), newest.getReceivedAt(), categories, fromLecturer,
                 moved != null, List.copyOf(dates), ahead, next, past, newest.isSorted(),
                 newestChoice != null && newestChoice.isOpened(), newestChoice != null && newestChoice.isDone(),
-                mails.size(), group.copies());
+                mails.size(), group.copies(), eventLike(categories) && !eventLike(newest.getCategories()));
     }
 
     private static final Comparator<Card> NEWEST_FIRST = Comparator.comparing(Card::receivedAt).reversed();
