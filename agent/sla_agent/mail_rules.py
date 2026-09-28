@@ -7,13 +7,12 @@ field for text."""
 
 import logging
 import re
-import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sla_contract.schema import MailClassChange, MailItem
+from sla_contract.schema import MailClassChange, MailItem, MailSession
 
-from sla_agent.class_changes import dates_in, read_announcement
+from sla_agent.class_changes import dates_in, fold, read_announcement, sessions_in
 
 log = logging.getLogger(__name__)
 
@@ -65,12 +64,6 @@ class Context:
 
     courses: tuple = ()  # (course code, course name, lecturer as EduSoft writes it, e.g. "P.Q.Hùng")
     bb_courses: tuple = ()  # (Blackboard course name, course code)
-
-
-def fold(text):
-    """Lower case without accents: "Hóa Đơn" -> "hoa don"."""
-    text = unicodedata.normalize("NFD", (text or "").replace("đ", "d").replace("Đ", "D"))
-    return "".join(c for c in text if not unicodedata.combining(c)).lower()
 
 
 def _phrase(words):
@@ -217,6 +210,18 @@ def class_changes(email, code):
             for a in found][:MAX_CLASS_CHANGES]
 
 
+def sessions_of(email, arrived):
+    """The times the email's event or school task takes place (mailbox-events 3.2), found in every email so they
+    are ready when the student moves one to Event. [] when the finder fails on it."""
+    try:
+        return [MailSession(day=s.day, start=s.start, end=s.end)
+                for s in sessions_in(email.subject + "\n" + email.text, arrived)]
+    except Exception as error:  # the message could quote the email
+        log.warning("Couldn't read the times in an email (%s); it is uploaded without them",
+                    error.__class__.__name__)
+        return []
+
+
 def sort_email(email, context):
     """The MailItem for one email. If the rules fail on it, it is uploaded unsorted (sorted=False)."""
     known = dict(key=email.key, entry_id=email.entry_id, thread_id=email.thread_id, received_at=email.received_at,
@@ -231,6 +236,7 @@ def sort_email(email, context):
             categories=categories(email, lecturer),
             from_lecturer=lecturer,
             dates=dates_in(email.subject + "\n" + email.text, arrived)[:MAX_DATES],
+            sessions=sessions_of(email, arrived),
             blackboard_title=blackboard_title(email),
             class_changes=class_changes(email, code) if code else [],
         )

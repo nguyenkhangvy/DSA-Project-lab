@@ -161,6 +161,26 @@ def test_course_of_prefers_the_blackboard_course_name():
 # ---- the whole email ------------------------------------------------------------------
 
 
+def test_sessions_are_found_in_every_email_whatever_its_categories():
+    item = sort_email(email("Họp lớp", "Họp lớp ngày 30/09/2026, 14h00 - 15h30."), CONTEXT)
+
+    assert item.categories == []
+    assert [(s.day, s.start, s.end) for s in item.sessions] == [(date(2026, 9, 30), time(14, 0), time(15, 30))]
+
+
+def test_an_email_the_session_finder_fails_on_keeps_its_sorting_and_logs_no_text(monkeypatch, caplog):
+    def broken(text, from_day):
+        raise ValueError(text)
+
+    monkeypatch.setattr(mail_rules, "sessions_in", broken)
+
+    with caplog.at_level(logging.WARNING):
+        item = sort_email(email("Workshop ngày 30/9", "Bí mật riêng tư 12345, 14h00."), CONTEXT)
+
+    assert (item.sorted, item.sessions, item.categories) == (True, [], ["event"])
+    assert "Bí mật" not in caplog.text and "12345" not in caplog.text
+
+
 def test_the_text_never_leaves_in_the_result():
     item = sort_email(email("Workshop", "UNIQUE-TEXT-7f3a only the laptop may read this"), CONTEXT)
 

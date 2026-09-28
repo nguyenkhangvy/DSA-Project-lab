@@ -1,5 +1,5 @@
-"""Class changes announced by lecturers: online, cancelled and make-up classes, and the dates in a text.
-Pure functions.
+"""Class changes announced by lecturers: online, cancelled and make-up classes; the dates in a text; and the
+times an event takes place (sessions). Pure functions.
 
 A sentence that mentions a class, a change word and a date makes a change; each date takes the
 nearest cancel or make-up word, or an online word when the sentence has neither. The rules are in
@@ -8,7 +8,9 @@ docs/superpowers/specs/2026-09-26-class-changes-and-to-submit-design.md, section
 The website reads Blackboard announcements with its Java twin
 (web/src/main/java/vn/edu/hcmiu/sla/school/schedule/ClassChanges.java); the agent reads lecturers'
 emails with this one. contract/samples/class-changes/sentences.json keeps the two in step: both test
-suites check every example in it."""
+suites check every example in it.
+
+Sessions follow docs/superpowers/specs/2026-09-28-mailbox-events-design.md, section 3.2."""
 
 import re
 import unicodedata
@@ -59,12 +61,40 @@ SENTENCE_END = re.compile(
 )
 
 
+# Sessions (mailbox-events 3.2): a time is a start alone, or a start and an end joined by one of these.
+SESSION_TIME = re.compile(
+    r"(?<![\w/.:,])(?P<hour>\d{1,2})(?:(?:[:.](?=\d{2})|[hg])(?P<minute>\d{2})?|(?=\s*[ap]\.?m\b))"
+    r"(?:\s*(?P<ampm>[ap])\.?m\.?)?(?!\w)",
+    re.IGNORECASE,
+)
+SESSION_JOIN = re.compile(r"\s*(?:-|–|—|to|until|đến)\s*", re.IGNORECASE)
+# Words of a deadline, compared without accents or letter case. Bare "hạn" and "trước" don't count: "Số lượng
+# có hạn" and "có mặt trước 15 phút" sit next to real event times.
+DEADLINE_WORDS = ("hạn chót", "hạn đăng ký", "hạn nộp", "thời hạn", "trước ngày", "đăng ký trước", "deadline", "due")
+MAX_SESSIONS = 10
+
+
+def fold(text):
+    """Lower case without accents: "Hóa Đơn" -> "hoa don"."""
+    text = unicodedata.normalize("NFD", (text or "").replace("đ", "d").replace("Đ", "D"))
+    return "".join(c for c in text if not unicodedata.combining(c)).lower()
+
+
+DEADLINE = re.compile(r"\b(?:" + "|".join(r"\s+".join(fold(w).split()) for w in DEADLINE_WORDS) + r")\b")
+
+
 class Announced(NamedTuple):
     kind: str  # "online" / "cancelled" / "makeup"
     day: date  # in Vietnam
     start: time | None = None  # make-up only
     end: time | None = None
     room: str | None = None
+
+
+class Session(NamedTuple):
+    day: date  # in Vietnam
+    start: time
+    end: time | None = None
 
 
 def _date(match, posted_day):
@@ -80,9 +110,9 @@ def _date(match, posted_day):
     return min(candidates, key=lambda d: abs(d - posted_day))
 
 
-def _dates(sentence, posted_day):
-    """[(start, end, date)] in `sentence`, from the posting day on, in the order they appear; start and end
-    are the date's character positions."""
+def _dates(sentence, posted_day, keep_past=False):
+    """[(start, end, date)] in `sentence`, from the posting day on (or all of them with keep_past), in the order
+    they appear; start and end are the date's character positions."""
     found, taken = [], []
     for pattern in DATE_FORMATS:
         for match in pattern.finditer(sentence):
@@ -90,7 +120,7 @@ def _dates(sentence, posted_day):
                 continue
             taken.append(match.span())
             day = _date(match, posted_day)
-            if day is not None and day >= posted_day:
+            if day is not None and (keep_past or day >= posted_day):
                 found.append((match.start(), match.end(), day))
     return sorted(found)
 
@@ -156,3 +186,56 @@ def dates_in(text, from_day):
     without a year takes the year that puts it closest to `from_day`."""
     text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
     return sorted({day for _, _, day in _dates(text, from_day)})
+
+
+def _session_times(sentence, taken):
+    """[(start, end)] of every time in `sentence` outside the spans in `taken` (its dates), in order. A start and
+    an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after the start. In a
+    range, a start without AM/PM takes the end's when that keeps it before the end: "1:00 – 2:30 PM"."""
+    matches = [m for m in SESSION_TIME.finditer(sentence)
+               if not any(m.start() < end and start < m.end() for start, end in taken)]
+    found, i = [], 0
+    while i < len(matches):
+        first, start, end = matches[i], _time(matches[i]), None
+        i += 1
+        if i < len(matches) and SESSION_JOIN.fullmatch(sentence[first.end():matches[i].start()]):
+            second = matches[i]
+            end = _time(second)
+            i += 1
+            if start and end and not first.group("ampm") and second.group("ampm"):
+                shifted = _time(first, ampm=second.group("ampm"))
+                if shifted and shifted < end:
+                    start = shifted
+        if start is not None:
+            found.append((start, end if end is not None and end > start else None))
+    return found
+
+
+def sessions_in(text, from_day):
+    """The times an event takes place (mailbox-events 3.2): each sentence's times go with its dates, or with the
+    dates of the nearest sentence above that has some. Several dates and one time, or one date and several
+    times, give one session each; equal numbers pair in order. Sentences about a deadline are skipped. Sessions
+    before `from_day` are dropped; a repeated day and start is kept once, with the first end found; at most
+    MAX_SESSIONS, in time order."""
+    text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
+    above, found = [], []
+    for sentence in SENTENCE_END.split(text):
+        if DEADLINE.search(fold(sentence)):
+            continue
+        dates = _dates(sentence, from_day, keep_past=True)
+        days = [day for _, _, day in dates]
+        times = _session_times(sentence, [(start, end) for start, end, _ in dates])
+        if days:
+            above = days
+        if not times or not above:
+            continue
+        pairs = zip(above, times) if len(above) == len(times) else [(d, t) for d in above for t in times]
+        found.extend(Session(day, start, end) for day, (start, end) in pairs)
+    kept = {}
+    for session in found:
+        if session.day < from_day:
+            continue
+        key = (session.day, session.start)
+        if key not in kept or (kept[key].end is None and session.end is not None):
+            kept[key] = session if key not in kept else kept[key]._replace(end=session.end)
+    return sorted(kept.values())[:MAX_SESSIONS]
