@@ -28,6 +28,10 @@ class State:
     blackboard_username: str | None = None
     blackboard_paused: str | None = None  # error code that paused Blackboard sync
     registered_courses: list | None = None  # [[course code, group], ...] from EduSoft's registration page
+    outlook_account: str | None = None  # the classic Outlook account whose Inbox is read
+    term_code: str | None = None  # EduSoft's semester, from the last timetable read, e.g. "20261"
+    courses: list | None = None  # [[course code, course name, lecturer], ...] from the last timetable read
+    bb_courses: list | None = None  # [[Blackboard course name, course code], ...] from the last Blackboard read
 
 
 def load_state():

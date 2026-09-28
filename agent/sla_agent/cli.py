@@ -1,12 +1,14 @@
 """sla-agent: the laptop side of School-Life-Assistant.
 
     sla-agent setup                  enter your details once; schedules automatic sync
+    sla-agent setup --outlook        read your Inbox through classic Outlook at each sync
     sla-agent run                    what the scheduled task calls every 15 minutes
     sla-agent sync-now               sync right away
     sla-agent status                 show the last result and whether sync is paused
     sla-agent fetch --save-html DIR  save your EduSoft pages on this laptop (for building the readers)
     sla-agent import FOLDER          read pages saved by `fetch` (or your browser) and upload them
     sla-agent forget                 delete the saved secrets and the scheduled task
+    sla-agent open-mail LINK         what Mailbox's "Open in Outlook" button runs: shows one email
 """
 
 import argparse
@@ -19,7 +21,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import credentials
+from sla_agent import credentials, mail_link
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -27,12 +29,21 @@ from sla_agent.errors import (
     AgentError,
     BadCredentials,
     DeviceKeyRejected,
+    EmailNotFound,
     ExtraVerification,
     ParseError,
     RunInProgress,
     ServerError,
 )
 from sla_agent.log import protect, setup_logging
+from sla_agent.outlook_reader import (
+    accounts,
+    entry_id_from_link,
+    open_email,
+    open_outlook,
+    read_outlook,
+    with_time_limit,
+)
 from sla_agent.parsers import PARSERS
 from sla_agent.parsers.registration import RegisteredCourse, parse_registered_courses
 from sla_agent.scheduler import SchedulerError, current_user, install_task, remove_task, windowless_python
@@ -62,8 +73,19 @@ def make_blackboard():
     return BlackboardClient()
 
 
+def find_outlook_accounts():
+    return with_time_limit(lambda: accounts(open_outlook()))
+
+
 def say(message):
     print(message)
+
+
+def show_message(message):
+    """A Windows message box: `open-mail` runs from the browser, without a console."""
+    import ctypes
+
+    ctypes.windll.user32.MessageBoxW(None, message, "School-Life-Assistant", 0x40)  # MB_ICONINFORMATION
 
 
 def _now():
@@ -117,13 +139,53 @@ def _setup_blackboard(state, username=None):
     return 0
 
 
+OUTLOOK_HOW_TO = ("Open Outlook (classic), sign in with your IU account, wait until it says "
+                  "'All folders are up to date', then run `sla-agent setup --outlook` again.")
+
+
+def _setup_outlook(state):
+    """Choose the Outlook account whose Inbox each sync reads, and add the sla-mail: link type."""
+    say("Looking for classic Outlook on this laptop...")
+    try:
+        found = find_outlook_accounts()
+    except AgentError as error:
+        say(f"{error} {OUTLOOK_HOW_TO}")
+        return 1
+    if not found:
+        say(f"Classic Outlook has no account yet. {OUTLOOK_HOW_TO}")
+        return 1
+    if len(found) == 1:
+        if ask(f"Read the Inbox of {found[0]}? [Y/n]: ").strip().lower() not in ("", "y", "yes"):
+            say("Nothing was changed.")
+            return 1
+        address = found[0]
+    else:
+        for number, candidate in enumerate(found, 1):
+            say(f"  {number}. {candidate}")
+        answer = ask("Which account's Inbox should be read? Number: ").strip()
+        if not answer.isdigit() or not 1 <= int(answer) <= len(found):
+            say("Nothing was changed.")
+            return 1
+        address = found[int(answer) - 1]
+    state.outlook_account = address
+    save_state(state)
+    try:
+        mail_link.register(windowless_python())
+    except OSError as error:
+        say(f"Couldn't add the sla-mail: link type ({error}). Mailbox's \"Open in Outlook\" won't open emails "
+            "on this laptop; use \"Outlook on the web\" instead.")
+    say(f"Outlook is on: each sync reads the Inbox of {address}, sorts it on this laptop and uploads only the "
+        "results, never the text.")
+    return 0
+
+
 def cmd_setup(args):
     state = load_state()
-    if args.blackboard:
+    if args.blackboard or args.outlook:
         if not state.server_url or not state.student_id:
             say(NOT_SET_UP)
             return 1
-        return _setup_blackboard(state)
+        return _setup_blackboard(state) if args.blackboard else _setup_outlook(state)
     server_url = ask(f"Web app address [{state.server_url or 'https://...'}]: ").strip() or state.server_url or ""
     try:
         check_server_url(server_url)
@@ -202,7 +264,8 @@ def _sync(trigger, state, password, server):
     try:
         outcome = run_sync(trigger, state=state, edusoft=make_edusoft(), server=server, parsers=PARSERS,
                            password=password, now=_now(), blackboard=blackboard,
-                           blackboard_password=blackboard_password, read_blackboard=read_blackboard)
+                           blackboard_password=blackboard_password, read_blackboard=read_blackboard,
+                           read_outlook=read_outlook)
     except RunInProgress:
         say("A sync is already running.")
         return 0
@@ -393,6 +456,10 @@ def cmd_status(args):
         say(f"Blackboard:  PAUSED ({state.blackboard_paused}). Run `sla-agent setup --blackboard`.")
     else:
         say("Blackboard:  on")
+    if state.outlook_account:
+        say(f"Outlook:     on ({state.outlook_account})")
+    else:
+        say("Outlook:     not set up (run `sla-agent setup --outlook`)")
     if state.last_result:
         say(f"Last sync:   {state.last_result['status']} at {state.last_result['at']}: {state.last_result['message']}")
     else:
@@ -404,8 +471,29 @@ def cmd_forget(args):
     state = load_state()
     credentials.forget(state.student_id, state.server_url, state.blackboard_username)
     remove_task()
+    try:
+        mail_link.unregister()
+    except (ImportError, OSError):  # not Windows, or already gone
+        pass
     (agent_home() / "state.json").unlink(missing_ok=True)
-    say("Removed your saved EduSoft password, the device key and the scheduled task from this laptop.")
+    say("Removed your saved EduSoft password, the device key, the scheduled task and the sla-mail: link type "
+        "from this laptop.")
+    return 0
+
+
+def cmd_open_mail(args):
+    entry_id = entry_id_from_link(args.link)
+    if entry_id is None:
+        show_message("This isn't a School-Life-Assistant email link.")
+        return 1
+    try:
+        open_email(entry_id)
+    except EmailNotFound as error:
+        show_message(str(error))
+        return 1
+    except AgentError as error:
+        show_message(f"{error} Open Outlook (classic) and sign in, then try again.")
+        return 1
     return 0
 
 
@@ -417,6 +505,7 @@ COMMANDS = {
     "fetch": cmd_fetch,
     "import": cmd_import,
     "forget": cmd_forget,
+    "open-mail": cmd_open_mail,
 }
 
 
@@ -426,6 +515,7 @@ def main(argv=None):
     setup = commands.add_parser("setup", help="enter your details once; schedules automatic sync")
     setup.add_argument("--no-schedule", action="store_true", help="don't create the scheduled task")
     setup.add_argument("--blackboard", action="store_true", help="set or change only the Blackboard login")
+    setup.add_argument("--outlook", action="store_true", help="read your Inbox through classic Outlook")
     commands.add_parser("run", help="scheduled check-in: sync if the web app says it's due")
     commands.add_parser("sync-now", help="sync right away")
     commands.add_parser("status", help="show the last result and whether sync is paused")
@@ -435,6 +525,8 @@ def main(argv=None):
     importer.add_argument("folder")
     importer.add_argument("--term", help="semester code for exam pages, e.g. 20261")
     commands.add_parser("forget", help="delete saved secrets and the scheduled task")
+    open_mail = commands.add_parser("open-mail", help="show one email in Outlook (run by Mailbox's links)")
+    open_mail.add_argument("link")
 
     args = parser.parse_args(argv)
     # Output piped or redirected on Windows uses cp1252; never crash on Vietnamese text.

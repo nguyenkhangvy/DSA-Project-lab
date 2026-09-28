@@ -6,6 +6,7 @@ pydantic==2.13.5
 requests==2.34.2
 beautifulsoup4==4.15.0
 keyring==25.7.0
+pywin32==312; sys_platform == "win32"
 
 # Tests
 pytest==9.1.1

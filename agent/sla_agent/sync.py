@@ -1,18 +1,22 @@
-"""One sync: EduSoft (timetable, exams, tuition) then Blackboard, each on its own.
+"""One sync: EduSoft (timetable, exams, tuition), then Blackboard, then Outlook, each on its own.
 
 Stop-don't-retry rules: a rejected password or an extra-verification request pauses
 that system only (no second login attempt). An expired session gets one re-login and
-one retry. One system failing never stops the other from uploading.
+one retry. One system failing never stops the others from uploading. Outlook has no
+password to lock out, so an Outlook problem never pauses anything: every sync tries again.
 """
 
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
 from sla_agent.blackboard_reader import read_blackboard as default_read_blackboard
 from sla_agent.errors import AgentError, BadCredentials, ExtraVerification, SessionExpired
 from sla_agent.log import protect
+from sla_agent.mail_rules import Context
+from sla_agent.outlook_reader import semester_start
 from sla_agent.parsers.registration import RegisteredCourse, parse_registered_courses
 
 log = logging.getLogger(__name__)
@@ -54,7 +58,7 @@ def blackboard_ready(state):
 
 
 def everything_paused(state):
-    return bool(state.paused) and not blackboard_ready(state)
+    return bool(state.paused) and not blackboard_ready(state) and not state.outlook_account
 
 
 def _read_section(name, edusoft, parsers, student_id, password):
@@ -140,6 +144,31 @@ def _collect_blackboard(state, blackboard, password, read):
         blackboard.logout()
 
 
+def _remember_context(state, sections):
+    """What sorting mail needs, from this sync's timetable and Blackboard (kept for syncs where they fail)."""
+    timetable = sections.get("timetable") or {}
+    if timetable.get("status") == "ok":
+        data = timetable["data"]
+        state.term_code = data.term_code
+        state.courses = [[c.course_code, c.course_name, c.lecturer] for c in data.courses]
+    blackboard = sections.get("blackboard") or {}
+    if blackboard.get("status") == "ok":
+        state.bb_courses = [[c.name, c.course_code] for c in blackboard["data"].courses if c.course_code]
+
+
+def _collect_outlook(state, read, now):
+    today = (now + timedelta(hours=7)).date()  # in Vietnam
+    context = Context(courses=tuple(tuple(c) for c in state.courses or []),
+                      bb_courses=tuple(tuple(c) for c in state.bb_courses or []))
+    try:
+        return {"status": "ok", "data": read(state.outlook_account, semester_start(state.term_code, today), context)}
+    except AgentError as error:
+        log.warning("Outlook sync failed: %s", error)
+        return _failed(error)
+    except Exception as error:
+        return _unexpected("Outlook", error)
+
+
 def _paused_sections(state):
     """A paused system is reported as failed in every run, so the web page keeps showing the pause."""
     sections = {}
@@ -175,13 +204,14 @@ def _paused_message(state):
 
 
 def run_sync(trigger, *, state, edusoft, server, parsers, password, now,
-             blackboard=None, blackboard_password=None, read_blackboard=default_read_blackboard):
+             blackboard=None, blackboard_password=None, read_blackboard=default_read_blackboard, read_outlook=None):
     """Run one sync and update `state` (the caller saves it). Server errors are raised."""
     protect(password)
     protect(blackboard_password)
     use_edusoft = not state.paused
     use_blackboard = blackboard is not None and bool(blackboard_password) and blackboard_ready(state)
-    if not use_edusoft and not use_blackboard:
+    use_outlook = read_outlook is not None and bool(state.outlook_account)
+    if not use_edusoft and not use_blackboard and not use_outlook:
         return Outcome("paused", _paused_message(state))
 
     run_id = server.start(trigger)
@@ -191,6 +221,9 @@ def run_sync(trigger, *, state, edusoft, server, parsers, password, now,
         sections.update(_collect_edusoft(state, edusoft, parsers, password))
     if use_blackboard:
         sections["blackboard"] = _collect_blackboard(state, blackboard, blackboard_password, read_blackboard)
+    _remember_context(state, sections)
+    if use_outlook:
+        sections["outlook"] = _collect_outlook(state, read_outlook, now)
     result = FinishRun.model_validate(sections)
     status = server.finish(run_id, result)
 

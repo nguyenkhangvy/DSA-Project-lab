@@ -12,6 +12,7 @@ dependencies = [
     "requests>=2.32,<3",
     "beautifulsoup4>=4.12,<5",
     "keyring>=25,<26",
+    "pywin32>=312; sys_platform == 'win32'",  # reads classic Outlook (Windows only)
 ]
 
 [project.scripts]

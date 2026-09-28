@@ -345,3 +345,114 @@ def test_this_semesters_timetable_courses_stay_when_the_registration_list_moves_
 
     assert ["CS999IU", "05"] in bb_state.registered_courses
     assert len(bb_state.registered_courses) == 9  # the 8 registered, plus CS999IU; IT093IU only once
+
+
+# ---- Outlook ------------------------------------------------------------------------
+
+
+def outlook_result(since):
+    from sla_contract.schema import Outlook
+
+    return Outlook(since=since, connected=True, emails=[])
+
+
+@pytest.fixture
+def mail_state(state):
+    state.outlook_account = "ititiu99001@student.hcmiu.edu.vn"
+    return state
+
+
+def sync_with_outlook(state, edusoft, read_outlook, parsers=PARSERS, **options):
+    server = FakeServer()
+    outcome = run_sync("scheduled", state=state, edusoft=edusoft, server=server, parsers=parsers,
+                       password=PASSWORD, now=NOW, read_outlook=read_outlook, **options)
+    return outcome, server
+
+
+def test_outlook_syncs_after_the_others_with_this_syncs_courses(mail_state):
+    from sla_contract.schema import Course
+
+    seen = []
+
+    def read(address, since, context):
+        seen.append((address, since, context))
+        return outlook_result(since)
+
+    parsers = {**PARSERS, "timetable": lambda html: Timetable(term_code="20261", courses=[
+        Course(course_code="IT093IU", course_name="Web Application Development", lecturer="P.Q.Hùng")])}
+    outcome, server = sync_with_outlook(mail_state, FakeEduSoft(), read, parsers=parsers)
+
+    assert list(only_finish(server).sections()) == ["timetable", "exams", "tuition", "outlook"]
+    [(address, since, context)] = seen
+    assert (address, since) == ("ititiu99001@student.hcmiu.edu.vn", date(2026, 8, 1))
+    assert context.courses == (("IT093IU", "Web Application Development", "P.Q.Hùng"),)
+    assert (mail_state.term_code, mail_state.courses) == (
+        "20261", [["IT093IU", "Web Application Development", "P.Q.Hùng"]])
+    assert outcome.status == "success"
+
+
+def test_outlook_uses_the_blackboard_course_names_read_in_the_same_sync(mail_state):
+    from sla_contract.schema import BbCourse
+
+    mail_state.blackboard_username, mail_state.registered_courses = "bbuser", [["IT093IU", "02"]]
+    seen = []
+    course = BbCourse(bb_id="_1_1", course_code="IT093IU", name="Web Application Development_S1_2026-27_G02",
+                      url="https://blackboard.hcmiu.edu.vn/x")
+
+    sync_with_outlook(mail_state, FakeEduSoft(), lambda a, s, c: seen.append(c) or outlook_result(s),
+                      blackboard=FakeBlackboard(), blackboard_password=BB_PASSWORD,
+                      read_blackboard=lambda client, registered: Blackboard(courses=[course]))
+
+    assert seen[0].bb_courses == (("Web Application Development_S1_2026-27_G02", "IT093IU"),)
+
+
+def test_a_failed_edusoft_keeps_the_courses_from_the_last_sync(mail_state):
+    mail_state.term_code, mail_state.courses = "20261", [["IT093IU", "Web Application Development", "P.Q.Hùng"]]
+    seen = []
+
+    sync_with_outlook(mail_state, FakeEduSoft(login_error=NetworkError("timed out")),
+                      lambda a, s, c: seen.append(c) or outlook_result(s))
+
+    assert seen[0].courses == (("IT093IU", "Web Application Development", "P.Q.Hùng"),)
+
+
+def test_an_outlook_problem_fails_only_outlook_and_pauses_nothing(mail_state):
+    from sla_agent.errors import OutlookBlocked
+
+    def blocked(address, since, context):
+        raise OutlookBlocked("Outlook didn't let the agent read your mail.")
+
+    outcome, server = sync_with_outlook(mail_state, FakeEduSoft(), blocked)
+
+    result = only_finish(server)
+    assert (result.timetable.status, result.outlook.error_code) == ("ok", "outlook_blocked")
+    assert (outcome.status, mail_state.paused) == ("partial", None)
+
+
+def test_an_unexpected_outlook_crash_still_finishes_the_run(mail_state):
+    def crashing(address, since, context):
+        raise KeyError("x")
+
+    outcome, server = sync_with_outlook(mail_state, FakeEduSoft(), crashing)
+
+    assert only_finish(server).outlook.error_code == "unknown"
+
+
+def test_outlook_still_syncs_while_edusoft_is_paused(mail_state):
+    mail_state.paused = "bad_credentials"
+    edusoft = FakeEduSoft()
+
+    outcome, server = sync_with_outlook(mail_state, edusoft, lambda a, s, c: outlook_result(s))
+
+    result = only_finish(server)
+    assert edusoft.logins == []
+    assert (result.timetable.error_code, result.outlook.status) == ("bad_credentials", "ok")
+
+
+def test_outlook_is_not_read_until_it_is_set_up(state):
+    seen = []
+
+    outcome, server = sync_with_outlook(state, FakeEduSoft(), lambda a, s, c: seen.append(a))
+
+    assert seen == []
+    assert "outlook" not in only_finish(server).sections()

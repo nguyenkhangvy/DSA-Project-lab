@@ -464,3 +464,136 @@ def test_fetch_says_what_it_is_reading_so_a_slow_run_doesnt_look_stuck(world, tm
     out = capsys.readouterr().out
     assert out.index("Reading EduSoft") < out.index("Reading Blackboard") < out.index("Saved ")
     assert "few minutes" in out
+
+
+# ---- Outlook ------------------------------------------------------------------------
+
+ME = "ititiu99001@student.hcmiu.edu.vn"
+
+
+def test_setup_outlook_needs_edusoft_setup_first(world, capsys):
+    assert cli.main(["setup", "--outlook"]) == 1
+    assert "isn't set up" in capsys.readouterr().out
+
+
+def test_setup_outlook_reads_the_only_account_after_asking(world, isolated_agent, monkeypatch, capsys):
+    configure()
+    monkeypatch.setattr(cli, "find_outlook_accounts", lambda: [ME])
+    world.answers = [""]
+
+    assert cli.main(["setup", "--outlook"]) == 0
+
+    assert load_state().outlook_account == ME
+    command = isolated_agent.registry.keys[("HKCU", r"Software\Classes\sla-mail\shell\open\command")][""]
+    assert command.endswith('-m sla_agent open-mail "%1"')
+    assert "never the text" in capsys.readouterr().out
+
+
+def test_setup_outlook_asks_which_account_when_there_are_several(world, monkeypatch):
+    configure()
+    monkeypatch.setattr(cli, "find_outlook_accounts", lambda: ["me@gmail.com", ME])
+    world.answers = ["2"]
+
+    assert cli.main(["setup", "--outlook"]) == 0
+
+    assert load_state().outlook_account == ME
+
+
+@pytest.mark.parametrize("found, answers", [([ME], ["n"]), (["me@gmail.com", ME], ["3"]), ([], [])],
+                         ids=["said-no", "bad-number", "no-account"])
+def test_setup_outlook_changes_nothing_without_a_clear_answer(world, monkeypatch, found, answers):
+    configure()
+    monkeypatch.setattr(cli, "find_outlook_accounts", lambda: found)
+    world.answers = answers
+
+    assert cli.main(["setup", "--outlook"]) == 1
+
+    assert load_state().outlook_account is None
+
+
+def test_setup_outlook_without_classic_outlook_explains_what_to_do(world, monkeypatch, capsys):
+    from sla_agent.errors import OutlookNotSetUp
+
+    configure()
+
+    def missing():
+        raise OutlookNotSetUp("Classic Outlook isn't set up on this laptop.")
+
+    monkeypatch.setattr(cli, "find_outlook_accounts", missing)
+
+    assert cli.main(["setup", "--outlook"]) == 1
+    assert "Open Outlook (classic)" in capsys.readouterr().out
+
+
+def test_run_syncs_outlook_when_it_is_set_up(world, monkeypatch):
+    from sla_contract.schema import Outlook
+
+    configure()
+    state = load_state()
+    state.outlook_account = ME
+    save_state(state)
+    monkeypatch.setattr(cli, "read_outlook",
+                        lambda address, since, context: Outlook(since=since, connected=True, emails=[]))
+
+    assert cli.main(["run"]) == 0
+
+    assert "outlook" in world.server.finishes[0][1].sections()
+
+
+def test_status_shows_outlook(world, capsys):
+    configure()
+    state = load_state()
+    state.outlook_account = ME
+    save_state(state)
+
+    cli.main(["status"])
+
+    assert f"Outlook:     on ({ME})" in capsys.readouterr().out
+
+
+def test_forget_removes_the_link_type(world, isolated_agent):
+    from sla_agent import mail_link
+
+    configure()
+    mail_link.register("pythonw.exe")
+
+    cli.main(["forget"])
+
+    assert not [path for _, path in isolated_agent.registry.keys if "sla-mail" in path]
+
+
+@pytest.fixture
+def messages(monkeypatch):
+    shown = []
+    monkeypatch.setattr(cli, "show_message", shown.append)
+    return shown
+
+
+def test_open_mail_opens_the_email_in_outlook(monkeypatch, messages):
+    opened = []
+    monkeypatch.setattr(cli, "open_email", opened.append)
+
+    assert cli.main(["open-mail", "sla-mail:00AB12/"]) == 0
+
+    assert (opened, messages) == (["00AB12"], [])
+
+
+def test_open_mail_refuses_anything_else(monkeypatch, messages):
+    monkeypatch.setattr(cli, "open_email", lambda entry_id: pytest.fail("must not open anything"))
+
+    assert cli.main(["open-mail", "javascript:alert(1)"]) == 1
+
+    assert messages == ["This isn't a School-Life-Assistant email link."]
+
+
+def test_open_mail_for_an_email_that_is_gone(monkeypatch, messages):
+    from sla_agent.errors import EmailNotFound
+
+    def gone(entry_id):
+        raise EmailNotFound("This email is no longer in your Outlook Inbox.")
+
+    monkeypatch.setattr(cli, "open_email", gone)
+
+    assert cli.main(["open-mail", "sla-mail:00AB12"]) == 1
+
+    assert messages == ["This email is no longer in your Outlook Inbox."]
