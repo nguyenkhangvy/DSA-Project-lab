@@ -249,3 +249,36 @@ When this is built, the Outlook spec is updated so the two agree: §4.4 (`sessio
 - **Auto-Done hides an email the student opened by mistake.** Undo is in the Done list.
 - **The script is blocked or fails.** Opening then records nothing; ✓ Done still works.
 - **A joined session's email changes its time.** The joined copy keeps the old time; the Join page shows the new session unticked next to the old one, so the student can switch.
+
+---
+
+## Addendum (2026-09-29): check-in times and registration deadlines
+
+Decided with the student at the real-sync check of 2026-09-29, after two real emails came out wrong: the UHub "Bean to Bold" workshop gave its check-in time (13:00–13:45) as a second session next to the programme (14:00–16:30), and the "Bế mạc HTSV" invitation stayed upcoming although its registration had closed on 22/9. This addendum changes §3.2, §3.3, §4.1, §4.2 and §4.4; everything else stays.
+
+### A.1 A check-in time joins its event (changes §3.2)
+
+- A time in a sentence that says "check in", "check-in", "checkin" or "điểm danh" (accents and letter case ignored) is a **check-in time**.
+- A check-in time joins the **earliest other session on the same day that starts at or after it**: that session now starts at the check-in's start, so conflicts count the check-in too. "Thời gian chương trình: 14:00 - 16:30, ngày 29/09/2026" with "Thời gian check in: 13:00 - 13:45, ngày 29/09/2026" is one session, 29/09 13:00–16:30.
+- A check-in time with no later session on its day stays a session of its own.
+
+### A.2 The registration deadline (changes §3.2 and §3.3)
+
+- A sentence is a **registration deadline** when it has a deadline word (§3.2 rule 5) and a registering word: "đăng ký", "register", "registration" or "sign up" (accents and letter case ignored). "Thời hạn đăng ký: đến hết ngày 22/9/2026", "Hạn đăng ký: 23h59 ngày 25/9" and "Đăng ký trước ngày 25/9" are; "Hạn nộp bài: 30/9" and "Hạn chót khảo sát: 30/9" are not.
+- The email's **`register_by`** is the latest date in its registration-deadline sentences (dates in links ignored, the year guessed as in §3.2); none gives `null`. "Đến hết ngày 22/9" means registration is open through 22/9.
+- Like sessions, it is found in **every email**. When the reader fails on an email, that email is uploaded with `register_by: null` and the failure is logged without any email text.
+- The upload format: `MailItem` gains `register_by: date | None = None` (Python) and `LocalDate registerBy` (Java). Still no text.
+
+### A.3 The website (changes §4.1, §4.2 and §4.4)
+
+- One migration adds `register_by` DATE NULL to `school_mail`; saving an `outlook` part stores it.
+- A card's registration deadline is the **latest** `register_by` of its emails (a reminder can extend it).
+- **Past** (§4.4): an event-like card is also Past when its registration deadline is before today (Vietnam) **and the student has joined none of its emails' sessions**. A joined card stays in its box until its last session ends. Its Timetable entries never change.
+- **On the row:** while an event-like card's registration is open (deadline today or later) it shows a small tag "Register by Tue 22/09"; a card that is Past because its registration closed shows "Registration closed".
+- **Join…** stays available on a card whose registration has closed (the student may have registered elsewhere in time).
+
+### A.4 Tests
+
+- Agent: check-in merged into the programme's session; a check-in alone; a check-in with no later session; each registration-deadline form above; "hạn nộp" and "hạn chót khảo sát" are not registration; the latest of two deadlines; a date in a link ignored; a failure gives `null` and logs no text.
+- Upload format: the shared sample with `register_by`, on both sides; a bad date refused.
+- Website: `register_by` saved; closed and not joined → Past; closed and joined → stays; the latest deadline of a thread; "Register by" and "Registration closed" on the page.
