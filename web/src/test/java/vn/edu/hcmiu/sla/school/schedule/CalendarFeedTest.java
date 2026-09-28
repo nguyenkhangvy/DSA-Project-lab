@@ -34,6 +34,7 @@ import vn.edu.hcmiu.sla.auth.AppUser;
 import vn.edu.hcmiu.sla.school.SchoolTestData;
 import vn.edu.hcmiu.sla.school.SchoolTestData.Meeting;
 import vn.edu.hcmiu.sla.school.model.SchoolBbCourse;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
 
 /**
  * The Timetable's calendar feed: Java twin of the feed tests in tests/test_school_schedule_pages.py,
@@ -112,6 +113,12 @@ class CalendarFeedTest {
         return data.save(course);
     }
 
+    void join(AppUser who, LocalDate day, LocalTime start, LocalTime end, String place, boolean points) {
+        db.persist(new SchoolMailJoined(who.id(), "a".repeat(64), day, start, end, "[THƯ MỜI] Workshop A", place,
+                points, false, LocalDateTime.of(2026, 9, 28, 1, 0)));
+        db.flush();
+    }
+
     // ---- Classes and exams ------------------------------------------------------------
 
     @Test
@@ -127,6 +134,43 @@ class CalendarFeedTest {
                           "classNames": ["event-class"],
                           "extendedProps": {"kind": "class", "code": "IT093IU", "room": "A2.508"}}]
                         """, JsonCompareMode.STRICT));
+    }
+
+    // ---- Events joined from Mailbox (spec 2026-09-28-mailbox-events-design.md, 4.7) ----
+
+    @Test
+    void aJoinedEventIsGreenInTheCalendarAndLinksToItsEmail() throws Exception {
+        join(an, LocalDate.of(2026, 9, 29), LocalTime.of(14, 0), LocalTime.of(16, 0), "Hall A2", true);
+
+        mvc.perform(get("/school/api/calendar").param("start", NEXT_WEEK_START).param("end", NEXT_WEEK_END)
+                        .with(user(an)))
+                .andExpect(content().json("""
+                        [{"title": "★ Training points: [THƯ MỜI] Workshop A",
+                          "start": "2026-09-29T14:00:00",
+                          "end": "2026-09-29T16:00:00",
+                          "classNames": ["event-event"],
+                          "url": "/school/mailbox#mail-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                          "extendedProps": {"kind": "event", "code": null, "room": "Hall A2"}}]
+                        """, JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void aJoinedSessionWithoutAnEndLastsAnHourNextToAClass() throws Exception {
+        data.course(an, "IT093IU", "Web Application Development", WEB_TUESDAY);
+        join(an, LocalDate.of(2026, 9, 29), LocalTime.of(9, 0), null, null, false);
+
+        List<Map<String, Object>> week = nextWeek();
+
+        assertThat(week).extracting(e -> e.get("title")).containsExactly("Web Application Development",
+                "Event: [THƯ MỜI] Workshop A");
+        assertThat(week.get(1)).containsEntry("start", "2026-09-29T09:00:00").containsEntry("end", "2026-09-29T10:00:00");
+    }
+
+    @Test
+    void someoneElsesJoinedEventsAreNeverInMyCalendar() throws Exception {
+        join(data.user("binh@example.com"), LocalDate.of(2026, 9, 29), LocalTime.of(14, 0), null, null, false);
+
+        assertThat(nextWeek()).isEmpty();
     }
 
     @Test

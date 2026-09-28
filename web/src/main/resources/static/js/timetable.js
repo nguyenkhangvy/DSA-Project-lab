@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
     height: "auto",
     slotLabelFormat: clock,
     eventTimeFormat: clock,
-    noEventsText: "No classes or exams in this period.",
+    noEventsText: "No classes, exams or events in this period.",
     views: {
       timeGridWeek: { titleFormat: weekTitle },
       listWeek: { titleFormat: weekTitle },

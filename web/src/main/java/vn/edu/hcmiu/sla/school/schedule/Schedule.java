@@ -27,6 +27,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolExamRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
+import vn.edu.hcmiu.sla.school.model.SchoolMailJoinedRepository;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Announced;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.ClassChange;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Emailed;
@@ -45,11 +47,14 @@ public class Schedule {
     public static final Map<String, String> EXAM_LABELS = Map.of(
             "final", "Final exam", "midterm", "Midterm exam", "other", "Exam");
     static final Duration DEFAULT_CLASS_LENGTH = Duration.ofMinutes(90); // a make-up of a course with no known classes
+    static final Duration JOINED_WITHOUT_END = Duration.ofHours(1); // an event session whose email gave no end
 
     /**
-     * A class or an exam on the timetable. Times are UTC; endAt may be empty. label: "Final exam" for exams.
+     * A class, an exam or a joined event on the timetable. Times are UTC; endAt may be empty. label: "Final exam"
+     * for exams, "Event" or "★ Training points" for events (whose code is empty and room the place typed on Join).
      * change: online / cancelled / makeup, from a Blackboard announcement or a lecturer's email, with source the
-     * app's page where it was announced. allDay: a make-up class announced without a time.
+     * app's page where it was announced (for an event, its email in Mailbox). allDay: a make-up class announced
+     * without a time.
      */
     public record Item(String kind, LocalDateTime startAt, LocalDateTime endAt, String code, String title, String room,
             String label, String change, Source source, boolean allDay) {
@@ -72,19 +77,21 @@ public class Schedule {
     private final SchoolBbAnnouncementRepository announcements;
     private final SchoolBbAssignmentRepository assignments;
     private final SchoolMailChangeRepository mailChanges;
+    private final SchoolMailJoinedRepository joined;
 
     public Schedule(SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolCourseRepository courses,
             SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments,
-            SchoolMailChangeRepository mailChanges) {
+            SchoolMailChangeRepository mailChanges, SchoolMailJoinedRepository joined) {
         this.meetings = meetings;
         this.exams = exams;
         this.courses = courses;
         this.announcements = announcements;
         this.assignments = assignments;
         this.mailChanges = mailChanges;
+        this.joined = joined;
     }
 
-    /** Classes and exams starting in [startUtc, endUtc), with announced changes, in time order. */
+    /** Classes, exams and joined events starting in [startUtc, endUtc), with announced changes, in time order. */
     @Transactional(readOnly = true)
     public List<Item> itemsBetween(Integer userId, LocalDateTime startUtc, LocalDateTime endUtc) {
         List<Item> items = new ArrayList<>();
@@ -97,7 +104,31 @@ public class Schedule {
             items.add(new Item("exam", e.getStartAt(), end, e.getCourseCode(), e.getCourseName(), e.getRoom(),
                     EXAM_LABELS.getOrDefault(e.getExamType(), "Exam"), null, null, false));
         }
-        return withChanges(items, announcedChanges(userId), timetableCourses(userId), startUtc, endUtc);
+        List<Item> result = new ArrayList<>(withChanges(items, announcedChanges(userId), timetableCourses(userId),
+                startUtc, endUtc));
+        result.addAll(joinedEvents(userId, startUtc, endUtc));
+        result.sort(Comparator.comparing(Item::startAt).thenComparing(Item::kind));
+        return result;
+    }
+
+    /**
+     * The event sessions the student joined from Mailbox, starting in [startUtc, endUtc)
+     * (docs/superpowers/specs/2026-09-28-mailbox-events-design.md, section 4.7). Class changes never apply to them.
+     */
+    private List<Item> joinedEvents(Integer userId, LocalDateTime startUtc, LocalDateTime endUtc) {
+        List<Item> events = new ArrayList<>();
+        for (SchoolMailJoined row : joined.findByUserIdAndDayBetweenOrderByDayAscStartAsc(userId,
+                VietnamTime.date(startUtc), VietnamTime.date(endUtc))) {
+            LocalDateTime startAt = VietnamTime.utc(row.getDay(), row.getStart());
+            LocalDateTime endAt = row.getEnd() != null ? VietnamTime.utc(row.getDay(), row.getEnd())
+                    : startAt.plus(JOINED_WITHOUT_END);
+            if (!startAt.isBefore(startUtc) && startAt.isBefore(endUtc)) {
+                events.add(new Item("event", startAt, endAt, null, row.getTitle(), row.getPlace(),
+                        row.isTrainingPoints() ? "★ Training points" : "Event", null, Source.email(row.getMailKey()),
+                        false));
+            }
+        }
+        return events;
     }
 
     /** The items of one Vietnam day. */
