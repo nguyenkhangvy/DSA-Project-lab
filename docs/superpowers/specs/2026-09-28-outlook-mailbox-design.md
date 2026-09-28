@@ -51,13 +51,13 @@ We will **not** get around this screen by borrowing a Microsoft app's client ID.
 | Sender addresses | All 55 found. 51 are plain addresses; 4 are Exchange-internal and convert to the real address with the property `PR_SENDER_SMTP_ADDRESS`. |
 | Links in the plain text | Kept: 45 emails with links, most written as `text <https://…>`. |
 | Thread ID (`ConversationID`) and message ID (`PR_INTERNET_MESSAGE_ID`) | Present on all 55 |
-| Blackboard emails | 9 from `bb@hcmiu.edu.vn`. Lecturer announcements carry the lecturer's address in the sender name ("… - dxhoi@hcmiu.edu.vn"); "Submission received" receipts have only "bb@hcmiu.edu.vn" as the name. |
-| Teams "added you to a group" emails | Sent from the lecturer's own address (`nttuan@hcmiu.edu.vn`, `leminhha@mp.hcmiu.edu.vn`) |
-| Lecturer address shapes | Initials + given name (`pbngoc` for Phan Bao Ngoc, `nttuan` for Nguyen Thanh Tuan) or the full name joined (`leminhha` for Le Minh Ha); also on IU sub-domains (`@mp.hcmiu.edu.vn`) |
+| Blackboard emails | 9 from `bb@hcmiu.edu.vn`. Lecturer announcements carry the lecturer's address in the sender name ("… - dvlong@hcmiu.edu.vn"); "Submission received" receipts have only "bb@hcmiu.edu.vn" as the name. |
+| Teams "added you to a group" emails | Sent from the lecturer's own address (`dhtai@hcmiu.edu.vn`, `buithanhnga@mp.hcmiu.edu.vn`) |
+| Lecturer address shapes | Initials + given name (`vmkhoa` for Vo Minh Khoa, `dhtai` for Do Huu Tai) or the full name joined (`buithanhnga` for Bui Thanh Nga); also on IU sub-domains (`@mp.hcmiu.edu.vn`) |
 | The dorm invoice | Subject "[ M-Invoice ] TB: Xuất hóa đơn điện tử số …" (contains "hóa đơn") |
 | Opening one exact email | `Namespace.GetItemFromID(entryId).Display()` opens it. Outlook's command line (`/select outlook:<id>`) only opens the main window. The `outlook:` link type is not registered on this laptop. |
 
-EduSoft stores lecturer names shortened, e.g. `L.D.Tân`, `Đ.X.Hội`, `P.H.Hà`. With dots and accents removed and in lower case they equal the address before the `@` (`ldtan@`, `dxhoi@`).
+EduSoft stores lecturer names shortened, e.g. `P.Q.Hùng`, `Đ.V.Long`, `N.T.Hà`. With dots and accents removed and in lower case they equal the address before the `@` (`pqhung@`, `dvlong@`).
 
 ---
 
@@ -181,9 +181,9 @@ All matching ignores letter case and Vietnamese accents ("KHẢO SÁT" matches "
 
 An email is **from a lecturer** when any of these holds, unless it is an automatic Microsoft notice (below):
 
-1. **Blackboard announcement:** the sender is `bb@hcmiu.edu.vn` and the sender name contains another `@hcmiu.edu.vn` address (e.g. "Đỗ Xuân Hội - dxhoi@hcmiu.edu.vn"). "Submission received" receipts, whose name is only "bb@hcmiu.edu.vn", don't count.
-2. **Timetable lecturer:** the part before `@` equals a timetable lecturer's name with dots, spaces and accents removed, in lower case (`L.D.Tân` → `ldtan`).
-3. **An IU person:** the address is at `hcmiu.edu.vn` or one of its sub-domains, except `student.hcmiu.edu.vn`, and the part before `@` is built from the sender's own name (accents removed, lower case). It is either the initials of every word but the last followed by the last word (`Phan Bao Ngoc` → `pbngoc`), or all words joined (`Le Minh Ha` → `leminhha`). Both word orders are tried, so `Tan Duy Le` also gives `ldtan`. Office accounts (`oss@`, `hoisinhvien@`, `iuyouth@`, `bb@`, `noreply.cis@` …) never match because their names aren't built this way.
+1. **Blackboard announcement:** the sender is `bb@hcmiu.edu.vn` and the sender name contains another `@hcmiu.edu.vn` address (e.g. "Đặng Văn Long - dvlong@hcmiu.edu.vn"). "Submission received" receipts, whose name is only "bb@hcmiu.edu.vn", don't count.
+2. **Timetable lecturer:** the part before `@` equals a timetable lecturer's name with dots, spaces and accents removed, in lower case (`P.Q.Hùng` → `pqhung`).
+3. **An IU person:** the address is at `hcmiu.edu.vn` or one of its sub-domains, except `student.hcmiu.edu.vn`, and the part before `@` is built from the sender's own name (accents removed, lower case). It is either the initials of every word but the last followed by the last word (`Vo Minh Khoa` → `vmkhoa`), or all words joined (`Bui Thanh Nga` → `buithanhnga`). Both word orders are tried, so `Hung Quoc Pham` also gives `pqhung`. Office accounts (`oss@`, `hoisinhvien@`, `iuyouth@`, `bb@`, `noreply.cis@` …) never match because their names aren't built this way.
 
 **Automatic Microsoft notices never count as lecturer mail:** Teams "added you to a group" emails (subject contains "Microsoft Teams" and one of "được thêm", "đã thêm", "added you") and anything from `sharepointonline.com` or `microsoft.com` addresses.
 
@@ -325,7 +325,7 @@ Done cards leave their box and go to a closed **"Done (n)"** list at the bottom 
 1. **Read only**, by design and in code (4.2). The only action on an email is opening it for the student to read.
 2. **No Microsoft key.** Outlook does its own sign-in. The agent stores nothing new in Credential Manager.
 3. **Email text never leaves the laptop.** It exists only in the agent's memory while sorting. It is never written to the upload, `state.json`, logs or the website. The upload format has no field for it and refuses unknown fields.
-4. **What the website holds per email:** sender name and address, subject, time, IDs, categories, dates, flags and class changes. Subjects can be personal (e.g. "[Ticket: 66157] Nguyễn Khang Vỹ – …"); they are shown only to their owner.
+4. **What the website holds per email:** sender name and address, subject, time, IDs, categories, dates, flags and class changes. Subjects can be personal (e.g. "[Ticket: 12345] Trần Thị Mai – …"); they are shown only to their owner.
 5. **The `sla-mail:` link type** only opens an email in Outlook. It accepts only hex IDs (4.6), so another website using the link can at most open one of the student's own emails on the student's own screen.
 6. **Safe display:** everything shown with Thymeleaf's escaping. The `sla-mail:` link is built only from `entry_id`, which the upload format limits to hex. The web link is a fixed address.
 7. **Every query is filtered by the logged-in user.** Done and Move to… only work on the user's own cards.
