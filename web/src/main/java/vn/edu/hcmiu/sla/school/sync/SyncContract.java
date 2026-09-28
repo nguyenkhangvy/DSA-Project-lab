@@ -196,6 +196,7 @@ public final class SyncContract {
             Boolean fromLecturer,
             @Size(max = 30) List<@NotNull LocalDate> dates,
             @Size(max = 10) List<@Valid MailSession> sessions,
+            LocalDate registerBy,
             Boolean sorted,
             @Chars(max = 255) String blackboardTitle,
             @Size(max = 10) List<@Valid MailClassChange> classChanges) {

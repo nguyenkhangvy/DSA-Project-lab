@@ -384,6 +384,8 @@ class IngestTest {
         assertThat(workshop.getCategories()).containsExactly("event", "training_points");
         assertThat(workshop.getDates()).containsExactly(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 10, 2));
         assertThat(List.of(workshop.isFromLecturer(), workshop.isSorted())).containsExactly(false, true);
+        assertThat(workshop.getRegisterBy()).isEqualTo(LocalDate.of(2026, 9, 23));
+        assertThat(saved.get(0).getRegisterBy()).isNull();
         assertThat(mailSessions.findOfUser(userId))
                 .extracting(s -> s.getMail().getMailKey() + " " + s.getDay() + " " + s.getStart() + "-" + s.getEnd())
                 .containsExactly(workshop.getMailKey() + " 2026-09-25 13:30-16:30",

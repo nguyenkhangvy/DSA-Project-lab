@@ -69,6 +69,9 @@ public class SchoolMail {
     @Column(name = "blackboard_title", length = 255)
     private String blackboardTitle;
 
+    @Column(name = "register_by")
+    private LocalDate registerBy; // the registration deadline (Vietnam date), or null
+
     @OneToMany(mappedBy = "mail", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SchoolMailChange> changes = new ArrayList<>();
 
@@ -151,6 +154,14 @@ public class SchoolMail {
 
     public String getBlackboardTitle() {
         return blackboardTitle;
+    }
+
+    public LocalDate getRegisterBy() {
+        return registerBy;
+    }
+
+    public void setRegisterBy(LocalDate registerBy) {
+        this.registerBy = registerBy;
     }
 
     public List<SchoolMailChange> getChanges() {

@@ -278,6 +278,7 @@ public class Ingest {
             SchoolMail mail = new SchoolMail(userId, item.key(), item.entryId(), item.threadId(),
                     toUtc(item.receivedAt()), item.senderName(), item.senderAddress(), item.subject(), item.categories(),
                     item.fromLecturer(), item.dates(), item.sorted(), item.blackboardTitle());
+            mail.setRegisterBy(item.registerBy());
             for (MailClassChange c : item.classChanges()) {
                 mail.getChanges().add(new SchoolMailChange(mail, c.courseCode(), c.kind(), c.day(), c.start(), c.end(),
                         c.room()));

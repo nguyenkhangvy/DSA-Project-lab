@@ -239,6 +239,8 @@ class SyncContractTest {
         assertThat(emails.get(1).sessions()).extracting(s -> s.day() + " " + s.start() + "-" + s.end())
                 .containsExactly("2026-09-25 13:30-16:30", "2026-10-02 08:00-null");
         assertThat(emails.get(0).sessions()).isEmpty();
+        assertThat(emails.get(1).registerBy()).isEqualTo(java.time.LocalDate.of(2026, 9, 23));
+        assertThat(emails.get(0).registerBy()).isNull();
     }
 
     static Stream<Arguments> badOutlookData() {
@@ -284,7 +286,9 @@ class SyncContractTest {
                 Arguments.of("bad-session-time", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1, "sessions", 0)
                         .put("start", "25:00:00")),
                 Arguments.of("session-without-start", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1,
-                        "sessions", 1).remove("start")));
+                        "sessions", 1).remove("start")),
+                Arguments.of("bad-register-by", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1)
+                        .put("register_by", "22/9/2026")));
     }
 
     @ParameterizedTest(name = "{0}")

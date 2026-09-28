@@ -186,6 +186,7 @@ class MailItem(_Strict):
     from_lecturer: bool = False
     dates: Annotated[list[date], Field(max_length=30)] = []
     sessions: Annotated[list[MailSession], Field(max_length=10)] = []  # found in any email; shown for events
+    register_by: date | None = None  # the registration deadline, found in any email (Vietnam date)
     sorted: bool = True  # False: the sorting rules failed on this email
     blackboard_title: Annotated[str, Field(max_length=255)] | None = None
     class_changes: Annotated[list[MailClassChange], Field(max_length=10)] = []

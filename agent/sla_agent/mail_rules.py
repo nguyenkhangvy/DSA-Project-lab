@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from sla_contract.schema import MailClassChange, MailItem, MailSession
 
-from sla_agent.class_changes import dates_in, fold, read_announcement, sessions_in
+from sla_agent.class_changes import dates_in, fold, read_announcement, register_by_in, sessions_in
 
 log = logging.getLogger(__name__)
 
@@ -222,6 +222,17 @@ def sessions_of(email, arrived):
         return []
 
 
+def register_by_of(email, arrived):
+    """The email's registration deadline (mailbox-events addendum A.2), found in every email; None when there is
+    none or the reader fails on it."""
+    try:
+        return register_by_in(email.subject + "\n" + email.text, arrived)
+    except Exception as error:  # the message could quote the email
+        log.warning("Couldn't read the registration deadline in an email (%s); it is uploaded without one",
+                    error.__class__.__name__)
+        return None
+
+
 def sort_email(email, context):
     """The MailItem for one email. If the rules fail on it, it is uploaded unsorted (sorted=False)."""
     known = dict(key=email.key, entry_id=email.entry_id, thread_id=email.thread_id, received_at=email.received_at,
@@ -237,6 +248,7 @@ def sort_email(email, context):
             from_lecturer=lecturer,
             dates=dates_in(email.subject + "\n" + email.text, arrived)[:MAX_DATES],
             sessions=sessions_of(email, arrived),
+            register_by=register_by_of(email, arrived),
             blackboard_title=blackboard_title(email),
             class_changes=class_changes(email, code) if code else [],
         )

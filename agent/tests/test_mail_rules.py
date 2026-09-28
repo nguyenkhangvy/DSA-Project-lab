@@ -181,6 +181,25 @@ def test_an_email_the_session_finder_fails_on_keeps_its_sorting_and_logs_no_text
     assert "Bí mật" not in caplog.text and "12345" not in caplog.text
 
 
+def test_the_registration_deadline_is_found_in_every_email():
+    item = sort_email(email("Họp lớp", "Hạn đăng ký: 23h59 ngày 25/9/2026."), CONTEXT)
+
+    assert (item.categories, item.register_by) == ([], date(2026, 9, 25))
+
+
+def test_an_email_the_deadline_reader_fails_on_keeps_its_sorting_and_logs_no_text(monkeypatch, caplog):
+    def broken(text, from_day):
+        raise ValueError(text)
+
+    monkeypatch.setattr(mail_rules, "register_by_in", broken)
+
+    with caplog.at_level(logging.WARNING):
+        item = sort_email(email("Workshop ngày 30/9", "Bí mật riêng tư 12345. Hạn đăng ký 25/9."), CONTEXT)
+
+    assert (item.sorted, item.register_by, item.categories) == (True, None, ["event"])
+    assert "Bí mật" not in caplog.text and "12345" not in caplog.text
+
+
 def test_the_text_never_leaves_in_the_result():
     item = sort_email(email("Workshop", "UNIQUE-TEXT-7f3a only the laptop may read this"), CONTEXT)
 

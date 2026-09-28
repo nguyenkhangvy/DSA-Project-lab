@@ -194,6 +194,7 @@ def test_an_outlook_section_is_accepted_next_to_the_others():
     assert [(s.day.isoformat(), s.start.isoformat(), s.end and s.end.isoformat()) for s in second.sessions] == [
         ("2026-09-25", "13:30:00", "16:30:00"), ("2026-10-02", "08:00:00", None)]
     assert first.sessions == []
+    assert (second.register_by.isoformat(), first.register_by) == ("2026-09-23", None)
 
 
 @pytest.mark.parametrize(
@@ -216,10 +217,12 @@ def test_an_outlook_section_is_accepted_next_to_the_others():
         lambda p: p["emails"][1]["sessions"][0].update(end="13:30:00"),
         lambda p: p["emails"][1]["sessions"][0].update(start="25:00:00"),
         lambda p: p["emails"][1]["sessions"][1].pop("start"),
+        lambda p: p["emails"][1].update(register_by="22/9/2026"),
     ],
     ids=["text", "html", "three-categories", "repeated-category", "unknown-category", "lower-case-entry-id",
          "script-entry-id", "bad-key", "naive-time", "unknown-change", "too-many-dates", "too-many-emails",
-         "loses-points", "eleven-sessions", "end-not-after-start", "bad-session-time", "session-without-start"],
+         "loses-points", "eleven-sessions", "end-not-after-start", "bad-session-time", "session-without-start",
+         "bad-register-by"],
 )
 def test_bad_outlook_data_is_rejected(change):
     data = outlook_payload()

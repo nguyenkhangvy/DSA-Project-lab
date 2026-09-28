@@ -6,7 +6,7 @@ from datetime import date, time
 
 import pytest
 
-from sla_agent.class_changes import MAX_SESSIONS, Session, sessions_in
+from sla_agent.class_changes import MAX_SESSIONS, Session, register_by_in, sessions_in
 
 ARRIVED = date(2026, 9, 28)  # Mon, in Vietnam
 
@@ -115,3 +115,69 @@ def test_vietnamese_typed_with_separate_accent_marks_reads_the_same():
 def test_nothing():
     assert sessions_in("", ARRIVED) == []
     assert sessions_in(None, ARRIVED) == []
+
+
+# ---- check-in times (addendum A.1) --------------------------------------------------------------------------------
+
+BEAN_TO_BOLD = """Thông tin chi tiết chương trình:
+⏰Thời gian chương trình: 14:00 - 16:30, ngày 29/09/2026.
+⏰Thời gian check in:  13:00 - 13:45, ngày 29/09/2026.
+📍 Địa điểm: Phòng A2.104, Trường Đại học Quốc tế (IU)."""
+
+
+def test_a_check_in_time_joins_its_event():
+    assert found(BEAN_TO_BOLD) == [("29/09", "13:00", "16:30")]
+
+
+@pytest.mark.parametrize("check_in", ["Check-in: 7h30", "CHECKIN lúc 7h30", "Sinh viên có mặt lúc 7h30 để điểm danh"])
+def test_every_way_of_writing_check_in(check_in):
+    assert found(f"Ngày 03/10/2026. {check_in}. Chương trình: 8h00 - 11h00") == [("03/10", "07:30", "11:00")]
+
+
+def test_a_check_in_joins_the_earliest_session_after_it_that_day():
+    text = "Ngày 03/10: sáng 8h00 - 10h00, chiều 13h30 - 15h00. Check in: 13h00 - 13h20, ngày 03/10"
+
+    assert found(text) == [("03/10", "08:00", "10:00"), ("03/10", "13:00", "15:00")]
+
+
+def test_a_check_in_without_a_later_session_stays_on_its_own():
+    assert found("Check in: 13:00 - 13:45, ngày 29/09/2026") == [("29/09", "13:00", "13:45")]
+    assert found("Chương trình 9h00 ngày 29/09. Check in 17h00 ngày 29/09") == [
+        ("29/09", "09:00", None), ("29/09", "17:00", None)]
+
+
+# ---- the registration deadline (addendum A.2) ---------------------------------------------------------------------
+
+CLOSING = """Link đăng ký: https://iuoss.com/BM-HTSV-2026
+Thông tin đăng ký Lễ Bế mạc HTSV như sau:
+ Thời gian: 9g45 ngày 30/9/2026 (Thứ Tư)
+ Thời hạn đăng ký: đến hết ngày 22/9/2026 hoặc cho đến khi đủ số lượng."""
+
+
+def test_the_closing_ceremony_closes_registration_on_22_9_and_takes_place_on_30_9():
+    assert register_by_in(CLOSING, date(2026, 9, 20)) == date(2026, 9, 22)
+    assert sessions_in(CLOSING, date(2026, 9, 20)) == [Session(date(2026, 9, 30), time(9, 45))]
+
+
+@pytest.mark.parametrize("text, deadline", [
+    ("Thời hạn đăng ký: đến hết ngày 22/9/2026", date(2026, 9, 22)),
+    ("Hạn đăng ký: 23h59 ngày 25/9", date(2026, 9, 25)),
+    ("Đăng ký trước ngày 25/9. Thời gian: 14h ngày 30/9", date(2026, 9, 25)),
+    ("REGISTRATION DEADLINE: September 25, 2026", date(2026, 9, 25)),
+    ("Hạn chót đăng ký: 24/9. Gia hạn: hạn đăng ký đến 27/9", date(2026, 9, 27)),
+    ("Hạn đăng ký: 20/9", date(2026, 9, 20)),
+])
+def test_each_way_of_writing_a_registration_deadline(text, deadline):
+    assert register_by_in(text, ARRIVED) == deadline
+
+
+@pytest.mark.parametrize("text", [
+    "Hạn nộp bài: 30/9",
+    "Hạn chót khảo sát: 30/9",
+    "Link đăng ký: https://example.com/dang-ky-30-9 . Thời gian: 14h ngày 30/9",
+    "Đăng ký tham gia workshop ngày 30/9",
+    "",
+    None,
+])
+def test_not_a_registration_deadline(text):
+    assert register_by_in(text, ARRIVED) is None

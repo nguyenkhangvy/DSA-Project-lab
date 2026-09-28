@@ -101,6 +101,7 @@ class SchoolTablesTest {
         mail.getSessions().add(new SchoolMailSession(mail, LocalDate.of(2026, 10, 2), java.time.LocalTime.of(8, 0), null));
         mail.getSessions().add(new SchoolMailSession(mail, LocalDate.of(2026, 9, 29), java.time.LocalTime.of(13, 30),
                 java.time.LocalTime.of(16, 30)));
+        mail.setRegisterBy(LocalDate.of(2026, 9, 25));
         db.persist(mail);
         SchoolMail empty = new SchoolMail(userId, "b".repeat(64), "00AC", "T1", SEPT_28, "", "", "", List.of(), false,
                 List.of(), false, null);
@@ -109,6 +110,7 @@ class SchoolTablesTest {
         SchoolMail again = reloaded(mail, mail.getId());
 
         assertThat(again.getCategories()).containsExactly("event", "training_points");
+        assertThat(again.getRegisterBy()).isEqualTo(LocalDate.of(2026, 9, 25));
         assertThat(again.getDates()).containsExactly(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2));
         assertThat(again.getChanges()).extracting(SchoolMailChange::getStart).containsExactly(java.time.LocalTime.of(13, 15));
         assertThat(again.getSessions()).extracting(s -> s.getDay() + " " + s.getStart() + "-" + s.getEnd())

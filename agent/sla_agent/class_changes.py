@@ -10,7 +10,8 @@ The website reads Blackboard announcements with its Java twin
 emails with this one. contract/samples/class-changes/sentences.json keeps the two in step: both test
 suites check every example in it.
 
-Sessions follow docs/superpowers/specs/2026-09-28-mailbox-events-design.md, section 3.2."""
+Sessions follow docs/superpowers/specs/2026-09-28-mailbox-events-design.md, section 3.2, and its addendum of
+2026-09-29 (check-in times, the registration deadline)."""
 
 import re
 import unicodedata
@@ -81,6 +82,10 @@ def fold(text):
 
 
 DEADLINE = re.compile(r"\b(?:" + "|".join(r"\s+".join(fold(w).split()) for w in DEADLINE_WORDS) + r")\b")
+# On folded text: "check in", "check-in", "checkin", "điểm danh" mark a check-in time; "đăng ký", "register",
+# "registration", "sign up" make a deadline sentence a registration deadline (addendum A.1 and A.2).
+CHECK_IN = re.compile(r"\b(?:check\s*-?\s*in|diem\s+danh)\b")
+REGISTER = re.compile(r"\b(?:dang\s+ky|register|registration|sign\s*-?\s*up)\b")
 
 
 class Announced(NamedTuple):
@@ -214,13 +219,15 @@ def _session_times(sentence, taken):
 def sessions_in(text, from_day):
     """The times an event takes place (mailbox-events 3.2): each sentence's times go with its dates, or with the
     dates of the nearest sentence above that has some. Several dates and one time, or one date and several
-    times, give one session each; equal numbers pair in order. Sentences about a deadline are skipped. Sessions
-    before `from_day` are dropped; a repeated day and start is kept once, with the first end found; at most
+    times, give one session each; equal numbers pair in order. Sentences about a deadline are skipped. A check-in
+    time joins the earliest other session of its day that starts at or after it (addendum A.1). Sessions before
+    `from_day` are dropped; a repeated day and start is kept once, with the first end found; at most
     MAX_SESSIONS, in time order."""
     text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
-    above, found = [], []
+    above, found, check_ins = [], [], []
     for sentence in SENTENCE_END.split(text):
-        if DEADLINE.search(fold(sentence)):
+        folded = fold(sentence)
+        if DEADLINE.search(folded):
             continue
         dates = _dates(sentence, from_day, keep_past=True)
         days = [day for _, _, day in dates]
@@ -230,7 +237,15 @@ def sessions_in(text, from_day):
         if not times or not above:
             continue
         pairs = zip(above, times) if len(above) == len(times) else [(d, t) for d in above for t in times]
-        found.extend(Session(day, start, end) for day, (start, end) in pairs)
+        target = check_ins if CHECK_IN.search(folded) else found
+        target.extend(Session(day, start, end) for day, (start, end) in pairs)
+    for check_in in check_ins:
+        later = [i for i, s in enumerate(found) if s.day == check_in.day and s.start >= check_in.start]
+        if later:
+            first = min(later, key=lambda i: found[i].start)
+            found[first] = found[first]._replace(start=check_in.start)
+        else:
+            found.append(check_in)
     kept = {}
     for session in found:
         if session.day < from_day:
@@ -239,3 +254,14 @@ def sessions_in(text, from_day):
         if key not in kept or (kept[key].end is None and session.end is not None):
             kept[key] = session if key not in kept else kept[key]._replace(end=session.end)
     return sorted(kept.values())[:MAX_SESSIONS]
+
+
+def register_by_in(text, from_day):
+    """The registration deadline (mailbox-events addendum A.2): the latest date in the sentences that have a deadline
+    word and a registering word, or None. Dates in links are ignored; a date without a year takes the year closest
+    to `from_day`."""
+    text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
+    days = [day for sentence in SENTENCE_END.split(text)
+            if DEADLINE.search(fold(sentence)) and REGISTER.search(fold(sentence))
+            for _, _, day in _dates(sentence, from_day, keep_past=True)]
+    return max(days, default=None)
