@@ -1,0 +1,17 @@
+{
+  "outlook": {
+    "status": "ok",
+    "data": {
+      "since": "2026-08-01",
+      "connected": true,
+      "emails": [
+        {
+          "key": "e59f2b527cc57265e4719faaa2bed978ce0cb5468cc8fb109fb90b137e85b860",
+          "entry_id": "00000000A1B2C3D4",
+          "received_at": "2026-09-21T01:05:00+00:00",
+          "categories": ["event", "training_points", "promotion"]
+        }
+      ]
+    }
+  }
+}

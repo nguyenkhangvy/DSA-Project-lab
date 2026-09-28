@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "outlook": {
+    "status": "ok",
+    "data": {
+      "since": "2026-08-01",
+      "connected": true,
+      "emails": [
+        {
+          "key": "e59f2b527cc57265e4719faaa2bed978ce0cb5468cc8fb109fb90b137e85b860",
+          "entry_id": "00000000A1B2C3D4E5F6071829304A5B6C7D8E9F0700C1D2E3F4A5B6C7D8E9F0A1B2C3D4",
+          "thread_id": "8E2D1C0B9A8F7E6D5C4B3A2918070605",
+          "received_at": "2026-09-21T01:05:00+00:00",
+          "sender_name": "Tran Van An - tvan@hcmiu.edu.vn",
+          "sender_address": "bb@hcmiu.edu.vn",
+          "subject": "Web Application Development_S1_2026-27_G02: Online class on 22/9",
+          "categories": ["class"],
+          "from_lecturer": true,
+          "dates": ["2026-09-22"],
+          "blackboard_title": "Online class on 22/9",
+          "class_changes": [
+            {"course_code": "IT093IU", "kind": "online", "day": "2026-09-22"}
+          ]
+        },
+        {
+          "key": "51e77916873ea9f29962ffb91e14c24907e439a41fc6bfdfad52010416af1631",
+          "entry_id": "00000000A1B2C3D4E5F6071829304A5B6C7D8E9F0700C1D2E3F4A5B6C7D8E9F0A1B2C3D5",
+          "thread_id": null,
+          "received_at": "2026-09-24T03:30:00+00:00",
+          "sender_name": "P.CTSV [OSS]",
+          "sender_address": "oss@hcmiu.edu.vn",
+          "subject": "[THƯ MỜI] Workshop “Từ giảng đường tới công sở”",
+          "categories": ["event", "training_points"],
+          "dates": ["2026-09-25", "2026-10-02"],
+          "loses_points": true
+        },
+        {
+          "key": "8a8799a54ac207a586b7fc42e9fd68adb4e6c2ff5f8b6e0712d68df3acc157ad",
+          "entry_id": "00000000A1B2C3D4E5F6071829304A5B6C7D8E9F0700C1D2E3F4A5B6C7D8E9F0A1B2C3D6",
+          "received_at": "2026-09-25T09:00:00+00:00",
+          "sender_name": "Lecturer Two",
+          "sender_address": "ltwo@hcmiu.edu.vn",
+          "subject": "Make-up class",
+          "from_lecturer": true,
+          "sorted": false,
+          "class_changes": [
+            {"course_code": "MA026IU", "kind": "makeup", "day": "2026-10-03", "start": "13:15:00", "end": "15:45:00", "room": "A2.401"}
+          ]
+        }
+      ]
+    }
+  }
+}

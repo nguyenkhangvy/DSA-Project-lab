@@ -8,12 +8,17 @@ import static vn.edu.hcmiu.sla.school.sync.Payloads.blackboardPayload;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.bytes;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.failed;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.fullPayload;
+import static vn.edu.hcmiu.sla.school.sync.Payloads.list;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.ok;
+import static vn.edu.hcmiu.sla.school.sync.Payloads.outlookPayload;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 
@@ -211,6 +217,73 @@ class SyncContractTest {
         FinishRun finish = read(Map.of(
                 "timetable", fullPayload().get("timetable"),
                 "blackboard", failed("source_changed", "Unexpected format")));
+
+        assertThat(finish.overallStatus()).isEqualTo("partial");
+    }
+
+    @Test
+    void anOutlookSectionIsAcceptedNextToTheOthers() {
+        Map<String, Object> payload = fullPayload();
+        payload.put("outlook", ok(outlookPayload()));
+
+        FinishRun finish = read(payload);
+
+        assertThat(finish.sections().keySet()).containsExactly("timetable", "exams", "tuition", "outlook");
+        var emails = finish.outlook().data().emails();
+        assertThat(emails.get(0).classChanges().get(0).kind()).isEqualTo("online");
+        assertThat(emails.get(1).categories()).containsExactly("event", "training_points");
+        assertThat(emails.get(2).sorted()).isFalse();
+        assertThat(emails.get(2).classChanges().get(0).start()).isEqualTo(LocalTime.of(13, 15));
+        assertThat(List.of(emails.get(1).fromLecturer(), emails.get(1).sorted(), emails.get(1).classChanges()))
+                .containsExactly(false, true, List.of());
+    }
+
+    static Stream<Arguments> badOutlookData() {
+        return Stream.<Arguments>of(
+                Arguments.of("text", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("text", "The email's text must never leave the laptop.")),
+                Arguments.of("html", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0).put("body", "<p>html</p>")),
+                Arguments.of("three-categories", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("categories", List.of("event", "training_points", "promotion"))),
+                Arguments.of("repeated-category", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("categories", List.of("event", "event"))),
+                Arguments.of("unknown-category", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("categories", List.of("homework"))),
+                Arguments.of("lower-case-entry-id", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("entry_id", "00000000a1b2")),
+                Arguments.of("script-entry-id", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("entry_id", "javascript:alert(1)")),
+                Arguments.of("bad-key", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0).put("key", "not-a-hash")),
+                Arguments.of("naive-time", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("received_at", "2026-09-21T01:05:00")),
+                Arguments.of("unknown-change", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0, "class_changes", 0)
+                        .put("kind", "moved")),
+                Arguments.of("too-many-dates", (Consumer<Map<String, Object>>) p -> at(p, "emails", 0)
+                        .put("dates", Collections.nCopies(31, "2026-09-22"))),
+                Arguments.of("too-many-emails", (Consumer<Map<String, Object>>) p -> {
+                    List<Object> emails = new ArrayList<>();
+                    for (int i = 0; i < 667; i++) {
+                        emails.addAll(list(p, "emails"));
+                    }
+                    p.put("emails", emails);
+                }));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("badOutlookData")
+    void badOutlookDataIsRejected(String name, Consumer<Map<String, Object>> change) {
+        Map<String, Object> data = outlookPayload();
+        change.accept(data);
+
+        assertRefused(new HashMap<>(Map.of("outlook", ok(data))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"outlook_not_set_up", "outlook_blocked"})
+    void aFailedOutlookPartSaysWhy(String code) {
+        FinishRun finish = read(Map.of(
+                "timetable", fullPayload().get("timetable"),
+                "outlook", failed(code, "Outlook problem")));
 
         assertThat(finish.overallStatus()).isEqualTo("partial");
     }

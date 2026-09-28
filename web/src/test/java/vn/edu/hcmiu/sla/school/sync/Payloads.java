@@ -35,6 +35,11 @@ final class Payloads {
         return at(read("finish-blackboard.json"), "blackboard", "data");
     }
 
+    /** A valid Outlook section's data, as the agent uploads it: results only, never an email's text. */
+    static Map<String, Object> outlookPayload() {
+        return at(read("finish-outlook.json"), "outlook", "data");
+    }
+
     static Map<String, Object> ok(Object data) {
         return Map.of("status", "ok", "data", data);
     }

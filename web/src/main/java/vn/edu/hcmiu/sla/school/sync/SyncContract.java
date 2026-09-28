@@ -1,7 +1,9 @@
 package vn.edu.hcmiu.sla.school.sync;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +31,10 @@ public final class SyncContract {
     private SyncContract() {
     }
 
-    static final String ERROR_CODES =
-            "bad_credentials|session_expired|network|edusoft_changed|source_changed|extra_verification|unknown";
+    static final String ERROR_CODES = "bad_credentials|session_expired|network|edusoft_changed|source_changed"
+            + "|extra_verification|outlook_not_set_up|outlook_blocked|unknown";
+    public static final String MAIL_CATEGORIES =
+            "class|event|training_points|school_task|money|requests_account|system_notice|promotion";
     static final String BLACKBOARD_URL = "(?s)https://blackboard\\.hcmiu\\.edu\\.vn/.*";
 
     public record StartRun(@NotNull @Pattern(regexp = "scheduled|manual|import") String trigger) {
@@ -158,6 +162,59 @@ public final class SyncContract {
     public record Blackboard(@NotNull @Size(max = 40) List<@Valid BbCourse> courses) {
     }
 
+    // ---- Outlook ------------------------------------------------------------------
+
+    /** A class change a lecturer's email announces. day and times are Vietnam time. */
+    public record MailClassChange(
+            @NotNull @Chars(min = 1, max = 20) String courseCode,
+            @NotNull @Pattern(regexp = "online|cancelled|makeup") String kind,
+            @NotNull LocalDate day,
+            LocalTime start,
+            LocalTime end,
+            @Chars(max = 50) String room) {
+    }
+
+    /** What the website may know about one email: never its text. */
+    public record MailItem(
+            @NotNull @Pattern(regexp = "[0-9a-f]{64}") String key,
+            @NotNull @Pattern(regexp = "[0-9A-F]{2,512}") String entryId,
+            @Chars(max = 64) String threadId,
+            @NotNull OffsetDateTime receivedAt,
+            @Chars(max = 255) String senderName,
+            @Chars(max = 255) String senderAddress,
+            @Chars(max = 500) String subject,
+            @Size(max = 2) List<@NotNull @Pattern(regexp = MAIL_CATEGORIES) String> categories,
+            Boolean fromLecturer,
+            @Size(max = 30) List<@NotNull LocalDate> dates,
+            Boolean losesPoints,
+            Boolean sorted,
+            @Chars(max = 255) String blackboardTitle,
+            @Size(max = 10) List<@Valid MailClassChange> classChanges) {
+
+        public MailItem {
+            senderName = senderName == null ? "" : senderName;
+            senderAddress = senderAddress == null ? "" : senderAddress;
+            subject = subject == null ? "" : subject;
+            categories = categories == null ? List.of() : categories;
+            fromLecturer = fromLecturer != null && fromLecturer;
+            dates = dates == null ? List.of() : dates;
+            losesPoints = losesPoints != null && losesPoints;
+            sorted = sorted == null || sorted;
+            classChanges = classChanges == null ? List.of() : classChanges;
+        }
+
+        @AssertTrue(message = "categories must differ")
+        boolean isEachCategoryOnce() {
+            return new HashSet<>(categories).size() == categories.size();
+        }
+    }
+
+    public record Outlook(
+            @NotNull LocalDate since,
+            @NotNull Boolean connected,
+            @NotNull @Size(max = 2000) List<@Valid MailItem> emails) {
+    }
+
     // ---- A whole sync -----------------------------------------------------------
 
     /** One part of a sync: {"status": "ok", "data": …} or {"status": "failed", "error_code": …, "error_message": …}. */
@@ -188,7 +245,8 @@ public final class SyncContract {
             @Valid Section<Timetable> timetable,
             @Valid Section<Exams> exams,
             @Valid Section<Tuition> tuition,
-            @Valid Section<Blackboard> blackboard) {
+            @Valid Section<Blackboard> blackboard,
+            @Valid Section<Outlook> outlook) {
 
         @AssertTrue(message = "schema_version must be 1")
         boolean isVersion1() {
@@ -210,7 +268,7 @@ public final class SyncContract {
             return errorCode != null || !sections().isEmpty();
         }
 
-        /** The parts that were sent, by name, in the order timetable, exams, tuition, blackboard. */
+        /** The parts that were sent, by name, in the order timetable, exams, tuition, blackboard, outlook. */
         public Map<String, Section<?>> sections() {
             Map<String, Section<?>> sent = new LinkedHashMap<>();
             if (timetable != null) {
@@ -224,6 +282,9 @@ public final class SyncContract {
             }
             if (blackboard != null) {
                 sent.put("blackboard", blackboard);
+            }
+            if (outlook != null) {
+                sent.put("outlook", outlook);
             }
             return sent;
         }

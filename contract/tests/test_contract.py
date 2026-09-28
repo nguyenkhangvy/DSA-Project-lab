@@ -174,6 +174,62 @@ def test_a_failed_blackboard_part_can_say_its_format_changed():
     assert finish.overall_status() == "partial"
 
 
+# A valid Outlook section as the agent uploads it: results only, never an email's text.
+def outlook_payload():
+    return _sample("finish-outlook.json")["outlook"]["data"]
+
+
+def test_an_outlook_section_is_accepted_next_to_the_others():
+    payload = full_payload()
+    payload["outlook"] = {"status": "ok", "data": outlook_payload()}
+
+    finish = FinishRun.model_validate(payload)
+
+    assert list(finish.sections()) == ["timetable", "exams", "tuition", "outlook"]
+    first, second, third = finish.outlook.data.emails
+    assert first.class_changes[0].kind == "online"
+    assert second.categories == ["event", "training_points"]
+    assert (third.sorted, third.class_changes[0].start.isoformat()) == (False, "13:15:00")
+    assert (second.from_lecturer, second.sorted, second.class_changes) == (False, True, [])
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda p: p["emails"][0].update(text="The email's text must never leave the laptop."),
+        lambda p: p["emails"][0].update(body="<p>html</p>"),
+        lambda p: p["emails"][0].update(categories=["event", "training_points", "promotion"]),
+        lambda p: p["emails"][0].update(categories=["event", "event"]),
+        lambda p: p["emails"][0].update(categories=["homework"]),
+        lambda p: p["emails"][0].update(entry_id="00000000a1b2"),
+        lambda p: p["emails"][0].update(entry_id="javascript:alert(1)"),
+        lambda p: p["emails"][0].update(key="not-a-hash"),
+        lambda p: p["emails"][0].update(received_at="2026-09-21T01:05:00"),
+        lambda p: p["emails"][0]["class_changes"][0].update(kind="moved"),
+        lambda p: p["emails"][0].update(dates=["2026-09-22"] * 31),
+        lambda p: p.update(emails=p["emails"] * 667),
+    ],
+    ids=["text", "html", "three-categories", "repeated-category", "unknown-category", "lower-case-entry-id",
+         "script-entry-id", "bad-key", "naive-time", "unknown-change", "too-many-dates", "too-many-emails"],
+)
+def test_bad_outlook_data_is_rejected(change):
+    data = outlook_payload()
+    change(data)
+
+    with pytest.raises(ValidationError):
+        FinishRun.model_validate({"outlook": {"status": "ok", "data": data}})
+
+
+@pytest.mark.parametrize("code", ["outlook_not_set_up", "outlook_blocked"])
+def test_a_failed_outlook_part_says_why(code):
+    finish = FinishRun.model_validate({
+        "timetable": full_payload()["timetable"],
+        "outlook": {"status": "failed", "error_code": code, "error_message": "Outlook problem"},
+    })
+
+    assert finish.overall_status() == "partial"
+
+
 # ---- contract/samples/: the Java website's tests check the same files ----------
 
 

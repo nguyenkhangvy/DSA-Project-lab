@@ -8,8 +8,8 @@ web/src/main/java/vn/edu/hcmiu/sla/school/sync/SyncContract.java: change both
 together. contract/samples/ holds example uploads that both test suites check.
 """
 
-from datetime import date
-from typing import Annotated, Generic, Literal, TypeVar
+from datetime import date, time
+from typing import Annotated, Generic, Literal, TypeVar, get_args
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
@@ -22,6 +22,8 @@ ErrorCode = Literal[
     "edusoft_changed",  # a page no longer looks the way the parser expects
     "source_changed",  # Blackboard's answers are in an unexpected format
     "extra_verification",  # EduSoft asked for a CAPTCHA, one-time code or Microsoft sign-in
+    "outlook_not_set_up",  # classic Outlook is missing, has no account, or the chosen account is gone
+    "outlook_blocked",  # Outlook refused the read or didn't answer in time (e.g. a security prompt)
     "unknown",
 ]
 Trigger = Literal["scheduled", "manual", "import"]
@@ -140,6 +142,53 @@ class Blackboard(_Strict):
     courses: Annotated[list[BbCourse], Field(max_length=40)]
 
 
+MailCategory = Literal["class", "event", "training_points", "school_task", "money", "requests_account",
+                       "system_notice", "promotion"]
+MAIL_CATEGORIES = get_args(MailCategory)
+
+
+class MailClassChange(_Strict):
+    """A class change a lecturer's email announces. day and times are Vietnam time."""
+
+    course_code: Code
+    kind: Literal["online", "cancelled", "makeup"]
+    day: date
+    start: time | None = None  # make-up classes only
+    end: time | None = None
+    room: Room | None = None
+
+
+class MailItem(_Strict):
+    """What the website may know about one email: never its text."""
+
+    key: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]  # SHA-256 of the internet message ID
+    entry_id: Annotated[str, Field(pattern=r"^[0-9A-F]{2,512}$")]  # Outlook's ID: opens it on the laptop
+    thread_id: Annotated[str, Field(max_length=64)] | None = None
+    received_at: AwareDatetime
+    sender_name: Annotated[str, Field(max_length=255)] = ""
+    sender_address: Annotated[str, Field(max_length=255)] = ""
+    subject: Annotated[str, Field(max_length=500)] = ""
+    categories: Annotated[list[MailCategory], Field(max_length=2)] = []
+    from_lecturer: bool = False
+    dates: Annotated[list[date], Field(max_length=30)] = []
+    loses_points: bool = False
+    sorted: bool = True  # False: the sorting rules failed on this email
+    blackboard_title: Annotated[str, Field(max_length=255)] | None = None
+    class_changes: Annotated[list[MailClassChange], Field(max_length=10)] = []
+
+    @model_validator(mode="after")
+    def _categories_differ(self):
+        if len(set(self.categories)) != len(self.categories):
+            raise ValueError("categories must differ")
+        return self
+
+
+class Outlook(_Strict):
+    since: date
+    connected: bool  # False: Outlook was offline, so the newest mail may be missing
+    emails: Annotated[list[MailItem], Field(max_length=2000)]
+
+
 T = TypeVar("T")
 
 
@@ -158,9 +207,10 @@ TimetableResult = Annotated[SectionOk[Timetable] | SectionFailed, Field(discrimi
 ExamsResult = Annotated[SectionOk[Exams] | SectionFailed, Field(discriminator="status")]
 TuitionResult = Annotated[SectionOk[Tuition] | SectionFailed, Field(discriminator="status")]
 BlackboardResult = Annotated[SectionOk[Blackboard] | SectionFailed, Field(discriminator="status")]
+OutlookResult = Annotated[SectionOk[Outlook] | SectionFailed, Field(discriminator="status")]
 
 EDUSOFT_SECTIONS = ("timetable", "exams", "tuition")
-SECTION_NAMES = EDUSOFT_SECTIONS + ("blackboard",)
+SECTION_NAMES = EDUSOFT_SECTIONS + ("blackboard", "outlook")
 
 
 class FinishRun(_Strict):
@@ -173,6 +223,7 @@ class FinishRun(_Strict):
     exams: ExamsResult | None = None
     tuition: TuitionResult | None = None
     blackboard: BlackboardResult | None = None
+    outlook: OutlookResult | None = None
 
     @model_validator(mode="after")
     def _error_or_sections(self):
