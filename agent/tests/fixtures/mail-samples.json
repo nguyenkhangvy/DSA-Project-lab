@@ -1,0 +1,1422 @@
+{
+ "about": "Anonymized copies of the student's Inbox made by agent/tools/anonymize_mail.py. `expected` is what the sorting rules must give; checked by the student.",
+ "context": {
+  "courses": [
+   [
+    "EN011IU",
+    "Writing AE2",
+    "T.V.An"
+   ],
+   [
+    "IT007WE",
+    "Skills for Communicating Information",
+    "L.T.Bình"
+   ],
+   [
+    "IT013IU",
+    "Algorithms & Data Structures",
+    "P.M.Châu"
+   ],
+   [
+    "IT090IU",
+    "Object-Oriented Analysis and Design",
+    "H.Q.Dũng"
+   ],
+   [
+    "IT093IU",
+    "Web Application Development",
+    "V.T.Giang"
+   ],
+   [
+    "IT120IU",
+    "Entrepreneurship",
+    "Đ.H.Hải"
+   ],
+   [
+    "MA026IU",
+    "Probability, Statistic & Random Process",
+    "B.N.Khánh"
+   ],
+   [
+    "PH012IU",
+    "Physics 4",
+    "Đ.T.Lan"
+   ]
+  ],
+  "bb_courses": [
+   [
+    "Probability",
+    "MA026IU"
+   ],
+   [
+    "Physics 4_S1_2026-27_G01",
+    "PH012IU"
+   ],
+   [
+    "Entrepreneurship_S1_2026-27_G01",
+    "IT120IU"
+   ],
+   [
+    "Algorithms & Data Structures_S1_2026-27_G02_Lab02",
+    "IT013IU"
+   ],
+   [
+    "Algorithms & Data Structures_S1_2026-27_G02",
+    "IT013IU"
+   ],
+   [
+    "Web Application Development_S1_2026-27_G02_Lab01",
+    "IT093IU"
+   ],
+   [
+    "Web Application Development_S1_2026-27_G02",
+    "IT093IU"
+   ],
+   [
+    "Writing AE2_S1_2026-27_G03",
+    "EN011IU"
+   ],
+   [
+    "Object-Oriented Analysis and Design_S1_2026-27_G01",
+    "IT090IU"
+   ],
+   [
+    "Object-Oriented Analysis and Design_S1_2026-27_G01_Lab01",
+    "IT090IU"
+   ],
+   [
+    "Skills for Communicating Information_S1_2026-27_G01",
+    "IT007WE"
+   ]
+  ]
+ },
+ "emails": [
+  {
+   "subject": "[HTSV] Đăng ký tham gia cổ vũ đội tuyển Môn Võ nhạc và Nhảy Cổ động Hội thao Sinh viên ĐHQG-HCM năm 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-28T12:04:55.101000+00:00",
+   "thread_id": "8BD84EA4AC29B54C9BC96A23E90EFCEB",
+   "text": " <https://example.com/link \t\r\nThân gửi em sinh viên,\r\n\r\nPhòng CTSV thân mời các em sinh viên đăng ký tham gia cổ vũ cho đội tuyển Võ nhạc và Nhảy Cổ động tại Hội thao Sinh viên Đại học Quốc gia TP.HCM năm 2026\r\n\r\n <https://example.com/link Thời gian: Từ 09g00 - 12g00 ngày 29/9/2026 (Thứ Ba)\r\n\r\n <https://example.com/link Địa điểm: Nhà học TDTT đa năng Trường Đại học Khoa học Xã hội và Nhân văn\r\n\r\n <https://example.com/link Số lượng: 50 sinh viên\r\n\r\n <https://example.com/link Link đăng ký: https://example.com/link <https://example.com/link \r\n\r\n <https://example.com/link Quyền lợi:\r\n\r\n <https://example.com/link Được cộng điểm rèn luyện.\r\n\r\n <https://example.com/link Giao lưu, kết bạn đến từ nhiều trường Đại học thành viên ĐHQG-HCM.\r\n\r\nLưu ý:\r\n\r\n- Sinh viên đã đăng ký phải có mặt đúng giờ để điểm danh;\r\n\r\n- Sinh viên đã đăng ký nếu tự ý vắng mặt mà không xin phép sẽ bị trừ điểm rèn luyện theo quy định.\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-29"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-29",
+      "start": "09:00:00",
+      "end": "12:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Ticket: (private)] Nguyễn Student Namẽ – Comment added",
+   "sender_name": "OSS HCMIU",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-28T06:28:44.060000+00:00",
+   "thread_id": "66F051471B10CA4BBFD8CC816A4977D1",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "requests_account"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[ M-Invoice ] TB: Xuất hóa đơn điện tử số 80652",
+   "sender_name": "M-INVOICE Hóa đơn điện tử",
+   "sender_address": "no-reply@kiemtrahoadon.com.vn",
+   "received_at": "2026-09-26T02:36:42.623000+00:00",
+   "thread_id": "37EFBBC0FB8A5245AFE8F3014F89F0E7",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "money"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[THÔNG BÁO] TIẾP NHẬN ĐĂNG KÝ THAM GIA WORKSHOP BEAN TO BOLD",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-25T04:05:11.765000+00:00",
+   "thread_id": "DE7743AAB62EC543AFB356AC064CCA8C",
+   "text": " <https://example.com/link \t\r\nThân gửi Các em sinh viên,\r\n\r\nUHub Network câu lạc bộ trực thuộc Phòng Công tác Sinh viên trường đại học Quốc tế phối hợp cùng Highlands Coffee tổ chức buổi Workshop “Bean to Bold” dành riêng cho IUers.\r\n\r\n\r\nThông tin chi tiết chương trình:\r\n⏰Thời gian chương trình: 14:00 - 16:30, ngày 29/09/2026.\r\n⏰Thời gian check in:  13:00 - 13:45, ngày 29/09/2026.\r\n📍 Địa điểm: Phòng A2.104, Trường Đại học Quốc tế (IU).\r\n💫Đối tượng tham gia: Toàn thể sinh viên Trường Đại học Quốc tế.\r\n\r\nNội dung: Giao lưu, nhận tư vấn nghề nghiệp trực tiếp từ đội ngũ chuyên gia.\r\n \r\n\r\n🔗 Đăng ký tham gia ngay tại: https://example.com/link <https://example.com/link   \r\n\r\nĐừng quên theo dõi fanpage “UHub Network <https://example.com/link ” và “Ngày Hội Việc Làm - Job Fair <https://example.com/link ” để cập nhật thông tin mới nhất về những chương trình sắp tới nhé!\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-29"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-29",
+      "start": "13:00:00",
+      "end": "16:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Your Teams meeting recording has expired and is now deleted",
+   "sender_name": "SharePoint Online",
+   "sender_address": "no-reply@sharepointonline.com",
+   "received_at": "2026-09-24T11:02:45.149000+00:00",
+   "thread_id": "F01DA6777C9A804281DACA8707E8AC73",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Thông báo về việc đăng ký tạm trú và cập nhật thông tin cư trú",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-23T13:40:19.997000+00:00",
+   "thread_id": "98C45FD54E2ACE478F4EE06D2E0AE486",
+   "text": "Sinh viên có nơi thường trú ngoài TP. Hồ Chí Minh hoàn thành khai báo thông tin tạm trú trước ngày 03/10/2026.\r\n <https://example.com/link \t\r\nThân gửi các em,\r\n\r\nPhòng Công tác Sinh viên thông báo về việc đăng ký tạm trú và cập nhật thông tin cư trú đối với sinh viên có nơi thường trú ngoài TP. Hồ Chí Minh, hiện đang cư trú tại Thành phố để học tập, cụ thể như sau:\r\n\r\n1. Đối tượng thực hiện:\r\n\r\nSinh viên đang học tập tại Trường có nơi thường trú ngoài TP. Hồ Chí Minh, hiện đang sinh sống tại TP. Hồ Chí Minh (ở trọ, ở nhà người thân, ở ký túc xá…) để học tập nhưng chưa đăng ký tạm trú hoặc chưa khai báo thông tin tạm trú với Nhà trường.\r\n\r\n2. Nội dung thực hiện chi tiết:\r\n\r\nSinh viên xem tại đây <https://example.com/link .\r\n\r\n3. Thời hạn thực hiện:\r\n\r\nSinh viên hoàn thành việc khai báo thông tin tạm trú với Nhà trường trước ngày 03/10/2026 (thứ Bảy).\r\n\r\nSau thời hạn trên, sinh viên thuộc đối tượng thực hiện nhưng chưa khai báo thông tin sẽ bị xử lý theo Quy chế Công tác Sinh viên của Trường.\r\n\r\nPhòng Công tác Sinh viên đề nghị sinh viên thuộc đối tượng nêu trên thực hiện đầy đủ các nội dung và hoàn thành đúng thời hạn.\r\n\r\nTrân trọng,\r\nPhòng Công tác Sinh viên\r\n\r\n <https://example.com/link \tThe Office of Student Services (O1.105)\r\n\r\nInternational University\r\nPortal: oss.hcmiu.edu.vn <https://example.com/link \r\nWebsite: iuoss.com <https://example.com/link \r\nFanpage: facebook.com/hcmiuoss <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2026, All rights reserved. Office of Student Services.\r\n\r\nEm nhận được email này vì em là sinh viên Trường Đại học Quốc tế.\r\n\r\nĐể từ chối nhận email của trường, em có thể nhấn vào đây <https://example.com/link .\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-10-03"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[THƯ MỜI] sinh viên tham gia WORKSHOP “TỪ GIẢNG ĐƯỜNG TỚI CÔNG SỞ\"",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-23T08:40:06.555000+00:00",
+   "thread_id": "1A25E909310A954896B69A5FA1B0BD3F",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nUHub Network câu lạc bộ trực thuộc Phòng Công tác Sinh viên trường đại học Quốc tế phối hợp cùng Công ty TNHH Điện tử Thông Minh TCL Việt Nam tổ chức WORKSHOP “TỪ GIẢNG ĐƯỜNG TỚI CÔNG SỞ\" \r\n\r\n \r\n\r\nThông tin chi tiết chương trình:\r\n⏰Thời gian: 08:30 - 11:30, Thứ Sáu,  ngày 25/09/2026.\r\n\r\n📍 Địa điểm: A2.307, Trường Đại học Quốc tế (IU).\r\n\r\n💫 Đối tượng tham gia: \r\n\r\n- Ưu tiên Sinh viên năm 3, năm 4  ngành Công nghệ Thông tin, Điện – Điện tử và Quản lý Công nghiệp\r\n\r\n- Sinh viên có nhu cầu tham gia\r\n\r\n👉 Đăng ký ngay tại đây: https://example.com/link <https://example.com/link \r\n\r\nQuyền lợi khi tham gia:\r\n\r\n✨ Gặp gỡ và lắng nghe chia sẻ từ diễn giả giàu kinh nghiệm trong lĩnh vực nhân sự.\r\n\r\n✨ Khám phá môi trường làm việc và hành trình phát triển nghề nghiệp tại TCL.\r\n\r\n✨ Bỏ túi những kiến thức và kỹ năng cần thiết cho hành trình nghề nghiệp. \r\n\r\n✨ Tích lũy điểm rèn luyện. \r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-25"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-25",
+      "start": "08:30:00",
+      "end": "11:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Bạn đã được thêm vào một nhóm trong Microsoft Teams",
+   "sender_name": "NGO DUC MINH",
+   "sender_address": "ngoducminh@mp.hcmiu.edu.vn",
+   "received_at": "2026-09-22T13:28:17.821000+00:00",
+   "thread_id": "9D1B0DA7C69C1746BD592FBC01DC86D9",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class",
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia Chương trình “Hành trang Tân Sinh viên 2026” với chuyên đề “Job hay ‘bẫy’? – Kỹ năng tìm việc an toàn trong thời đại số”",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-22T11:46:19.239000+00:00",
+   "thread_id": "01A1A20B1AD86644BB3B65D1AEF6A1DF",
+   "text": "Thân chào bạn,\r\n\r\nNhằm trang bị cho sinh viên những kiến thức và kỹ năng cần thiết trong quá trình tìm kiếm việc làm, trong khuôn khổ Ngày hội Tân Sinh viên Thành phố Hồ Chí Minh lần thứ XXI – năm 2026, Hội Sinh viên trường phối hợp với Nhà Văn hóa Sinh viên Thành phố tổ chức Chương trình “Hành trang Tân Sinh viên 2026” với chuyên đề: “Job hay ‘bẫy’? - Kỹ năng tìm việc an toàn trong thời đại số”.\r\n\r\nTHÔNG TIN CHƯƠNG TRÌNH\r\n\r\n*\tThời gian: 09g00 - 11g00, ngày 27/9/2026 (Chủ nhật).\r\n*\tĐịa điểm: Nhà Văn hóa Sinh viên tại Khu đô thị Đại học Quốc gia TPHCM.\r\n*\tĐối tượng: Sinh viên đang theo học tại các trường Đại học, Cao đẳng và Trung cấp trên địa bàn TP. Hồ Chí Minh.\r\n*\tĐăng ký tham gia: Tại đây <https://example.com/link \r\n\r\nQuyền lợi khi tham gia:\r\n\r\n*\tNhận diện và phòng tránh các tin tuyển dụng giả mạo, đồng thời biết cách kiểm tra thông tin và bảo vệ dữ liệu cá nhân khi tìm việc.\r\n*\tTrang bị kỹ năng lựa chọn công việc bán thời gian phù hợp, an toàn và chủ động.\r\n*\tĐược công nhận hoạt động theo Quy chế sinh viên.\r\n\r\nĐừng để một cơ hội việc làm tưởng chừng hấp dẫn trở thành rủi ro không đáng có. Hãy chủ động trang bị cho mình những kiến thức cần thiết để tìm việc đúng cách, bảo vệ bản thân và lựa chọn công việc an toàn trong thời đại số.\r\n\r\nThân ái ./.\r\n\r\n--\r\n\r\n\r\n <https://example.com/link \r\n\r\n Hội Sinh viên trường Đại học Quốc tế\r\n | Văn phòng O1.111, Khu phố 33, P. Linh Xuân, TP. Hồ Chí Minh\r\n | Mobile: (028) 3724 4270 <tel:(028) 3724 4270> ; Ext. 3240\r\n | Email: hoisinhvien@iuyouth.edu.vn\r\n | Website: https:// <https://example.com/link iuyouth.edu.vn <https://example.com/link \r\n\r\n  <https://example.com/link \r\n\r\n <https://example.com/link \r\n\r\n <https://example.com/link \r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-27"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-27",
+      "start": "09:00:00",
+      "end": "11:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Submission received",
+   "sender_name": "bb@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-22T02:42:57.580000+00:00",
+   "thread_id": "E91D30D4C6E8494ABE4526349D57BAFA",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Mời sinh viên tham dự chuyên đề Dấu hiệu nhận biết các vấn đề tâm lý ban đầu",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-22T02:05:40.278000+00:00",
+   "thread_id": "9A25DAC9B7E53242BF971733C7B9C29E",
+   "text": "Mời sinh viên tham dự chuyên đề Dấu hiệu nhận biết các vấn đề tâm lý ban đầu ngày 24/09/2026.\r\n <https://example.com/link \t\r\nPhòng Công tác Sinh viên thông báo về chuyên đề Dấu hiệu nhận biết các vấn đề tâm lý ban đầu.\r\n\r\nThông tin về chương trình:\r\n\r\nThời gian: 14g30, ngày 24/09/2026 (thứ Năm).\r\n\r\nĐịa điểm: Phòng A1.206\r\n\r\nLink đăng ký: https://example.com/link <https://example.com/link \r\n\r\nSinh viên tham gia sẽ được cộng điểm rèn luyện theo quy định. Sinh viên đăng ký nhưng không tham gia sẽ bị trừ điểm rèn luyện theo quy định.\r\n\r\nThông tin chi tiết và đăng ký tham gia xem tại:\r\nhttps://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\nPhòng Công tác Sinh viên\r\n\r\n <https://example.com/link \tThe Office of Student Services (O1.105)\r\n\r\nInternational University\r\nPortal: oss.hcmiu.edu.vn <https://example.com/link \r\nWebsite: iuoss.com <https://example.com/link \r\nFanpage: facebook.com/hcmiuoss <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2026, All rights reserved. Office of Student Services.\r\n\r\nEm nhận được email này vì em là sinh viên Trường Đại học Quốc tế.\r\n\r\nĐể từ chối nhận email của trường, em có thể nhấn vào đây <https://example.com/link .\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-24"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-24",
+      "start": "14:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Ticket: (private)] Nguyễn Student Namẽ – Yêu cầu mới được tạo",
+   "sender_name": "OSS HCMIU",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-22T01:55:09.845000+00:00",
+   "thread_id": "657BF8E16CB0C74E9F5518516ABEC745",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "requests_account"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Ticket: (private)] Nguyễn Student Namẽ – Chỉ định cho part_time",
+   "sender_name": "OSS HCMIU",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-22T01:55:05.063000+00:00",
+   "thread_id": "2ECBFA66153EED44A480B875898733F4",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "requests_account"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Reset your password",
+   "sender_name": "Reset Password",
+   "sender_address": "noreply.cis@hcmiu.edu.vn",
+   "received_at": "2026-09-22T01:33:25.790000+00:00",
+   "thread_id": "83CB3BCDC2088C4483DE4E52BAD90BC9",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "requests_account"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HTSV] Đăng ký tham dự Lễ Bế mạc Hội thao Sinh viên ĐHQG-HCM năm 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-22T01:15:21.543000+00:00",
+   "thread_id": "1BA952C4613AFB4999EDC6092B6F7022",
+   "text": " <https://example.com/link \t\r\nThân gửi em sinh viên,\r\n\r\nPhòng CTSV thân mời các em sinh viên đăng ký tham gia lễ Bế mạc HTSV Đại học Quốc gia TP.HCM năm 2026\r\n\r\nLink đăng ký: https://example.com/link <https://example.com/link \r\n\r\nThông tin đăng ký Lễ Bế mạc HTSV như sau:\r\n\r\n <https://example.com/link Thời gian: 9g45 ngày 30/9/2026 (Thứ Tư)\r\n\r\n <https://example.com/link Địa điểm: Nhà học thể dục thể thao đa năng, Trường Đại học Khoa học Xã hội và Nhân văn, cơ sở Linh Xuân, Thành phố Hồ Chí Minh.\r\n\r\n <https://example.com/link Thời hạn đăng ký: đến hết ngày 22/9/2026 hoặc cho đến khi đủ số lượng.\r\n\r\n <https://example.com/link Quyền lợi:\r\n\r\n <https://example.com/link Được cộng điểm rèn luyện.\r\n\r\n <https://example.com/link Giao lưu, kết bạn đến từ nhiều trường Đại học thành viên ĐHQG-HCM.\r\n\r\nLưu ý:\r\n\r\n- Sinh viên đã đăng ký phải có mặt đúng giờ để điểm danh;\r\n\r\n- Sinh viên đã đăng ký nếu tự ý vắng mặt mà không xin phép sẽ bị trừ điểm rèn luyện theo quy định.\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-22",
+     "2026-09-30"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-30",
+      "start": "09:45:00"
+     }
+    ],
+    "register_by": "2026-09-22",
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[THƯ MỜI] SINH VIÊN THAM GIA WORKSHOP “TỪ GIẢNG ĐƯỜNG TỚI CÔNG SỞ”",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-21T06:47:48.459000+00:00",
+   "thread_id": "A5561350187CAD40B3D3F0220624BB95",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nUHub Network câu lạc bộ trực thuộc Phòng Công tác Sinh viên trường đại học Quốc tế phối hợp cùng TCL Việt Nam tổ chức chương trình Worksho \" Từ giảng đường tới công sở\"\r\n\r\nThông tin chi chương trình:\r\n⏰Thời gian: 08:30 - 11:30, Thứ Sáu,  ngày 25/09/2026.\r\n\r\n📍 Địa điểm: A2.307, Trường Đại học Quốc tế (IU).\r\n\r\n💫 Đối tượng tham gia: Sinh viên năm 3, năm 4 (Ưu tiên các ngành Công nghệ Thông tin, Điện – Điện tử và Quản lý Công nghiệp).\r\n\r\n👉 Đăng ký ngay tại đây: https://example.com/link <https://example.com/link \r\n\r\nQuyền lợi khi tham gia:\r\n\r\n✨ Gặp gỡ và lắng nghe chia sẻ từ diễn giả giàu kinh nghiệm trong lĩnh vực nhân sự.\r\n\r\n✨ Khám phá môi trường làm việc và hành trình phát triển nghề nghiệp tại TCL.\r\n\r\n✨ Bỏ túi những kiến thức và kỹ năng cần thiết cho hành trình nghề nghiệp. \r\n\r\n✨ Tích lũy điểm rèn luyện. \r\n\r\nĐừng quên theo dõi fanpage “UHub Network <https://example.com/link ” và “Ngày Hội Việc Làm - Job Fair <https://example.com/link ” để cập nhật thông tin mới nhất về những chương trình sắp tới nhé!\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-25"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-25",
+      "start": "08:30:00",
+      "end": "11:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Re: Slide bài tập bị thiếu số trang",
+   "sender_name": "Duong Mai Nga",
+   "sender_address": "dmnga@hcmiu.edu.vn",
+   "received_at": "2026-09-21T04:03:00.731000+00:00",
+   "thread_id": "48155A007BFDFF4EA623A1E7485C3549",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Submission received",
+   "sender_name": "bb@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-20T13:49:45.288000+00:00",
+   "thread_id": "436C7A39CBE2564392B4D583ED760E48",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Bạn đã được thêm vào một nhóm trong Microsoft Teams",
+   "sender_name": "Dang Huu Hai",
+   "sender_address": "dhhai@hcmiu.edu.vn",
+   "received_at": "2026-09-19T09:57:08.017000+00:00",
+   "thread_id": "92E221D0123E3148ADEF4A0B312EED23",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class",
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] Thư Mời Tham Gia Workshop Nha Khoa Học Đường 2026: “Hiểu Đúng - Chăm Đúng - Chủ Động Bảo Vệ Sức Khỏe Răng Miệng” [UHUB NETWORK x BIK]",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-19T09:19:51.751000+00:00",
+   "thread_id": "1502019F71E76C47A46CA5922AAA87BA",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nUHub Network câu lạc bộ trực thuộc Phòng Công tác Sinh viên trường đại học Quốc tế phối hợp cùng Nha khoa Quốc tế BIK tổ chức chương trình Workshop Nha khoa Học Đường 2026 \"\r\n\r\n \r\n\r\n⏰Thời gian: 08:00 - 12:00, ngày 24/09/2026.\r\n📍 Địa điểm: Phòng A1.206, Trường Đại học Quốc tế (IU).\r\n💫Đối tượng tham gia: Toàn thể sinh viên Trường Đại học Quốc tế.\r\n\r\n🔗 Đăng ký tham gia ngay tại: https://example.com/link <https://example.com/link \r\n\r\nKhi tham gia chương trình, bạn sẽ được:  \r\n\r\n- Tư vấn trực tiếp 1:1 cùng đội ngũ bác sĩ Nha khoa Quốc tế BIK.  \r\n\r\n- Kiểm tra và tư vấn ban đầu về chỉnh nha, răng khôn, sâu răng và thẩm mỹ răng.  \r\n\r\n- Cung cấp kiến thức và cẩm nang chăm sóc răng miệng phù hợp với sinh viên. \r\n\r\n- Tiếp cận chính sách hỗ trợ dành riêng cho người tham gia khi đăng ký thăm khám chuyên sâu tại BIK.\r\n\r\n- Tích lũy điểm rèn luyện.  \r\n\r\nĐừng quên theo dõi fanpage “UHub Network <https://example.com/link ” và “Ngày Hội Việc Làm - Job Fair <https://example.com/link ” để cập nhật thông tin mới nhất về những chương trình sắp tới nhé!\r\n\r\nThân mến,  \r\n\r\nUHub Network.\r\n\r\n \r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-24"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-24",
+      "start": "08:00:00",
+      "end": "12:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "THÔNG BÁO: CHƯƠNG TRÌNH SINH HOẠT CÔNG DÂN GIỮA KHÓA (2026 - 2027)",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-18T17:49:16.763000+00:00",
+   "thread_id": "0605439D6A244A4696381FFF42579F44",
+   "text": "Thông tin đăng ký và lịch học Sinh hoạt Công dân Giữa khóa năm học 2026 - 2027.\r\n <https://example.com/link \t\r\nTHÔNG BÁO: CHƯƠNG TRÌNH SINH HOẠT CÔNG DÂN GIỮA KHÓA (2026 - 2027)\r\n\r\nĐỐI TƯỢNG THAM GIA\r\n\r\nSinh viên Khóa 2025, Khóa 2024 và sinh viên từ Khóa 2023 trở về trước chưa hoàn thành SHCD GK.\r\n\r\nTHỜI GIAN ĐĂNG KÝ\r\n\r\nTừ ngày 20/09 đến 22/09/2026. Lưu ý: Thời gian đăng ký hợp lệ tùy thuộc từng đối tượng cụ thể.\r\n\r\nTHỜI GIAN HỌC TẬP\r\n\r\nSinh viên đăng ký và tham gia học tập duy nhất 01 ngày (gồm 4 chuyên đề). Sinh viên chọn 1 trong 4 ngày sau:\r\n\r\n*\tNgày 26/09/2026 (thứ Bảy)\r\n*\tNgày 27/09/2026 (Chủ nhật)\r\n*\tNgày 14/11/2026 (thứ Bảy)\r\n*\tNgày 15/11/2026 (Chủ nhật)\r\n\r\nXEM THÔNG TIN CHI TIẾT VÀ ĐĂNG KÝ TẠI:\r\n\r\nhttps://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\nPhòng Công tác Sinh viên\r\n\r\n <https://example.com/link \tThe Office of Student Services (O1.105)\r\n\r\nInternational University\r\nPortal: oss.hcmiu.edu.vn <https://example.com/link \r\nWebsite: iuoss.com <https://example.com/link \r\nFanpage: facebook.com/hcmiuoss <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2026, All rights reserved. Office of Student Services.\r\n\r\nEm nhận được email này vì em là sinh viên Trường Đại học Quốc tế.\r\n\r\nĐể từ chối nhận email của trường, em có thể nhấn vào đây <https://example.com/link .\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-20",
+     "2026-09-22",
+     "2026-09-26",
+     "2026-09-27",
+     "2026-11-14",
+     "2026-11-15"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Submission received",
+   "sender_name": "bb@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-18T15:37:48.215000+00:00",
+   "thread_id": "54A5C073D1489247B78FDD2650CCBE30",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Submission received",
+   "sender_name": "bb@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-18T15:12:22.673000+00:00",
+   "thread_id": "CE57039BE6A7604B83C7119941A9381B",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "THÔNG BÁO: CHƯƠNG TRÌNH SINH HOẠT CÔNG DÂN GIỮA KHÓA (2026 - 2027)",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-18T09:14:38.326000+00:00",
+   "thread_id": "8069C283DF361D4187427398020A02C2",
+   "text": "Thông tin đăng ký và lịch học Sinh hoạt Công dân Giữa khóa năm học 2026 - 2027.\r\n <https://example.com/link \t\r\nTHÔNG BÁO: CHƯƠNG TRÌNH SINH HOẠT CÔNG DÂN GIỮA KHÓA (2026 - 2027)\r\n\r\nĐỐI TƯỢNG THAM GIA\r\n\r\nSinh viên Khóa 2025, Khóa 2024 và sinh viên từ Khóa 2023 trở về trước chưa hoàn thành SHCD GK.\r\n\r\nTHỜI GIAN ĐĂNG KÝ\r\n\r\nTừ ngày 20/09 đến 22/09/2026. Lưu ý: Thời gian đăng ký hợp lệ tùy thuộc từng đối tượng cụ thể.\r\n\r\nTHỜI GIAN HỌC TẬP\r\n\r\nSinh viên đăng ký và tham gia học tập duy nhất 01 ngày (gồm 4 chuyên đề). Sinh viên chọn 1 trong 4 ngày sau:\r\n\r\n*\tNgày 26/09/2026 (thứ Bảy)\r\n*\tNgày 27/09/2026 (Chủ nhật)\r\n*\tNgày 14/11/2026 (thứ Bảy)\r\n*\tNgày 15/11/2026 (Chủ nhật)\r\n\r\nXEM THÔNG TIN CHI TIẾT VÀ ĐĂNG KÝ TẠI:\r\n\r\nhttps://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\nPhòng Công tác Sinh viên\r\n\r\n <https://example.com/link \tThe Office of Student Services (O1.105)\r\n\r\nInternational University\r\nPortal: oss.hcmiu.edu.vn <https://example.com/link \r\nWebsite: iuoss.com <https://example.com/link \r\nFanpage: facebook.com/hcmiuoss <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2026, All rights reserved. Office of Student Services.\r\n\r\nEm nhận được email này vì em là sinh viên Trường Đại học Quốc tế.\r\n\r\nĐể từ chối nhận email của trường, em có thể nhấn vào đây <https://example.com/link .\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-20",
+     "2026-09-22",
+     "2026-09-26",
+     "2026-09-27",
+     "2026-11-14",
+     "2026-11-15"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] Mời sinh viên ủng hộ trường theo chương trình [IU x beFood] Bứt phá Vòng Chung Kết Đại Chiến Học Đường 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-17T12:14:57.622000+00:00",
+   "thread_id": "61DBB61C97D96245AD6747BDE8DD0CE9",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nChặng đua beFood Back To School 2026 đã chính thức bước vào Vòng Chung Kết (14/09 - 20/09). Với sự đồng lòng và nhiệt huyết của các em, IU đã xuất sắc vượt qua vòng bảng để góp mặt trong Top 8 đội mạnh nhất toàn thành phố.\r\n\r\nĐể giữ vững phong độ và tiến thẳng đến ngôi vị Quán quân, mang về giải thưởng học bổng 25.000.000 VNĐ cho nhà trường cũng như cơ hội rinh chiếc Laptop trị giá đến 19.000.000 VNĐ cho cá nhân có doanh thu tích lũy cao nhất, Ban tổ chức và Đội ngũ dự án sinh viên rất cần sự chung tay của mỗi một sinh viên IU!\r\n\r\n🚀 Cách thức tham gia ủng hộ trường:\r\nĐặt món mỗi ngày: Khi sử dụng dịch vụ beFood trên ứng dụng be, hãy nhớ nhập mã trường [Mã trường IU] để áp dụng ưu đãi giảm 30% (tối đa 40K cho đơn từ 80K) và tích lũy điểm số cho IU.\r\nTối ưu hóa điểm số:\r\nRủ bạn bè đặt Đơn Nhóm (Group Order) để nhân đôi điểm số (x2).\r\nGiới thiệu bạn bè mới (New User) để nhân ba điểm số (x3).\r\nThanh toán qua ví đối tác để kích hoạt hệ số nhân điểm cao nhất (lên đến x2.0).\r\n\r\n🎁 Đặc quyền dành cho các em:\r\nHãy ghé ngay Phòng Công Tác Sinh Viên để nhận những phần quà vô cùng hấp dẫn:\r\nĐịa điểm: O1.105\r\nThời gian: 8h00 - 11h30 & 13h00 - 16h00 (Từ nay đến 20/09).\r\nMỗi đơn hàng các em đặt không chỉ giúp tiết kiệm chi phí sinh hoạt hằng ngày mà còn là một \"viên gạch\" quý giá đưa tên tuổi IU vinh danh trên bảng xếp hạng toàn thành phố.\r\nHãy mở app be ngay, nhập mã trường và cùng nhau \"cháy\" hết mình vì màu cờ sắc áo IU nhé!\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "promotion"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-20"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-20",
+      "start": "08:00:00",
+      "end": "11:30:00"
+     },
+     {
+      "day": "2026-09-20",
+      "start": "13:00:00",
+      "end": "16:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Physics 4_S1_2026-27_G01: Link học online sáng thứ Sáu, 18/9/2026, 8g00-9g40",
+   "sender_name": "Đỗ Thu Lan - dtlan@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-17T09:30:57.232000+00:00",
+   "thread_id": "4521E5E7930B7F43B39FD587B1028406",
+   "text": "Link:\r\n\r\nPhysics 4\r\nFriday, September 18\r\nTime zone: Asia/Ho_Chi_Minh\r\nGoogle Meet joining info\r\nVideo call link: https://example.com/link\r\n\r\n\r\n\r\n",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [
+     "2026-09-18"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-18",
+      "start": "08:00:00",
+      "end": "09:40:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": "Link học online sáng thứ Sáu, 18/9/2026, 8g00-9g40",
+    "class_changes": [
+     {
+      "course_code": "PH012IU",
+      "kind": "online",
+      "day": "2026-09-18"
+     }
+    ]
+   }
+  },
+  {
+   "subject": "THÔNG TIN VỀ CUỘC THI TIẾNG ANH STAR AWARD - VÒNG THI TRẮC NGHIỆM STARSHIP",
+   "sender_name": "ĐOÀN TRƯỜNG ĐH QUỐC TẾ  - IUYOUTH",
+   "sender_address": "iuyouth@hcmiu.edu.vn",
+   "received_at": "2026-09-17T08:21:56.610000+00:00",
+   "thread_id": "379BA9B5C19A444EAC88D06EB894C38E",
+   "text": "Thân gửi các bạn sinh viên,\r\n\r\nNhằm tạo môi trường để sinh viên rèn luyện, nâng cao năng lực ngoại ngữ, đồng thời tăng cường cơ hội giao lưu, học hỏi và thử sức trong sân chơi dành cho sinh viên trên toàn quốc, Đoàn Trường Đại học Quốc tế triển khai đến toàn thể sinh viên Cuộc thi tiếng Anh  toàn quốc STAR AWARDS 2026, với chủ đề “Z Start-up Competition: Craft to Rise”. Cuộc thi đang diễn ra Vòng thi trắc nghiệm trực tuyến STARSHIP, với thông tin cụ thể như sau:\r\n\r\n1. Hình thức và nội dung thi\r\n\r\n- Thí sinh thực hiện 40 câu hỏi trong thời gian 30 phút, dưới hình thức trắc nghiệm hoặc điền khuyết.\r\n- Nội dung thi xoay quanh chủ đề của Cuộc thi và kiến thức, kỹ năng tiếng Anh, bao gồm từ vựng, ngữ pháp, nghe hiểu.\r\n- Mỗi thí sinh được tham gia tối đa 01 lượt thi/tuần trong thời gian diễn ra Vòng STARSHIP.\r\n- Trong trường hợp các thí sinh bằng điểm, thời gian hoàn thành bài thi sẽ là căn cứ để xác định thứ hạng.\r\n\r\n2. Thời gian tổ chức\r\n\r\nVòng thi STARSHIP được tổ chức từ ngày 04/9/2026 đến hết ngày 05/10/2026, gồm 04 tuần thi:\r\n\r\n- Tuần 1: Từ 00g00 ngày 04/9 đến 23g59 ngày 13/9/2026;\r\n- Tuần 2: Từ 00g00 ngày 14/9 đến 23g59 ngày 20/9/2026;\r\n- Tuần 3: Từ 00g00 ngày 21/9 đến 23g59 ngày 27/9/2026;\r\n- Tuần 4: Từ 00g00 ngày 28/9 đến 23g59 ngày 05/10/2026.\r\n\r\nSinh viên đăng ký và tham gia thi trực tuyến tại: https://example.com/link <https://example.com/link \r\n\r\n3. Giải thưởng và cơ hội vào vòng tiếp theo\r\n\r\nHằng tuần, Top 06 thí sinh có kết quả cao nhất của mỗi cụm thi sẽ được vinh danh và nhận giải thưởng gồm 500.000 đồng cùng quà tặng từ Nhà tài trợ Wilmar CLV. Mỗi thí sinh chỉ được nhận giải thưởng 01 lần trong suốt mùa thi. Sau khi kết thúc Vòng STARSHIP, 100 thí sinh xuất sắc của mỗi cụm thi sẽ được lựa chọn để tiếp tục tham gia Vòng Chọn lọc. \r\n\r\nLưu ý về việc ghi nhận điểm rèn luyện theo quy chế sinh viên: \r\n- Mỗi tài khoản được tham gia tối đa 01 lượt thi/tuần. Cuộc thi diễn ra trong 03 tuần, vì vậy mỗi sinh viên có tối đa 03 lượt thi trong toàn bộ thời gian diễn ra cuộc thi\r\n- Điểm rèn luyện chỉ được ghi nhận 01 lần duy nhất trong vòng thi trắc nghiệm (Sinh viên có thể nộp minh chứng bất cứ tuần nào trong thời gian diễn ra cuộc thi) không cộng dồn theo số lần đạt từ 250 điểm trở lên.\r\n- Sinh viên đạt từ 250 điểm trở lên ở ít nhất 01 lượt thi sẽ đủ điều kiện được ghi nhận điểm rèn luyện trong học kỳ.\r\n- Sinh viên sau khi hoàn tất bài thi thì chụp màn hình và nộp minh chứng tại đây: https://example.com/link <https://example.com/link \r\n- Sinh viên đủ điều kiện vào các vòng thi tiếp theo, vui lòng chủ động liên hệ với Đoàn Trường để được cộng điểm cho từng vòng thi tiếp theo. \r\n\r\nTrân trọng.\r\n\r\n \r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-20",
+     "2026-09-21",
+     "2026-09-27",
+     "2026-09-28",
+     "2026-10-05"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-20",
+      "start": "23:59:00"
+     },
+     {
+      "day": "2026-09-21",
+      "start": "00:00:00"
+     },
+     {
+      "day": "2026-09-27",
+      "start": "23:59:00"
+     },
+     {
+      "day": "2026-09-28",
+      "start": "00:00:00"
+     },
+     {
+      "day": "2026-10-05",
+      "start": "23:59:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Web Application Development_S1_2026-27_G02: Online Class Notification – Web Application – 22 September 2026",
+   "sender_name": "Phuc Gia Ly - lgphuc@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-15T16:01:21.923000+00:00",
+   "thread_id": "5BC5F1400707A9478D1F20148EBEE26E",
+   "text": "Dear Students,\r\n\r\nPlease be informed that our Web Application class will be conducted online via Microsoft Teams.\r\n\r\n\r\n\r\n\r\nDate: Tuesday, 22 September 2026 \r\nTime: From 8:00 AM\r\nPlatform: Microsoft Teams\r\n\r\n\r\nOnline Class Link: \r\n\r\nhttps://example.com/link \r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nPlease join the meeting on time and make sure your Microsoft Teams account and internet connection are ready before the class.\r\n\r\nSee you online on the day.\r\n\r\n\r\n\r\n\r\nBest regards,\r\n\r\nLý Gia Phúc, Ph.D.\r\n\r\n\r\n\r\n",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [
+     "2026-09-22"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-22",
+      "start": "08:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": "Online Class Notification – Web Application – 22 September 2026",
+    "class_changes": [
+     {
+      "course_code": "IT093IU",
+      "kind": "online",
+      "day": "2026-09-22"
+     }
+    ]
+   }
+  },
+  {
+   "subject": "Your Teams meeting recording has expired and is now deleted",
+   "sender_name": "SharePoint Online",
+   "sender_address": "no-reply@sharepointonline.com",
+   "received_at": "2026-09-14T11:02:48.349000+00:00",
+   "thread_id": "4BE199C91F9FAE4F9D34E1610A7BD0D0",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] TIẾP NHẬN SINH VIÊN THAM GIA WORKSHOP: HỌC IELTS HIỆU QUẢ VỚI PHƯƠNG PHÁP TƯ DUY LINEARTHINKING  ĐĂNG KÝ",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-14T05:05:08.489000+00:00",
+   "thread_id": "FE0DE990EDAC2B418273F965C18F3220",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nPhòng Công tác Sinh viên gửi thông báo tiếp nhận sinh viên đăng ký tham gia WORKSHOP: HỌC IELTS HIỆU QUẢ VỚI PHƯƠNG PHÁP TƯ DUY LINEARTHINKING\r\n\r\nThông tin chi tiết chương trình: Thời gian: 8g00 - 11g30 Ngày 17/09/2026 (Thứ Năm).\r\n\r\nĐịa điểm: Phòng A1.309 | Trường Đại học Quốc tế – Đại học Quốc gia TP.HCM.  \r\n\r\nQuyền lợi khi tham gia:\r\n\r\n✨ Tiếp cận phương pháp tư duy Linearthinking độc quyền giúp tối ưu hóa thời gian và nâng band điểm hiệu quả.\r\n\r\n✨ Trực tiếp giao lưu, hỏi đáp và lắng nghe kinh nghiệm thực chiến từ chuyên gia ngôn ngữ.\r\n\r\n✨ Nhận các phần quà, tài liệu và ưu đãi học tập hấp dẫn từ DOL English.\r\n\r\n✨ Nhận điểm rèn luyện.\r\n\r\nĐăng ký tham gia chương trình tại đây: https://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-17"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-17",
+      "start": "08:00:00",
+      "end": "11:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Re: Question About the Physics Textbook",
+   "sender_name": "Duong Mai Nga",
+   "sender_address": "dmnga@hcmiu.edu.vn",
+   "received_at": "2026-09-13T02:10:18.326000+00:00",
+   "thread_id": "B2DB678930587B4987B643ED47D5F8F0",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Submission received",
+   "sender_name": "bb@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-11T16:23:23.951000+00:00",
+   "thread_id": "87911F54715E1243AE51AF807C5CC133",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Your Teams meeting recording has expired and is now deleted",
+   "sender_name": "SharePoint Online",
+   "sender_address": "no-reply@sharepointonline.com",
+   "received_at": "2026-09-11T11:02:54.003000+00:00",
+   "thread_id": "F7C9B4389F5E2141873DB701A584F5CD",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Bạn đã được thêm vào một nhóm trong Microsoft Teams",
+   "sender_name": "Dang Huu Hai",
+   "sender_address": "dhhai@hcmiu.edu.vn",
+   "received_at": "2026-09-11T06:37:16.141000+00:00",
+   "thread_id": "27EE7BA87A8E7F4DA22545E20880AF04",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class",
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Bạn đã được thêm vào một nhóm trong Microsoft Teams",
+   "sender_name": "Dang Huu Hai",
+   "sender_address": "dhhai@hcmiu.edu.vn",
+   "received_at": "2026-09-11T06:32:48.785000+00:00",
+   "thread_id": "E66A61E7CDCEFC4EAFCC6FBDD12E0C43",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class",
+     "system_notice"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Mời sinh viên tham dự Talkshow: “THÍCH NGHI VỚI HÀNH TRÌNH ĐẠI HỌC”",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-11T02:05:34.232000+00:00",
+   "thread_id": "184D8B1B35C7D346BAA2FB9F1A69683D",
+   "text": "Mời sinh viên tham dự Talkshow “Thích nghi với hành trình đại học”.\r\n <https://example.com/link \t\r\nPhòng Công tác Sinh viên thông báo về chương trình Talkshow: “THÍCH NGHI VỚI HÀNH TRÌNH ĐẠI HỌC” nằm trong chuỗi chuyên đề tham vấn tâm lý dành cho sinh viên Trường Đại học Quốc tế.\r\n\r\nThông tin chi tiết và đăng ký tham gia xem tại:\r\nhttps://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\nPhòng Công tác Sinh viên\r\n\r\n <https://example.com/link \tThe Office of Student Services (O1.105)\r\n\r\nInternational University\r\nPortal: oss.hcmiu.edu.vn <https://example.com/link \r\nWebsite: iuoss.com <https://example.com/link \r\nFanpage: facebook.com/hcmiuoss <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2026, All rights reserved. Office of Student Services.\r\n\r\nEm nhận được email này vì em là sinh viên Trường Đại học Quốc tế.\r\n\r\nĐể từ chối nhận email của trường, em có thể nhấn vào đây <https://example.com/link .\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia Talkshow về “ An toàn tình dục & Sức khỏe sinh sản cho sinh viên” và Chương trình Giao lưu Âm nhạc Acoustic",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-10T10:45:56.372000+00:00",
+   "thread_id": "D99619B4673ADF4D8215E0865A6A37F1",
+   "text": "Thân chào bạn,\r\n\r\nNhằm chào đón và tạo cơ hội để các bạn sinh viên giao lưu, kết nối, tìm hiểu những thông tin thú vị và bổ ích về môi trường học tập cũng như những hoạt động sinh viên đa dạng trên chặng đường Đại học, Hội Sinh viên trường tổ chức các chương trình sau:\r\n\r\n1. Talkshow về “ An toàn tình dục & Sức khỏe sinh sản cho sinh viên”\r\n- Thời gian: 16g00 - 17g30, ngày 12/9/2026 (Thứ Bảy).\r\n\r\n- Địa điểm: Phòng A1.409, Trường Đại học Quốc tế, ĐHQG-HCM.\r\n\r\n- Thông tin diễn giả:\r\n+ ThS. Nguyễn Khánh Chi: Giám đốc Đào tạo Glink Academy\r\n+ Bs. CKI Trần Lê Đức Trí: Chuyên gia Y tế Glink Academy\r\n\r\n2. Chương trình Giao lưu âm nhạc Acoustic\r\n\r\n- Thời gian: 11g00 - 13g00, 11/9/2026 (Thứ Sáu).\r\n\r\n- Địa điểm: Zero Coffee, Trường Đại học Quốc tế, ĐHQG-HCM.\r\n\r\nĐăng ký tham gia các hoạt động: Tại đây <https://example.com/link .\r\n\r\nQuyền lợi khi tham gia các chương trình:\r\n\r\n- Được cộng điểm rèn luyện theo Quy chế Sinh viên và được cấp giấy chứng nhận tham gia hoạt động.\r\n\r\n- Nhận được những phần quà hấp dẫn đến từ Ban Tổ chức chương trình.\r\n\r\n- Cơ hội giao lưu, học hỏi cùng bạn bè đồng trang lứa và được giải đáp những thắc mắc, trăn trở về trên các lĩnh vực.\r\n\r\nHội Sinh viên trường mong muốn mang đến những trải nghiệm ý nghĩa, gắn kết và đồng hành cùng Tân Sinh viên trong hành trình đầu tiên tại IU. Hẹn gặp bạn tại Tuần lễ Chào đón Tân Sinh viên – Freshers' Week 2026.\r\n\r\nThân ái.\r\n\r\n--\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-11",
+     "2026-09-12"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-11",
+      "start": "11:00:00",
+      "end": "13:00:00"
+     },
+     {
+      "day": "2026-09-12",
+      "start": "16:00:00",
+      "end": "17:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Re: TA Physics 1",
+   "sender_name": "Duong Mai Nga",
+   "sender_address": "dmnga@hcmiu.edu.vn",
+   "received_at": "2026-09-09T08:35:52.474000+00:00",
+   "thread_id": "12BD572583C3C34181580ECD35B73946",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Re: TA Physics 1",
+   "sender_name": "Duong Mai Nga",
+   "sender_address": "dmnga@hcmiu.edu.vn",
+   "received_at": "2026-09-09T08:04:40.173000+00:00",
+   "thread_id": "12BD572583C3C34181580ECD35B73946",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] Casting Liên hoan Âm nhạc Học sinh, Sinh viên Đại học Quốc gia TP.HCM năm 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-09T03:45:33.597000+00:00",
+   "thread_id": "1324F34032CB484B8C4CA1397443FCA2",
+   "text": " <https://example.com/link \t\r\nThân gửi các em,\r\n\r\nTrường Đại học Quốc tế thông báo đến em về việc mở xét tuyển thành viên đội thi tham gia chương trình Liên hoan Âm nhạc Học sinh, Sinh viên Đại học Quốc gia TP.HCM năm 2026, cụ thể như sau:\r\n\r\n*\tĐối tượng: Tất cả sinh viên đang học tập tại Trường Đại học Quốc tế – ĐHQG-HCM có đam mê và mong muốn tham gia đội thi.\r\n\r\n*\tThời gian: 16g00 – 17g00 | Thứ Tư, 09/09/2026\r\n\r\n*\tĐịa điểm: phòng A1.208\r\n\r\n*\tLink đăng ký: https://example.com/link <https://example.com/link \r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-09"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-09",
+      "start": "16:00:00",
+      "end": "17:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Physics 4_S1_2026-27_G01: Exercises Physics 4",
+   "sender_name": "Đỗ Thu Lan - dtlan@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-06T12:32:49.994000+00:00",
+   "thread_id": "CA52FE14013C464F99EADC7A1AF099EA",
+   "text": "Dear students,\r\n\r\nYou can find here the extra exercises of physics 4. You should do them all at home.\r\n\r\nYou do not have to submit your solution. They are for you to practice.\r\n\r\nGood luck!\r\n\r\nYour teacher,\r\n\r\nDr. Đỗ Thu Lan\r\n\r\n\r\n\r\nPHYS4-CH1-ExtraProblem_New.pdf <https://example.com/link \r\n\r\nPHYS4-CH2-Light_ExtraProblems_New.pdf <https://example.com/link \r\n\r\nPHYS4-CH3_ExtraProblems_New.pdf <https://example.com/link \r\n\r\nPHYS4-CH4_ExtraProblems_New.pdf <https://example.com/link \r\n\r\nPHYS4-CH5-Nulear_ExtraProblem_New.pdf <https://example.com/link \r\n\r\n \r\n",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": "Exercises Physics 4",
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] NHẮC NHỞ HẠN CUỐI KHẢO SÁT SỰ HÀI LÒNG CỦA NGƯỜI HỌC VỚI TRẢI NGHIỆM HỌC TẬP TẠI ĐHQG-HCM NĂM 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-09-06T10:05:18.813000+00:00",
+   "thread_id": "8C4E5A51AFD79049B48EDC626E651A0F",
+   "text": " <https://example.com/link \t\r\nThân gửi các em,\r\n\r\n[SV đã thực hiện khảo sát vui lòng bỏ qua thông báo này]\r\n\r\nHôm nay là hạn cuối khảo sát sự hài lòng của người học với trải nghiệm học tập tại ĐHQG-HCM năm 2026. Các em tiếp tục làm khảo sát, cụ thể như sau:\r\n\r\n*\tĐối tượng: Tất cả sinh viên đang theo học tại trường (ngoại trừ tân sinh viên)\r\n\r\n*\tCách thức thực hiện: sinh viên đăng ký tài khoản tại https://example.com/link <https://example.com/link  và thực hiện khảo sát theo hướng dẫn TẠI ĐÂY <https://example.com/link \r\n\r\n*\tThời gian thực hiện: Hết ngày 06/9/2026.\r\n\r\n*\tSinh viên tham gia đánh giá sẽ được cộng điểm rèn luyện theo quy chế.\r\n\r\nLưu ý:\r\n\r\n*\tSinh viên vui lòng sử dụng email định dạng MSSV@student.hcmiu.edu.vn <mailto:MSSV@student.hcmiu.edu.vn>  khi liên hệ với nhà trường.\r\n\r\n*\tMọi thắc mắc sinh viên liên hệ về Phòng Công tác Sinh viên qua email: oss@hcmiu.edu.vn <mailto:oss@hcmiu.edu.vn> , điện thoại: 028.00000000 nhánh 3334.\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-06"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia Hoạt động sát hạch thể lực - Health Challenges",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-06T09:15:06.310000+00:00",
+   "thread_id": "5292CA33C81E1845A01049F9940FF1A5",
+   "text": "Thân chào bạn,\r\n\r\nNhằm nâng cao sức khỏe và nhận thức về tầm quan trọng của thể dục thể thao, Hội Sinh viên trường tổ chức “Hoạt động sát hạch thể lực - Health Challenges” với 04 trạm thử thách. Sinh viên hoàn thành đủ các hoạt động trong thời gian quy định sẽ được công nhận Danh hiệu “Thanh niên khỏe 2026”.\r\n\r\nThông tin về chi tiết về chương trình:\r\n- Thể lệ chi tiết của cuộc thi: Tại đây <https://example.com/link \r\n- Thời gian: 14g00 - 16g00, ngày 12/9/2026 (Thứ Bảy).\r\n- Địa điểm: Khuôn viên Trường Đại học Quốc tế, ĐHQG-HCM.\r\n- Đối tượng tham gia: Sinh viên trường Đại học Quốc tế, ĐHQG-HCM\r\n- Đăng ký tham gia: Tại đây <https://example.com/link \r\n\r\nQuyền lợi khi tham gia chương trình:\r\n- Được công nhận hoạt động theo Quy chế sinh viên và cấp Giấy chứng nhận “Thanh niên khỏe 2026” - một trong các tiêu chí của danh hiệu “Sinh viên 5 Tốt”.\r\n- Được rèn luyện và đánh giá sức khỏe của bản thân.\r\n\r\nLưu ý:\r\n- Sinh viên tham gia có mặt trước 10 - 15 phút để được điểm danh vào chương trình.\r\n- Sinh viên đảm bảo tham gia đầy đủ 04 trạm thử thách để đủ điều kiện được ghi nhận hoạt động.\r\n- Sinh viên đăng ký tham gia thường xuyên kiểm tra email để nhận thông báo mới nhất từ Ban Tổ chức.\r\n\r\nThông qua hoạt động lần này, Hội Sinh viên trường mong muốn tạo sân chơi năng động, vui vẻ để sinh viên tham gia được rèn luyện sức khỏe, nâng cao nhận thức về tinh thần thể dục thể thao. Vì vậy, các bạn còn chần chờ gì nữa mà không click vào link đăng ký tham gia ngay thôi nào!\r\n\r\nMọi thắc mắc về chương trình vui lòng liên hệ qua fanpage: IU UNION OF STUDENTS <https://example.com/link \r\n\r\nThân ái.\r\n\r\n---\r\n\r\n \r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-12"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-12",
+      "start": "14:00:00",
+      "end": "16:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia Chương trình Khám phá blockchain Avalanche và cơ hội nghề nghiệp Web3 cùng Team1",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-06T03:25:38.387000+00:00",
+   "thread_id": "445E531E8923554588D04D5545366FF0",
+   "text": "Thân chào bạn,\r\n\r\nBạn tò mò về Web3, Avalanche hay muốn thử tự tay xây dựng một ứng dụng onchain nhưng chưa biết bắt đầu từ đâu? Nhằm mang đến những kiến thức nền tảng về blockchain và cơ hội thực hành thực tế cho sinh viên, Hội Sinh viên trường phối hợp cùng đơn vị Avalanche tổ chức Chương trình Khám phá blockchain Avalanche và cơ hội nghề nghiệp Web3 cùng Team1.\r\n\r\nThông tin về chi tiết về chương trình:\r\n- Thời gian: 14g00 - 17g00, ngày 11/9/2026 (Thứ Sáu).\r\n- Địa điểm: Thông tin chi tiết sẽ thông báo sau.\r\n- Đối tượng tham gia: Sinh viên trường Đại học Quốc tế, ĐHQG-HCM\r\n- Đăng ký tham gia: Tại đây <https://example.com/link \r\n\r\nQuyền lợi khi tham gia chương trình:\r\n- Có cơ hội tìm hiểu về blockchain, Web3.\r\n\r\n- Được tự tay tạo Avalanche L1 và smart contract đầu tiên.\r\n\r\n- Gặp gỡ các builder và kết nối với cộng đồng Avalanche.\r\n\r\n- Cơ hội nhận phần thưởng và quà tặng hiện vật từ Avalanche và Team1 với tổng giá trị lên đến 10.000.000 VNĐ.\r\n- Được cộng điểm rèn luyện theo Quy chế Sinh viên.\r\n\r\nLưu ý:\r\n\r\n*\tĐể tham gia đầy đủ các hoạt động tại workshop, các bạn nhớ mang theo laptop để thực hành và chuẩn bị sẵn tài khoản Telegram và X (Twitter) để hoàn thành các task tại chương trình để có cơ hội nhận quà hấp dẫn.\r\n*\tCác bạn vui lòng có mặt trước thời gian diễn ra chương trình 10 - 15 phút để thuận tiện cho công tác điểm danh.\r\n*\tCăn cứ theo Quy chế Sinh viên, sinh viên sẽ bị trừ 05 điểm rèn luyện nếu đã đăng ký tham gia chương trình nhưng không tham dự hoặc xin phép không tham dự với lý do không chính đáng.\r\n*\tSinh viên cần tham gia chương trình tối thiểu 2 tiếng để được cộng điểm rèn luyện.\r\n*\tTrong trường hợp sinh viên rời khỏi chương trình trước thời gian quy định, Hội Sinh viên sẽ không tính điểm rèn luyện trừ khi sinh viên đó đã phản hồi thời gian tham dự được qua email kèm lý do phù hợp.\r\n\r\nThông qua hoạt động lần này, Hội Sinh viên trường mong muốn tạo sân chơi công nghệ năng động, giúp sinh viên tiếp cận với xu hướng Web3 và nâng cao kỹ năng thực chiến. Vì vậy, các bạn còn chần chờ gì nữa mà không click vào link đăng ký tham gia ngay thôi nào!\r\n\r\nMọi thắc mắc về chương trình vui lòng liên hệ qua fanpage: IU UNION OF STUDENTS <https://example.com/link \r\n\r\nThân ái.\r\n\r\n---\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-11"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-11",
+      "start": "14:00:00",
+      "end": "17:00:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia các chương trình của Tuần lễ Chào đón Tân Sinh viên Freshers Week 2026",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-05T09:20:42.600000+00:00",
+   "thread_id": "55FA83F57A61E5428A3A071159653D4A",
+   "text": "Thân chào bạn,\r\n\r\nNhằm chào đón và tạo cơ hội để các bạn sinh viên giao lưu, kết nối, tìm hiểu những thông tin thú vị và bổ ích về môi trường học tập cũng như những hoạt động sinh viên đa dạng trên chặng đường Đại học, Hội Sinh viên trường tổ chức Tuần lễ Chào đón Tân sinh viên Freshers' Week 2026 với các hoạt động từ ngày 07/9 - 12/9/2026: \r\n\r\n*\tIU Venture 2026\r\n*\tNgày hội CLB/ Đội/ Nhóm - Clubs’ Fair \r\n*\tTalkshow Giới thiệu về Danh hiệu Sinh viên 5 tốt, \"5 tốt - 5 Hành trình\"\r\n*\tTalkshow về An toàn tình dục & Sức khỏe sinh sản\r\n*\tTalkshow Sức khỏe Tâm thần cho sinh viên Đại học\r\n*\tChuỗi hoạt động InfoDay các CLB/ Đội/ Nhóm\r\n\r\n👉Thông tin chi tiết những chương trình của Tuần lễ: Thông tin chi tiết <https://example.com/link \r\n\r\n👉Đăng ký tham gia chương trình bạn quan tâm: Đăng ký <https://example.com/link \r\n\r\nQuyền lợi khi tham gia:\r\n\r\n- Được cộng điểm rèn luyện theo Quy chế Sinh viên và được cấp giấy chứng nhận tham gia hoạt động.\r\n\r\n- Nhận được những phần quà hấp dẫn đến từ Ban tổ chức chương trình.\r\n\r\n- Cơ hội giao lưu, học hỏi cùng bạn bè đồng trang lứa và được giải đáp những thắc mắc, trăn trở về trên các lĩnh vực.\r\n\r\nHội Sinh viên trường mong muốn mang đến những trải nghiệm ý nghĩa, gắn kết và đồng hành cùng Tân Sinh viên trong hành trình đầu tiên tại IU. Hẹn gặp bạn tại Tuần lễ Chào đón Tân Sinh viên – Freshers' Week 2026.\r\n\r\nThân ái./.\r\n\r\n--\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-07",
+     "2026-09-12"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Thư mời đăng ký tham gia Lễ Khai mạc Tuần lễ Chào đón Tân Sinh viên - Freshers’ Week 2026",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-09-05T02:40:34.272000+00:00",
+   "thread_id": "D55A4316A8802C43A0C6A25231F5342E",
+   "text": "Thân chào bạn,\r\n\r\nMở đầu cho chuỗi hoạt động chào đón năm học mới, Hội Sinh viên Trường Đại học Quốc tế, ĐHQG-HCM trân trọng tổ chức Lễ Khai mạc Tuần lễ Chào đón Tân Sinh viên (Freshers’ Week 2026) kết hợp Chương trình Giao lưu Âm nhạc giữa các Câu lạc bộ, Đội, Nhóm. Sự kiện đóng vai trò định hướng và giới thiệu toàn diện các nội dung hoạt động trong tuần lễ chào đón; đồng thời tạo không gian kết nối, giúp tân sinh viên thưởng thức các tiết mục nghệ thuật đặc sắc và chủ động hòa nhập vào phong trào sinh viên năng động tại trường.\r\n\r\nThông tin về chi tiết về chương trình:\r\n- Thời gian: 14g00 - 16g30, 08/9/2026 (Thứ Ba) \r\n- Địa điểm: Sân khấu chính Lễ Khai giảng Trường Đại học Quốc tế, ĐHQG-HCM.\r\n- Đối tượng tham gia: Sinh viên trường Đại học Quốc tế, ĐHQG-HCM\r\n- Đăng ký tham gia: Tại đây <https://example.com/link .\r\n\r\nQuyền lợi khi tham gia chương trình:\r\n- Được cộng điểm rèn luyện theo Quy chế Sinh viên.\r\n- Có cơ hội tìm hiểu về Tuần lễ Chào đón Tân sinh viên – Freshers’ Week 2026, giao lưu và khám phá các Câu lạc bộ/Đội/Nhóm cùng những hoạt động, chương trình nổi bật tại trường.\r\n- Được thưởng thức các tiết mục văn nghệ đặc sắc, tham gia hoạt động giao lưu và nhận những phần quà hấp dẫn từ Ban Tổ chức chương trình.\r\n\r\n📌 Lưu ý:\r\n- Sinh viên tham gia có mặt trước 30 phút để được điểm danh vào chương trình.\r\n- Sinh viên đảm bảo tham gia tối thiểu 3/4 thời lượng chương trình để đủ điều kiện được ghi nhận hoạt động.\r\n- Sinh viên đăng ký tham gia thường xuyên kiểm tra email để nhận thông báo mới nhất từ Ban Tổ chức.\r\n\r\nThông qua sự kiện mở màn lần này, Hội Sinh viên trường mong muốn mang đến một không gian tràn đầy năng lượng, giúp các bạn dễ dàng làm quen bạn bè, tìm hiểu thêm các câu lạc bộ và sẵn sàng hòa mình vào đời sống phong trào rực rỡ tại IU. Đừng bỏ lỡ cơ hội này, hãy nhanh tay nhấn vào link đăng ký tham gia ngay nhé!\r\n\r\nMọi thắc mắc về chương trình vui lòng liên hệ qua fanpage: IU UNION OF STUDENTS <https://example.com/link \r\n\r\nThân ái./.\r\n\r\n--\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-09-08"
+    ],
+    "sessions": [
+     {
+      "day": "2026-09-08",
+      "start": "14:00:00",
+      "end": "16:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Physics 4_S1_2026-27_G01: Welcome to physics 4 class, group 01, semester 1, academic year 2026-2027",
+   "sender_name": "Đỗ Thu Lan - dtlan@hcmiu.edu.vn",
+   "sender_address": "bb@hcmiu.edu.vn",
+   "received_at": "2026-09-02T12:40:44.213000+00:00",
+   "thread_id": "49B4C03FFE733348B747E1E3806C3B94",
+   "text": "Dear students,\r\n\r\nYou are welcome to physics 4 class, group 01 semester 1, academic year 2026-2027.\r\n\r\nYou can find attached here all the lessons of physics 4 : \r\n\r\nYou should print them all in order to use in class.\r\n\r\n\r\nPHYS4-CH1-WAVE-New.pdf <https://example.com/link \r\n\r\nPHYS4-CH2-LIGHT-New.pdf <https://example.com/link \r\n\r\nPHYS4-CH3-QUANTUMPHYSICS-New.pdf <https://example.com/link \r\n\r\nPHYS4-CH4-ATOMICPHYSICS_New.pdf <https://example.com/link \r\n\r\nPHYS4-CH5-REL-NUCLEAR-New.pdf <https://example.com/link \r\n\r\n\r\n\r\nGood luck for all !\r\n\r\nDr Đỗ Thu Lan\r\n\r\ndtlan@hcmiu.edu.vn\r\n",
+   "expected": {
+    "categories": [
+     "class"
+    ],
+    "from_lecturer": true,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": "Welcome to physics 4 class, group 01, semester 1, academic year 2026-2027",
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Cảm ơn bạn đã điền vào biểu mẫu này: CHECK-OUT: GEMINI ACADEMY FOR STUDENTS | WORKSHOP 3 ",
+   "sender_name": "Email cho biết đã nhận câu trả lời trong biểu mẫu",
+   "sender_address": "forms-receipts-noreply@google.com",
+   "received_at": "2026-08-31T13:46:30.767000+00:00",
+   "thread_id": "BABD5A2845348B419C3EA21B6D084C05",
+   "text": " <https://example.com/link \t\r\n\r\nCảm ơn bạn đã điền vào biểu mẫu này: CHECK-OUT: GEMINI ACADEMY FOR STUDENTS | WORKSHOP 3  <https://example.com/link \r\n\r\n <https://example.com/link \tBạn nhận được email này vì bạn đã điền vào biểu mẫu sau đây bằng địa chỉ email của mình. Đảm bảo rằng bạn nhận ra và tin tưởng biểu mẫu này trước khi sao chép hoặc nhấp vào bất kỳ đường liên kết nào. Nếu có vẻ đáng ngờ, báo cáo vi phạm <https://example.com/link . The content of this form is not created or endorsed by Google.\t\r\nBên dưới là nội dung đã gửi.\r\n\r\nCHECK-OUT: GEMINI ACADEMY FOR STUDENTS | WORKSHOP 3 \r\n\r\n\r\nThân chào bạn,\r\n\r\nCảm ơn bạn đã tham gia buổi talkshow Gemini Academy for Students – Workshop 3 - UNLOCK KỸ NĂNG MỀM & THIẾT KẾ LỐI SỐNG CÙNG GEMINI AI. \r\n\r\nLưu ý: Form sẽ đóng ngay sau khi chương trình kết thúc, BTC sẽ không ghi nhận bất kỳ trường hợp ngoại lệ nào đối với sinh viên không có kết quả được ghi nhận.\r\n\r\nĐừng quên follow fanpage “Ngày Hội Việc Làm - Job Fair” và fanpage “UHub Network” để cập nhật sớm nhất những thông tin quan trọng về chương trình.\r\n\r\n\r\nXin cảm ơn và hẹn gặp lại bạn ở những chương trình sắp tới!\r\n\r\n\r\nEmail *\r\n\r\nSTUDENT01@student.hcmiu.edu.vn\r\n\r\nHọ tên của bạn là? *\r\n\r\nStudent Name\r\n\r\nMã số sinh viên của bạn là? *\r\n\r\nSTUDENT01\r\n\r\nMinh chứng tham gia chương trình: Vui lòng tải lên ảnh chụp màn hình thể hiện bạn đã tham gia chương trình. *\r\n\r\nTệp đã gửi\r\n <https://example.com/link \t\tScreenshot_2026-08-31-20-45-42-566_us.zoom.videomeetings - 9 - Student Name.jpg\t\r\n\r\nBạn có muốn đóng góp ý kiến về cho chương trình không? *\r\n\r\nDa không\r\n\r\nBạn mong muốn UHub Network sẽ tổ chức những chủ đề Workshop nào trong thời gian tới? *\r\n\r\nDạ AI\r\n\t\r\nTạo Biểu mẫu Google của riêng bạn <https://example.com/link \t\r\nBiểu mẫu này có vẻ đáng ngờ không? Báo cáo <https://example.com/link \t",
+   "expected": {
+    "categories": [
+     "event"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[UHub Network x GOOGLE] Thư thông báo theo dõi tình trạng đăng ký tham gia chương trình “GEMINI ACADEMY FOR STUDENTS - WORKSHOP 3: KHƠI NGUỒN SÁNG TẠO CÙNG GEMINI AI”.",
+   "sender_name": "UHUB NETWORK",
+   "sender_address": "info@iujobhub.com",
+   "received_at": "2026-08-31T04:09:09.213000+00:00",
+   "thread_id": "4C46EAD30E80E14A94BC88D36E4EC383",
+   "text": "Thân chào bạn,\r\n\r\nUHub Network gửi lời cảm ơn đến bạn vì đã quan tâm và đăng ký tham gia chương trình “Gemini Academy for Students - Workshop 3: Khơi nguồn sáng tạo cùng Gemini AI”.\r\n\r\nUHub Network gửi các bạn <https://example.com/link Sheet theo dõi tình trạng đăng ký <https://example.com/link  để thuận tiện kiểm tra thông tin của mình.\r\n\r\n\r\n\r\nThông tin chi tiết chương trình:\r\n\r\n*\tThời gian: 19h30, Thứ Hai, ngày 31/08/2026.\r\n\r\n*\tHình thức: Tham gia trực tuyến qua nền tảng Zoom (đường link tham gia sẽ được gửi vào group Zalo).\r\n\r\n*\tLink group Zalo để cập thông tin: https://example.com/link \r\n\r\n*\tĐối tượng: Sinh viên Trường Đại học Quốc tế (IU).\r\n\r\nLưu ý:\r\n\r\n*\tVì số lượng đăng ký lớn, vui lòng có mặt đúng khung giờ đã đăng ký để BTC hỗ trợ check-in và hướng dẫn tham gia chương trình.\r\n\r\n*\tKhi tham gia sự kiện, bạn sẽ được cộng điểm rèn luyện theo Quy chế của P.CTSV (Thông tin chi tiết xem tại Phụ lục 3 Quy chế CTSV <https://example.com/link ). \r\n\r\n*\tNếu đăng ký thành công nhưng không tham gia sẽ bị trừ điểm rèn luyện theo Quy chế.\r\n\r\nHãy theo dõi fanpage“Ngày Hội Việc Làm - Job Fair <https://example.com/link ” và fanpage “UHub Network <https://example.com/link ”  để cập nhật những chương trình tham quan doanh nghiệp và phát triển nghề nghiệp hấp dẫn trong thời gian tới nhé!\r\n\r\nThân mến,\r\nUHub Network.\r\n\r\n-- \r\n\r\n\r\n <https://example.com/link \r\n\r\n <https://example.com/link \r\n\r\nUHUB NETWORK / Kênh thông tin việc làm và Phát triển nguồn nhân lực\r\ninfo@iujobhub.com <mailto:info@iujobhub.com>  / (84) 28 3724 4270 – ext: 3334 ((Mr. Tấn Tấn)\r\n\r\n <https://example.com/link \r\n\r\nĐịa chỉ: Phòng O1.105, Phòng Công tác Sinh viên, Khu phố 33, Phường Linh Xuân, Thành phố Hồ Chí Minh\r\nhttps://example.com/link ⎮ https://example.com/link <https://example.com/link \r\n\r\n <https://example.com/link \r\n\r\n <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link \r\n\r\n\t\t\r\n <https://example.com/link \r\n",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-08-31"
+    ],
+    "sessions": [
+     {
+      "day": "2026-08-31",
+      "start": "19:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "V/v thực hiện \"Khảo sát sự hài lòng của người học với trải nghiệm học tập tại ĐHQG HCM 2026 (IR3)\"",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-08-25T10:44:47.436000+00:00",
+   "thread_id": "D19F0B13DFD9724CA598B07FEC573CF1",
+   "text": " <https://example.com/link \t\r\nThân gửi các em sinh viên,\r\n\r\nNhằm giúp ĐHQG-HCM cũng như Trường Đại học Quốc tế nâng cao chất lượng đào tạo, cải thiện sự hài lòng của người học, các em vui lòng thực hiện \"Khảo sát sự hài lòng của người học với trải nghiệm học tập tại ĐHQG HCM 2026 (IR3)\" với các nội dung như sau:\r\n\r\nĐối tượng: Tất cả SV đang theo học hoặc vừa tốt nghiệp tại trường ĐHQT năm 2026.\r\n\r\nCách thức thực hiện: SV đăng ký tài khoản tại https://example.com/link <https://example.com/link  và thực hiện khảo sát theo hướng dẫn TẠI ĐÂY <https://example.com/link \r\n\r\nThời gian thực hiện: Từ ngày 13/8/2026 đến hết ngày 26/8/2026.\r\n\r\nSV tham gia đánh giá sẽ được cộng điểm rèn luyện cho học kỳ I năm học 2026-2027\r\n\r\nNhững ý kiến góp ý của sinh viên sẽ góp phần to lớn giúp Nhà trường cải tiến chương trình đào tạo, đội ngũ giảng viên, cơ sở vật chất,... nhằm nâng cao sự hài lòng của người học trong những năm tiếp theo.\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-08-26"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] Chương trình học bổng của Tập đoàn Điện lực Việt Nam năm học 2026",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-08-25T06:52:58.982000+00:00",
+   "thread_id": "4D885CF9D15D6544920A648B05E40490",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "money"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[UHub Network x GOOGLE] Thư thông báo theo dõi tình trạng đăng ký tham gia chương trình “GEMINI ACADEMY FOR STUDENTS - WORKSHOP 2: KHƠI NGUỒN SÁNG TẠO CÙNG GEMINI AI”",
+   "sender_name": "UHUB NETWORK",
+   "sender_address": "info@iujobhub.com",
+   "received_at": "2026-08-24T12:10:07.414000+00:00",
+   "thread_id": "C0CAE11B718C0546A867689EE791F147",
+   "text": "Thân chào bạn,\r\n\r\nUHub Network gửi lời cảm ơn đến bạn vì đã quan tâm và đăng ký tham gia chương trình “Gemini Academy for Students - Workshop 2: Khơi nguồn sáng tạo cùng Gemini AI”.\r\n\r\nUHub Network gửi các bạn sheet theo dõi <https://example.com/link  tình trạng đăng ký để thuận tiện kiểm tra thông tin của mình.\r\n\r\n\r\nThông tin chi tiết chương trình:\r\n\r\n*\tThời gian: 19h30, Thứ Ba, ngày 25/08/2026.\r\n\r\n*\tHình thức: Tham gia trực tuyến qua nền tảng Zoom (đường link tham gia sẽ được gửi vào group Zalo).\r\n\r\n*\tĐối tượng: Sinh viên Trường Đại học Quốc tế (IU).\r\n\r\nLưu ý:\r\n\r\n*\tVì số lượng đăng ký lớn, vui lòng có mặt đúng khung giờ đã đăng ký để BTC hỗ trợ check-in và hướng dẫn tham gia chương trình.\r\n\r\n*\tKhi tham gia sự kiện, bạn sẽ được cộng điểm rèn luyện theo Quy chế của P.CTSV (Thông tin chi tiết xem tại Phụ lục 3 Quy chế CTSV <https://example.com/link ). \r\n\r\n*\tNếu đăng ký thành công nhưng không tham gia sẽ bị trừ điểm rèn luyện theo Quy chế.\r\n\r\nHãy theo dõi fanpage“Ngày Hội Việc Làm - Job Fair <https://example.com/link ” và fanpage “UHub Network <https://example.com/link ”  để cập nhật những chương trình tham quan doanh nghiệp và phát triển nghề nghiệp hấp dẫn trong thời gian tới nhé!\r\n\r\nThân mến,\r\nUHub Network.\r\n\r\n\r\n-- \r\n\r\n\r\n <https://example.com/link \r\n\r\n <https://example.com/link \r\n\r\nUHUB NETWORK / Kênh thông tin việc làm và Phát triển nguồn nhân lực\r\ninfo@iujobhub.com <mailto:info@iujobhub.com>  / (84) 28 3724 4270 – ext: 3334 ((Mr. Tấn Tấn)\r\n\r\n <https://example.com/link \r\n\r\nĐịa chỉ: Phòng O1.105, Phòng Công tác Sinh viên, Khu phố 33, Phường Linh Xuân, Thành phố Hồ Chí Minh\r\nhttps://example.com/link ⎮ https://example.com/link <https://example.com/link \r\n\r\n <https://example.com/link \r\n\r\n <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link   <https://example.com/link \r\n\r\n\t\t\r\n <https://example.com/link \r\n",
+   "expected": {
+    "categories": [
+     "event",
+     "training_points"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-08-25"
+    ],
+    "sessions": [
+     {
+      "day": "2026-08-25",
+      "start": "19:30:00"
+     }
+    ],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "Ưu đãi giảm 300K khi đăng ký thi IELTS tại IDP dành riêng cho SV Trường Đại học Quốc tế",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-08-21T01:19:46.241000+00:00",
+   "thread_id": "0C3AFC37A3741848A02BFBE1099C9E8A",
+   "text": " <https://example.com/link \t\r\nThân gửi sinh viên,\r\n\r\nNhân dịp năm học mới 2026-2027, Trường Đại học Quốc tế gửi đến các em thông tin về chương trình ưu đãi khi đăng ký thi IELTS tại IDP dành riêng cho sinh viên IU.\r\n\r\n📝 Đăng ký trước ngày 31/08/2026, SV sẽ được giảm ngay 300,000đ lệ phí thi. Lệ phí thi sau giảm: 4,364,000đ.\r\n\r\nNhận quà tặng theo sở thích và cơ hội quay số trúng thưởng các phần quà giá trị cao.\r\n\r\n🖇️ Link đăng ký: https://example.com/link <https://example.com/link . Lưu ý: SV phải đăng ký trước ngày 31/08/2026 để nhận được ưu đãi.\r\n\r\nThân mến,\r\n\r\nPhòng CTSV Trường Đại học Quốc tế.\r\n\r\n \r\n\r\n <https://example.com/link \r\n\r\n-------------------------------------------------------------------------------------------------------------------------------- \r\n <https://example.com/link \tOffice of Student Services (O1.105)\r\nInternational University - Vietnam National University Ho Chi Minh City\r\n\r\nPortal: https://example.com/link <https://example.com/link \r\nWebsite: https://example.com/link <https://example.com/link \r\nFanpage: https://example.com/link <https://example.com/link \r\nPhone: (028) 00000000 - Ext 3334 OR 3826\r\n\r\nCopyright © 2025, All rights reserved.\r\nOffice of Student Services.\r\nEm nhận được email này vì em là sinh viên trường Đại học Quốc tế.\r\n---\r\nĐể ngừng nhận email thông báo của trường, em có thể nhấn vào đây để không nhận email.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "promotion"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-08-31"
+    ],
+    "sessions": [],
+    "register_by": "2026-08-31",
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[Thông báo] THU THẬP DỮ LIỆU KIỂM KÊ KHÍ NHÀ KÍNH - GREENHOUSE GAS INVENTORY",
+   "sender_name": "P.CTSV [OSS]",
+   "sender_address": "oss@hcmiu.edu.vn",
+   "received_at": "2026-08-03T08:53:18.980000+00:00",
+   "thread_id": "B3ED795988F0E949845ED075F987F8A3",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[HSV] - Khảo sát \"Doanh nghiệp yêu thích 2026 - Enterprise of Choice\"",
+   "sender_name": "Hoi Sinh Vien IU",
+   "sender_address": "hoisinhvien@hcmiu.edu.vn",
+   "received_at": "2026-08-01T12:23:26.726000+00:00",
+   "thread_id": "E062DF6B171E824DB2A44D4986D2DAC6",
+   "text": "Thân chào bạn,\r\n\r\nNhằm tạo cơ hội để sinh viên chia sẻ góc nhìn, nguyện vọng nghề nghiệp đến các tập đoàn hàng đầu, đồng thời mang lại những đặc quyền và phần quà hấp dẫn cho các bạn sinh viên. Hội Sinh viên trường gửi đến toàn thể sinh viên thông tin về Khảo sát \"Doanh nghiệp yêu thích 2026 - Enterprise of Choice\"\r\n\r\n- Thời gian thực hiện: Chỉ từ 5 - 7 phút.\r\n\r\n- Thực hiện khảo sát: Tại đây <https://example.com/link \r\n\r\n- Thời hạn khảo sát: Đến hết ngày 27/08/2026 (Thứ Năm).\r\n\r\nQuyền lợi khi tham gia:\r\n\r\n- Được Công nhận hoạt động theo Quy chế sinh viên và nhận Giấy chứng nhận.\r\n\r\n- Cơ hội trúng các giải thưởng công nghệ đỉnh cao (Laptop, Điện thoại thông minh, Tai nghe, Đồng hồ thông minh...), phụ kiện thời thượng và voucher mua sắm.\r\n\r\n- Có cơ hội nhận 50 suất học khóa học online cao cấp (trị giá từ 109.000 VNĐ đến 499.000 VNĐ) và bộ quà tặng đặc biệt đến từ thương hiệu Masan.\r\n\r\nLưu ý:\r\n\r\n- Khi thực hiện khảo sát, bạn vui lòng ghi đúng chính xác MSSV và chọn đúng tên trường. Nếu nhập sai thông tin sẽ ảnh hưởng đến quyền lợi khi tham gia của bạn.\r\n\r\n- Đảm bảo thời gian hoàn thành từ 5 - 7 phút và nội dung trả lời cần logic, thống nhất giữa các câu hỏi để kết quả được ghi nhận hợp lệ.\r\n\r\nThông qua chương trình này, Hội Sinh viên trường mong muốn tạo cơ hội để tiếng nói của sinh viên được lắng nghe bởi các doanh nghiệp lớn và giúp các bạn rinh về những phần quà giá trị. Chính vì thế, các bạn còn chần chờ gì nữa mà không truy cập link và tham gia khảo sát ngay nào!\r\n\r\nThân ái./.\r\n\r\n <https://example.com/link ",
+   "expected": {
+    "categories": [
+     "school_task",
+     "promotion"
+    ],
+    "from_lecturer": false,
+    "dates": [
+     "2026-08-27"
+    ],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[ M-Invoice ] TB: Xuất hóa đơn điện tử số 31447",
+   "sender_name": "M-INVOICE Hóa đơn điện tử",
+   "sender_address": "no-reply@kiemtrahoadon.com.vn",
+   "received_at": "2026-08-01T04:06:58.463000+00:00",
+   "thread_id": "A39422B1778FB24B85EA29133BC6E88C",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "money"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  },
+  {
+   "subject": "[ M-Invoice ] TB: Xuất hóa đơn điện tử số 31449",
+   "sender_name": "M-INVOICE Hóa đơn điện tử",
+   "sender_address": "no-reply@kiemtrahoadon.com.vn",
+   "received_at": "2026-08-01T04:06:57.696000+00:00",
+   "thread_id": "09795AE1CCC81940B96EF6368BCD018B",
+   "text": "(Anonymized text.)",
+   "expected": {
+    "categories": [
+     "money"
+    ],
+    "from_lecturer": false,
+    "dates": [],
+    "sessions": [],
+    "register_by": null,
+    "blackboard_title": null,
+    "class_changes": []
+   }
+  }
+ ]
+}
