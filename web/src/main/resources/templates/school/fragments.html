@@ -3,9 +3,10 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!--/* The school menu; current is the page's name: overview, timetable, courses, exams, tuition or devices. */-->
+<!--/* The school menu; current is the page's name: overview, mailbox, timetable, courses, exams, tuition or devices. */-->
 <nav th:fragment="subnav(current)" class="subnav" aria-label="School pages">
   <a th:href="@{/school}" th:attr="aria-current=${current == 'overview' ? 'page' : null}">Overview</a>
+  <a th:href="@{/school/mailbox}" th:attr="aria-current=${current == 'mailbox' ? 'page' : null}">Mailbox</a>
   <a th:href="@{/school/timetable}" th:attr="aria-current=${current == 'timetable' ? 'page' : null}">Timetable</a>
   <a th:href="@{/school/courses}" th:attr="aria-current=${current == 'courses' ? 'page' : null}">Courses</a>
   <a th:href="@{/school/exams}" th:attr="aria-current=${current == 'exams' ? 'page' : null}">Exams</a>

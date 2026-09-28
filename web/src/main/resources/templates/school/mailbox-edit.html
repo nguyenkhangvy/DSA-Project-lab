@@ -1,0 +1,47 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Move to… · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Move to…</h1>
+  <nav th:replace="~{school/fragments :: subnav('mailbox')}"></nav>
+
+  <section class="card narrow">
+    <p><strong th:text="${card.subject.isEmpty() ? '(no subject)' : card.subject}">[THƯ MỜI] Workshop</strong><br>
+      <span class="muted" th:text="${card.senderName}">P.CTSV [OSS]</span></p>
+    <p class="field-error" th:if="${error != null}" th:text="${error}">Choose a first category.</p>
+
+    <form method="post" th:action="@{/school/mailbox/{key}/edit(key=${card.key})}" th:object="${form}">
+      <div class="field">
+        <label for="category1">Category 1</label>
+        <select id="category1" th:field="*{category1}">
+          <option th:each="category : ${categories}" th:value="${category.key}" th:text="${category.value}">Event</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="category2">Category 2 (optional)</label>
+        <select id="category2" th:field="*{category2}">
+          <option value="">None</option>
+          <option th:each="category : ${categories}" th:value="${category.key}" th:text="${category.value}">Training
+            points</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" th:field="*{fromLecturer}"> This is from a lecturer</label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button">Save</button>
+        <a th:href="@{/school/mailbox}">Cancel</a>
+      </div>
+    </form>
+
+    <form method="post" th:action="@{/school/mailbox/{key}/automatic(key=${card.key})}" class="mail-automatic">
+      <button type="submit" class="link-button">Back to automatic</button>
+      <span class="muted">(the laptop's sorting applies again)</span>
+    </form>
+  </section>
+</main>
+</body>
+</html>

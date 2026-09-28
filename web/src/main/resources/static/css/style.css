@@ -277,3 +277,35 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .badge-cancelled { background: var(--cancelled-color); color: var(--text); }
 .fc .fc-list-event a.event-title { color: inherit; text-decoration: none; }
 .fc .fc-list-event.event-cancelled a.event-title { text-decoration: line-through; }
+
+/* School: Mailbox */
+.mail-read { margin: 0 0 12px; }
+.mail-cards { list-style: none; margin: 0; padding: 0; }
+.mail-card { padding: 10px 0; border-top: 1px solid var(--border); }
+.mail-card:first-child { border-top: 0; }
+.mail-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; }
+.mail-sender { font-weight: 600; overflow-wrap: anywhere; }
+.mail-when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.mail-subject { margin: 2px 0 6px; overflow-wrap: anywhere; }
+.mail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.tag { padding: 1px 8px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+.tag-training_points { background: #fff4d6; border-color: #e0b64a; }
+.tag-warning { color: var(--error); background: var(--error-bg); border-color: var(--error-bg); }
+.mail-unsorted { margin: 0 0 6px; color: #c77700; font-size: 0.9rem; }
+.mail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+.mail-open { padding: 4px 12px; font-size: 0.9rem; text-decoration: none; }
+.mailbox-box details { margin-top: 8px; }
+.mailbox-box summary { cursor: pointer; color: var(--accent); }
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.field .check { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+.field .check input { width: auto; margin: 0; }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.mail-automatic { margin-top: 12px; }
