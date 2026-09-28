@@ -85,11 +85,16 @@ Only needed to sync your own EduSoft and Blackboard into the School pages. It ru
 | Sync right away | `sla-agent sync-now` |
 | See the last result | `sla-agent status` |
 | Set up or change the Blackboard login | `sla-agent setup --blackboard` |
-| Remove the saved passwords, key and schedule | `sla-agent forget` |
+| Read your Inbox through classic Outlook | `sla-agent setup --outlook` |
+| Remove the saved passwords, key, schedule and `sla-mail:` link type | `sla-agent forget` |
+
+**Mailbox (Outlook).** IU doesn't let students approve apps that read mail, so the agent reads your Inbox through the classic Outlook app on your laptop (Windows only). Open **Outlook (classic)**, sign in with your IU account, wait for "All folders are up to date", then run `sla-agent setup --outlook`. Each sync then reads your Inbox since the start of the semester, sorts every email on your laptop, and uploads only the results (sender, subject, time, categories, dates, event times, class changes), **never the text**. School → Mailbox shows them, one row per email with its category first. Clicking the subject opens the email in Outlook on this laptop (Edge asks once to open `sla-agent`), and **Web ↗** opens Outlook on the web anywhere. Opening an email marks it Done, unless it is an event or school task still ahead; untick "Mark emails as done when I open them" to press ✓ Done yourself. Events show the times the laptop found in them, each marked **Conflict** or **No conflict** against your timetable, and **Join…** puts the sessions you pick into your Timetable. A check-in time counts as part of its event, and an event whose registration has closed moves to Past unless you joined it. If Outlook shows a security warning or blocks the agent, the agent never clicks past it; Mailbox says so at the top.
 
 ### The laptop agent's data format
 
 The laptop agent uploads its data in the format set by `contract/sla_contract/schema.py`. The Java site reads it with `web/src/main/java/vn/edu/hcmiu/sla/school/sync/SyncContract.java`, so change the two together. `contract/samples/` holds example uploads that both the Python and the Java tests check: every file there must be accepted, every file in `contract/samples/invalid/` refused. When the format changes, update or add a sample.
+
+`contract/samples/class-changes/sentences.json` lists example announcements and the class changes each must give. The agent's Python reader (lecturers' emails) and the site's Java reader (Blackboard announcements) both check every one, so the two stay the same.
 
 ---
 

@@ -3,7 +3,7 @@
 **Date:** 2026-09-28
 **Scope:** read the student's IU Inbox through classic Outlook on the laptop, sort every email into the agreed categories, show them in a new **Mailbox** tab in priority order, and let class-change emails change the timetable like Blackboard announcements do, without counting a change twice
 **Owner:** Nguyen Khang Vy
-**Status:** Design, not built
+**Status:** Built (see docs/superpowers/plans/2026-09-28-outlook-mailbox.md). The Mailbox page, "lose points" and event times were then changed by [a compact Mailbox, auto-Done, and events you can join](2026-09-28-mailbox-events-design.md); each section that changed says so.
 **Builds on:** [EduSoft-first Phase 1](2026-09-25-edusoft-first-phase1-design.md), [Blackboard](2026-09-26-blackboard-design.md), [Class changes and "To submit"](2026-09-26-class-changes-and-to-submit-design.md) and [the Java website](2026-09-26-java-website-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
@@ -96,8 +96,9 @@ Website
 - **Only the default Inbox** of the confirmed account, and only emails (Outlook item class 43), not meeting requests or delivery reports.
 - **From the semester start**, taken from the EduSoft term code of the last timetable read (`YYYYS`): semester 1 → 1 August of `YYYY`; semester 2 → 1 January of `YYYY+1`; semester 3 (summer) → 1 June of `YYYY+1`. For `20261` this is **1 August 2026**. With no term code yet: the last 90 days.
 - **Every sync reads all of them again.** About 50 ms per email, so 500 emails take under 30 seconds. This keeps it simple: deleted or moved emails disappear by themselves, and an improved rule re-sorts old mail at the next sync (no "re-read" button is needed).
-- **Outlook is started hidden** if it isn't running. After reading, the agent closes it again only if the agent started it and no Outlook window is open.
-- **Time limit:** the Outlook read runs in a child process and is stopped after **3 minutes** (for example when Outlook shows a security prompt nobody answers).
+- **Outlook is started hidden** if it isn't running, and the reader waits up to 30 seconds for it to connect (it needs about 5). The agent never closes Outlook: a hidden Outlook closes by itself when the agent lets go of it and no Outlook window is open (checked 2026-09-28), so a window the student opened meanwhile is never closed.
+- **The time an email arrived** is read from `PR_MESSAGE_DELIVERY_TIME` (UTC). pywin32 labels Outlook's `ReceivedTime` as UTC although it is the laptop's local time, so that is only the fallback, read as local time.
+- **Time limit:** the Outlook read runs in a background thread and is given up after **3 minutes** (for example when Outlook shows a security prompt nobody answers): the Outlook part fails with `outlook_blocked`, and the stuck call ends when the agent's process does.
 - **Read only, in code:** the Outlook reader only reads item properties and, in `open-mail`, calls `Display()`. It never calls `Send`, `Delete`, `Move`, `Copy`, `Save`, or sets any property (including `UnRead`). A test scans the reader's source for these names.
 - **Outlook's security warning is never answered by the agent.** If Outlook blocks the read, the Outlook part fails with a message (4.4).
 
@@ -148,6 +149,8 @@ class Outlook(_Strict):
 
 **Never uploaded:** the email text or HTML, attachments, To/CC lists, the Outlook account's other folders.
 
+**Changed later:** `loses_points` was removed and each email gained `sessions`, the days and times its event takes place (mailbox-events design, 3.3).
+
 ### 4.5 Problems
 
 New error codes in the upload format: `outlook_not_set_up`, `outlook_blocked`.
@@ -185,6 +188,8 @@ An email is **from a lecturer** when any of these holds, unless it is an automat
 2. **Timetable lecturer:** the part before `@` equals a timetable lecturer's name with dots, spaces and accents removed, in lower case (`P.Q.Hùng` → `pqhung`).
 3. **An IU person:** the address is at `hcmiu.edu.vn` or one of its sub-domains, except `student.hcmiu.edu.vn`, and the part before `@` is built from the sender's own name (accents removed, lower case). It is either the initials of every word but the last followed by the last word (`Vo Minh Khoa` → `vmkhoa`), or all words joined (`Bui Thanh Nga` → `buithanhnga`). Both word orders are tried, so `Hung Quoc Pham` also gives `pqhung`. Office accounts (`oss@`, `hoisinhvien@`, `iuyouth@`, `bb@`, `noreply.cis@` …) never match because their names aren't built this way.
 
+Every rule needs an IU staff address (`hcmiu.edu.vn` or a sub-domain, not `student.hcmiu.edu.vn`). Rule 3 needs a name of at least two words, so a one-word office name never counts.
+
 **Automatic Microsoft notices never count as lecturer mail:** Teams "added you to a group" emails (subject contains "Microsoft Teams" and one of "được thêm", "đã thêm", "added you") and anything from `sharepointonline.com` or `microsoft.com` addresses.
 
 ### 5.2 Categories
@@ -209,7 +214,7 @@ When more than two categories match, the two that come first in this order are k
 ### 5.4 Dates and "loses points"
 
 - **Dates:** every date in the subject and text, found with the class-change reader's date formats (`29/09/2026`, `27/9`, `18-9-2026`, `ngày 18 tháng 9`, `September 24`, `24th September`, …). Dates inside links are ignored. A date without a year takes the year closest to the day the email arrived. Dates before the day it arrived are dropped. At most 30, sorted, no repeats.
-- **`loses_points`:** the text has "trừ" followed within 30 characters by "điểm rèn luyện" (e.g. "bị trừ điểm rèn luyện", "trừ 05 điểm rèn luyện").
+- **`loses_points`** was removed by the mailbox-events design. The agent finds the times an event takes place instead (mailbox-events 3.2).
 
 ### 5.5 Class changes from email
 
@@ -230,7 +235,7 @@ For every Blackboard announcement email (5.1 rule 1), `blackboard_title` is the 
 
 The Python class-change reader removed with the Python website (`app/school/services/class_changes.py` at commit `471cac0^`, 178 lines) comes back in the agent as `agent/sla_agent/class_changes.py`. The Java `ClassChanges` stays for Blackboard announcements.
 
-So the two can't drift apart, a shared file `contract/samples/class-change-sentences.json` lists example announcements (title, text, posting time) with the changes they must give. Both the Python and the Java tests check every example. The examples start with those in the class-changes design's tests.
+So the two can't drift apart, a shared file `contract/samples/class-changes/sentences.json` lists example announcements (title, text, posting time) with the changes they must give, each distinct change once. Both the Python and the Java tests check every example. The examples start with those in the class-changes design's tests. The file is in a sub-folder because every `*.json` directly in `contract/samples/` is read as an upload.
 
 ---
 
@@ -238,10 +243,10 @@ So the two can't drift apart, a shared file `contract/samples/class-change-sente
 
 ### 6.1 Tables
 
-One Flyway migration, `V<build date>_1_<n>__school_mail.sql` (School module = 1):
+One Flyway migration, `V<build date>_1_<n>__school_mail.sql` (School module = 1). The mailbox-events design (4.1) later dropped `loses_points` and added `school_mail_sessions`, `school_mail_joined`, `school_mail_settings` and `school_mail_choices.opened`.
 
-- **`school_mail`**: `id`, `user_id`, `mail_key` CHAR(64), `entry_id` VARCHAR(512), `thread_id` VARCHAR(64) NULL, `received_at` DATETIME (UTC), `sender_name` VARCHAR(255), `sender_address` VARCHAR(255), `subject` VARCHAR(500), `categories` VARCHAR(100) (comma-separated), `from_lecturer`, `dates` VARCHAR(400) (comma-separated ISO dates), `loses_points`, `sorted`, `blackboard_title` VARCHAR(255) NULL. Unique (`user_id`, `mail_key`).
-- **`school_mail_changes`**: `id`, `mail_id` (deleted with its email), `course_code`, `kind`, `day`, `start_time` NULL, `end_time` NULL, `room` NULL.
+- **`school_mail`**: `id`, `user_id`, `mail_key` VARCHAR(64), `entry_id` VARCHAR(512), `thread_id` VARCHAR(64) NULL, `received_at` DATETIME (UTC), `sender_name` VARCHAR(255), `sender_address` VARCHAR(255), `subject` VARCHAR(500), `categories` VARCHAR(100) (comma-separated), `from_lecturer`, `dates` VARCHAR(400) (comma-separated ISO dates), `loses_points`, `is_sorted`, `blackboard_title` VARCHAR(255) NULL. Unique (`user_id`, `mail_key`).
+- **`school_mail_changes`**: `id`, `mail_id` (deleted with its email), `course_code`, `kind`, `change_day`, `start_time` NULL, `end_time` NULL, `room` NULL.
 - **`school_mail_choices`**: `id`, `user_id`, `mail_key`, `done`, `categories` VARCHAR(100) NULL, `from_lecturer` NULL, `updated_at`. Unique (`user_id`, `mail_key`). The student's Done and Move to… choices.
 - **`school_mail_status`**: `user_id` (key), `since`, `connected`, `synced_at` (UTC).
 
@@ -252,6 +257,8 @@ When a sync's `outlook` part arrives correctly, it **replaces** the user's `scho
 ### 6.3 The Mailbox tab
 
 **Menu:** Overview · **Mailbox** · Timetable · Courses · Exams · Tuition · Devices. Page `/school/mailbox`.
+
+This section describes the first Mailbox. The mailbox-events design (4.2–4.6) turned the cards into one row each, shows every card (no "Show all"), removed the "Open in Outlook" button and the lose-points tag, and added opening, auto-Done, event sessions and Join….
 
 **Cards.** Emails are grouped into cards:
 
@@ -343,7 +350,7 @@ Done cards leave their box and go to a closed **"Done (n)"** list at the bottom 
 - **Categories and order:** subject-only words (the beFood prize), the top-two order, no match.
 - **Dates:** each format, dates in links, year guessing, dates before arrival, the 30 limit; `loses_points`.
 - **Class changes:** the four course rules; not from a lecturer → none.
-- **Shared sentences:** every example in `class-change-sentences.json`.
+- **Shared sentences:** every example in `class-changes/sentences.json`.
 
 **Agent: Outlook (with a fake Outlook, no real Outlook needed):**
 
@@ -369,7 +376,7 @@ Done cards leave their box and go to a closed **"Done (n)"** list at the bottom 
 ## 9. Build order
 
 1. Upload format: the `outlook` part and error codes (Python and Java), samples.
-2. Agent: the Python date reader restored, with `class-change-sentences.json` checked by both test suites.
+2. Agent: the Python date reader restored, with `class-changes/sentences.json` checked by both test suites.
 3. Agent: `anonymize_mail.py` and the sample file (the student checks it).
 4. Agent: sorting rules (5.1–5.5).
 5. Agent: the Outlook reader, `setup --outlook`, the link type, `open-mail`, `forget`, sync and problems.

@@ -3,7 +3,7 @@
 **Date:** 2026-09-28
 **Scope:** show Mailbox as compact rows with the category first, mark opened emails Done by themselves (a setting turns this off), drop "lose points", let the agent find events' times, mark each time Conflict / No conflict against the timetable, and put the events the student joins into the Timetable
 **Owner:** Nguyen Khang Vy
-**Status:** Design, not built
+**Status:** Built (see docs/superpowers/plans/2026-09-29-mailbox-events.md, and docs/superpowers/plans/2026-09-29-mailbox-registration.md for the addendum)
 **Builds on:** [Outlook mail in a Mailbox tab](2026-09-28-outlook-mailbox-design.md) (built on the branch `outlook-mailbox`, Tasks 1–9 of its plan). Everything there stays the same unless this document says otherwise. Section numbers like "Outlook §6.3" point into that spec.
 
 ---
@@ -77,7 +77,7 @@ A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, mi
 
 **Pairing a time with its day:**
 
-1. A time goes with the dates in the **same line**. If the line has none, it takes the dates of the **nearest line above** that has dates (e.g. "Ngày: 01/10/2026" then "Thời gian: 13h00 – 16h00").
+1. A time goes with the dates in the **same sentence or line**. If it has none, it takes the dates of the **nearest sentence or line above** that has dates (e.g. "Ngày: 01/10/2026" then "Thời gian: 13h00 – 16h00").
 2. **Several dates, one time** on a line: one session per date ("ngày 29/09 và 01/10, 13:00–14:00" → 2 sessions).
 3. **Several times, one date** on a line: one session per time ("Ca 1: 8:00–10:00; Ca 2: 13:00–15:00 ngày 30/9" → 2 sessions on 30/9).
 4. A line with several dates and several times pairs them in order when the counts are equal; otherwise every date gets every time.
@@ -112,7 +112,7 @@ class MailItem(_Strict):
 
 ### 4.1 Tables
 
-One Flyway migration, `V20260928_1_2__mail_events.sql`:
+Three Flyway migrations, each with the part that needs it: `V20260928_1_2__mail_sessions.sql` (sessions, no `loses_points`), `V20260928_1_3__mail_opened.sql` (opened, settings) and `V20260928_1_4__mail_joined.sql` (joined sessions). Days are stored in `session_day` (`day` is a reserved word):
 
 - **`school_mail`**: drop `loses_points`.
 - **`school_mail_sessions`** (new): `id`, `mail_id` (deleted with its email), `day` DATE, `start_time` TIME, `end_time` TIME NULL. Replaced with the mail at every sync (Outlook §6.2).
@@ -136,7 +136,7 @@ Layout as in the mockup `mailbox-rows.html` (kept in `.superpowers/brainstorm/`,
   5. **When**: "Next: Thu 01/10" for cards in the Events and School tasks boxes with an upcoming date or session (as Outlook §6.3), otherwise the time received.
   6. **Actions**: **Web ↗** (Outlook on the web, new tab, `rel="noopener noreferrer"`), **Move…**, **Join…** (event-like cards only), and **✓ Done** (Undo in the Done list) as a real button at the end, at least 32 px tall with a visible border.
 - **Sessions line:** a card with upcoming sessions gets one small extra line under its row listing them, e.g. `Tue 29/09 13:00–14:00 ⚠ Conflict: Web Application · Thu 01/10 13:00–14:00 ✓ No conflict`. A joined session shows **Joined** (green) instead of its mark. A session without an end shows "from 14:00".
-- **Phone (under 700 px):** each row wraps to two lines: labels and extra tags, then when (first line); sender · subject, then actions (second line). The sessions line wraps below.
+- **Phone (under 700 px):** each row takes three short lines: labels and extra tags, then when; sender · subject; the actions. (Two lines left the subject no room next to Web ↗, Move…, Join… and ✓ Done.) The sessions line wraps below.
 - **Removed:** the "Open in Outlook" button (the subject is the link), the "⚠ lose points if absent" tag, and the "Couldn't sort…" sentence on the card (now the label's hover text).
 
 ### 4.3 Opening, auto-Done and the setting
@@ -174,9 +174,9 @@ For each upcoming session of an event-like card:
 - The student's **other joined sessions** of this email (added by hand, or no longer in the email), ticked, labelled "added by you".
 - **Add a session:** day, start, end (optional). One per save.
 - **Place** (optional, up to 100 characters), shown for every joined session of this email.
-- **Save** (`POST …/join`), **Leave event** (`POST …/leave`: removes all of this email's joined sessions), **Cancel**.
+- **Save** (`POST …/join`), **Leave event** (`POST …/leave`: removes this email's joined sessions that haven't ended), **Cancel**.
 
-Saving replaces this email's joined sessions with the ticked ones plus the added one, copying the card's subject as `title` and whether its categories (the student's choice from Move to… wins) include Training points. Refused with a message: a day before today, an end not after its start, more than 10 joined sessions for one email. Joining does not mark the card Done.
+Saving replaces this email's joined sessions that haven't ended with the ticked ones plus the added one (sessions already over stay in the Timetable), copying the card's subject as `title` and whether its categories (the student's choice from Move to… wins) include Training points. Refused with a message: a day before today, an end not after its start, more than 10 joined sessions for one email. Joining does not mark the card Done.
 
 **Addresses** (login, CSRF on POSTs, a key that isn't one of the user's cards gives 404): `GET`/`POST /school/mailbox/{key}/join`, `POST /school/mailbox/{key}/leave`, `POST /school/mailbox/{key}/opened`, `POST /school/mailbox/settings`.
 
@@ -242,7 +242,15 @@ When this is built, the Outlook spec is updated so the two agree: §4.4 (`sessio
 
 ---
 
-## 9. Risks
+## 9. Decided while building (2026-09-29)
+
+- **A repeated day and start keeps an end if any copy has one:** "Workshop 30/9 lúc 14h" in the subject and "14h00 – 16h00 ngày 30/9" in the text give 14:00–16:00.
+- **`13.00` needs two digits after the dot**, so money ("15.000.000") and phone numbers are never times.
+- **Joined sessions are saved under the card's newest email** and found by any of the card's emails.
+- **"Not sorted" disappears** once the student has used Move to… on the card.
+- **The date and action columns have fixed widths** (130 and 270 px) so the rows line up.
+
+## 10. Risks
 
 - **The agent misreads or misses a time.** The student sees the sessions on the card and can add or fix one on the Join page.
 - **A deadline read as a session** when its line lacks the deadline words. The student simply doesn't tick it.
