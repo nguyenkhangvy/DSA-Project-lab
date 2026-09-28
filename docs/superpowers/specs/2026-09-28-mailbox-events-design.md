@@ -22,6 +22,8 @@ The first Mailbox showed each email as a tall card (about 160 px), so a screen h
 - **Event times come from the agent** (approach A): it finds each event's sessions on the laptop and uploads only day, start and end; the website checks conflicts when it shows the page.
 - **Sessions are picked:** an event with several sessions shows a mark per session, and Join lets the student tick the sessions they will attend.
 - **Join is offered for every event or school-task email**, not only training-point events.
+- **An email the student moves to Event or School task** gets its found times suggested on the Join page, so the agent finds sessions in every email (2026-09-29).
+- **No timetable means No conflict:** a session is checked against whatever the timetable holds; with nothing there the time is free (2026-09-29).
 - **Place is typed by the student** on the Join page; the agent never uploads a venue (it is email text).
 
 ### Not in scope
@@ -38,7 +40,7 @@ The first Mailbox showed each email as a tall card (about 160 px), so a screen h
 
 ```
 Laptop (sla-agent, each sync)
-  Inbox email ── sort (Outlook §5) ── Event / School task? ── find sessions: day, start, end
+  Inbox email ── sort (Outlook §5) ── find sessions in every email: day, start, end
         │  the text stays in memory and is thrown away
         ▼
   upload: … categories, dates, sessions, class changes   (no text, no loses_points)
@@ -57,7 +59,7 @@ Website
 
 ### 3.1 Which emails
 
-Only emails whose categories (after Outlook §5.3) include **Event** or **School task**. Every other email gets `sessions: []`.
+**Every email** is searched for sessions, whatever its categories, because the student can move any email to Event or School task (Move to…, Outlook §6.3) and its times should then be ready on the Join page. The website only shows and uses sessions of event-like cards (4.2).
 
 ### 3.2 Finding sessions
 
@@ -122,7 +124,7 @@ Saving an `outlook` part stores each email's sessions. Stale choices are still d
 
 ### 4.2 The Mailbox page
 
-Layout as in the mockup `mailbox-rows.html` (kept in `.superpowers/brainstorm/`, not committed). An **event-like card** is one whose categories (the student's Move to… choice wins) include Event or School task; only event-like cards have sessions, Join… and the auto-Done exception.
+Layout as in the mockup `mailbox-rows.html` (kept in `.superpowers/brainstorm/`, not committed). An **event-like card** is one whose categories (the student's Move to… choice wins) include Event or School task; only event-like cards show sessions and marks and get Join… and the auto-Done exception. Sessions of other cards are stored but not shown.
 
 - **Width:** the Mailbox page is up to 1200 px wide (the site's other pages stay 960 px).
 - **Box titles** show counts: "From lecturers (8)". Every card of a box is shown; "Everything else" has no limit and no "Show all". Past and Done stay folded (`<details>`).
@@ -160,7 +162,7 @@ For each upcoming session of an event-like card:
   - Items without a time (a make-up class announced without a time) don't count.
   - A session without an end lasts one hour.
 - The mark is **⚠ Conflict: <first item's name>** (the course name, the exam label and course, or the event's title), with "+ n" when more items clash, or **✓ No conflict**.
-- When the student has **no timetable at all** (no class meetings saved), no marks are shown.
+- A day with nothing on the timetable, or a student with **no timetable at all**, gives **✓ No conflict**: the time is free, and the student can join.
 - Marks are worked out when the page is shown, so a later make-up class or cancellation changes them by itself.
 
 ### 4.6 Join
@@ -168,7 +170,7 @@ For each upcoming session of an event-like card:
 **Join…** on an event-like card opens `GET /school/mailbox/{key}/join`:
 
 - The card's subject and sender.
-- **Each upcoming session** the agent found, with its mark (4.5) and a tick box, ticked when already joined. A card the student moved to Event themselves may have none; then only "Add a session" is offered.
+- **Each upcoming session** the agent found, with its mark (4.5) and a tick box, ticked when already joined. For a card the student moved to Event or School task themselves (the rules gave it neither), the same sessions are listed under **"Found in this email"**, unticked, as suggestions; with none found, only "Add a session" is offered.
 - The student's **other joined sessions** of this email (added by hand, or no longer in the email), ticked, labelled "added by you".
 - **Add a session:** day, start, end (optional). One per save.
 - **Place** (optional, up to 100 characters), shown for every joined session of this email.
@@ -201,7 +203,7 @@ Saving replaces this email's joined sessions with the ticked ones plus the added
 
 **Upload format (Python and Java):** a valid email with sessions; refused: `loses_points`, 11 sessions, an end not after its start, a bad time.
 
-**Agent: sessions (pure):** each time format; AM/PM once after the end; `lúc` / `từ` starts; not-a-time numbers; a time taking the date from the line above; several dates → several sessions; several times → several sessions; equal counts paired in order; deadline lines skipped; a time with no date dropped; days before arrival dropped; repeats once; the 10 limit; only Event and School-task emails; the shared examples; a failure gives `sessions: []` and logs no text; the text never in the upload.
+**Agent: sessions (pure):** each time format; AM/PM once after the end; `lúc` / `từ` starts; not-a-time numbers; a time taking the date from the line above; several dates → several sessions; several times → several sessions; equal counts paired in order; deadline lines skipped (and bare `hạn` / `trước` not); a time with no date dropped; days before arrival dropped; repeats once; the 10 limit; sessions found in an email of any category; the shared examples; a failure gives `sessions: []` and logs no text; the text never in the upload.
 
 **Website:**
 
@@ -209,8 +211,8 @@ Saving replaces this email's joined sessions with the ticked ones plus the added
 - Mailbox: rows and labels ("Other", "Not sorted" with its hover text); counts; no "Show all"; the Done button; no "lose points".
 - Opening: auto-Done on → Done, except upcoming Events and School tasks; auto-Done off → only opened; a new reply is unread again; the setting saved and read; another user's key 404; CSRF required.
 - Past and next date from sessions, around midnight Vietnam time.
-- Conflicts: class overlap; online counts; cancelled doesn't; make-up counts; exam with and without a length; another joined event; back-to-back isn't; no end = one hour; no timetable → no marks; "+ n".
-- Join: save ticked sessions; add by hand; place; leave; refused inputs; training points copied (Move to… wins); another user's card 404; CSRF.
+- Conflicts: class overlap; online counts; cancelled doesn't; make-up counts; exam with and without a length; another joined event; back-to-back isn't; no end = one hour; an empty day and no timetable at all → No conflict; "+ n".
+- Join: save ticked sessions; a card moved to Event lists its found sessions as unticked suggestions; a card of another category shows no sessions; add by hand; place; leave; refused inputs; training points copied (Move to… wins); another user's card 404; CSRF.
 - Timetable, Overview and `/school/api/calendar`: joined sessions as green `event` items with their link; another user's joined sessions never shown.
 
 **Browser check (Edge):** Mailbox and Join at 1400×1000 and 390×844; the auto-Done click; the Timetable with a joined event. **Real sync** with the student's Outlook, then the student's own check.
@@ -222,7 +224,7 @@ Saving replaces this email's joined sessions with the ticked ones plus the added
 On the branch `outlook-mailbox`, after Tasks 1–9 of the Outlook plan:
 
 1. Upload format: `sessions`, no `loses_points` (Python and Java, samples).
-2. Agent: the session finder and `sort_email` (no `loses_points`).
+2. Agent: the session finder for every email and `sort_email` (no `loses_points`).
 3. Website: the migration, entities, saving.
 4. Website: the Mailbox rows, the Done button, opening, auto-Done and the setting.
 5. Website: conflicts and Join.
