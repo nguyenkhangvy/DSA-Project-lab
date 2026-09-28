@@ -15,7 +15,7 @@ import vn.edu.hcmiu.sla.school.sync.Scheduling;
  * Turns the sync history into the status the user sees. Pure functions; the Java twin of
  * app/school/services/sync_status.py, with the same wording. Times are UTC, shown in Vietnam time.
  *
- * <p>A run's parts are always read in the order timetable, exams, tuition, blackboard: MySQL keeps the
+ * <p>A run's parts are always read in the order timetable, exams, tuition, blackboard, outlook: MySQL keeps the
  * keys of the JSON column in its own order, so the order they come back in means nothing.
  */
 public final class SyncStatus {
@@ -24,7 +24,7 @@ public final class SyncStatus {
     }
 
     static final String RETRY = "It will be tried again automatically.";
-    static final List<String> PART_ORDER = List.of("timetable", "exams", "tuition", "blackboard");
+    static final List<String> PART_ORDER = List.of("timetable", "exams", "tuition", "blackboard", "outlook");
 
     /** What a status says: state, headline, and what to do. */
     record Problem(String state, String headline, String detail) {
@@ -53,8 +53,18 @@ public final class SyncStatus {
             "source_changed", new Problem("failed", "Sync failed: Blackboard's data format has changed",
                     "sla-agent needs an update to read it."));
 
+    static final String CHECK_OUTLOOK = "Outlook may be showing a security warning, or your antivirus may be off. "
+            + "The agent never clicks past it. Check Outlook, then press Sync now.";
+
+    static final Map<String, Problem> OUTLOOK_PROBLEMS = Map.of(
+            "outlook_not_set_up", new Problem("failed", "Sync failed: classic Outlook isn't set up on your laptop",
+                    "Open Outlook (classic), sign in with your IU account, then press Sync now."),
+            "outlook_blocked", new Problem("failed", "Sync failed: Outlook didn't let the agent read your mail",
+                    CHECK_OUTLOOK));
+
     static final Map<String, String> PART_NAMES = Map.of(
-            "timetable", "timetable", "exams", "exam schedule", "tuition", "tuition", "blackboard", "Blackboard");
+            "timetable", "timetable", "exams", "exam schedule", "tuition", "tuition", "blackboard", "Blackboard",
+            "outlook", "Outlook");
 
     /** A system and the parts of a sync that come from it. */
     record SystemParts(String name, List<String> parts) {
@@ -62,7 +72,8 @@ public final class SyncStatus {
 
     static final List<SystemParts> SYSTEMS = List.of(
             new SystemParts("EduSoft", List.of("timetable", "exams", "tuition")),
-            new SystemParts("Blackboard", List.of("blackboard")));
+            new SystemParts("Blackboard", List.of("blackboard")),
+            new SystemParts("Outlook", List.of("outlook")));
 
     static final Map<String, String> PAUSE_HINTS = Map.of(
             "EduSoft/bad_credentials", "paused: wrong student ID or password. Run `sla-agent setup`.",
@@ -75,7 +86,9 @@ public final class SyncStatus {
             "network", "couldn't be reached; it will be tried again automatically.",
             "session_expired", "ended the session; it will be tried again automatically.",
             "edusoft_changed", "its pages changed; sla-agent needs an update.",
-            "source_changed", "its data format changed; sla-agent needs an update.");
+            "source_changed", "its data format changed; sla-agent needs an update.",
+            "outlook_not_set_up", "classic Outlook isn't set up on your laptop; open it and sign in, then press Sync now.",
+            "outlook_blocked", "Outlook didn't let the agent read your mail; check Outlook, then press Sync now.");
 
     /** One sync run, as the status needs it. */
     public record RunInfo(String status, LocalDateTime startedAt, LocalDateTime finishedAt, String errorCode,
@@ -199,6 +212,8 @@ public final class SyncStatus {
                 code = failed.isEmpty() ? null : latest.parts().get(failed.get(0)).get("error_code");
                 if (!failed.isEmpty() && failed.get(0).equals("blackboard")) {
                     problems = BLACKBOARD_PROBLEMS;
+                } else if (!failed.isEmpty() && failed.get(0).equals("outlook")) {
+                    problems = OUTLOOK_PROBLEMS;
                 }
             }
             problem = code == null ? UNKNOWN : problems.getOrDefault(code, UNKNOWN);
@@ -211,5 +226,21 @@ public final class SyncStatus {
             return new Status(problem.state(), problem.headline(), problem.detail(), lastGoodFinishedAt, warning);
         }
         return new Status("success", "Synced " + at(latest.finishedAt(), now), null, lastGoodFinishedAt, warning);
+    }
+
+    /** A problem reading the Inbox, for the top of Mailbox: headline, what to do, and when. */
+    public record MailProblem(String headline, String detail, LocalDateTime at) {
+    }
+
+    /** The Outlook problem of the newest finished run that included Outlook (runs newest first), or null. */
+    public static MailProblem mailProblem(List<RunInfo> runs) {
+        RunInfo run = runs.stream()
+                .filter(r -> !r.status().equals(SchoolSyncRun.RUNNING) && r.parts().containsKey("outlook"))
+                .findFirst().orElse(null);
+        if (run == null || !"failed".equals(run.parts().get("outlook").get("status"))) {
+            return null;
+        }
+        Problem problem = OUTLOOK_PROBLEMS.getOrDefault(run.parts().get("outlook").get("error_code"), UNKNOWN);
+        return new MailProblem(problem.headline(), problem.detail(), run.finishedAt());
     }
 }

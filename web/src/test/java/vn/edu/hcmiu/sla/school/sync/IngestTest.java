@@ -9,10 +9,12 @@ import static vn.edu.hcmiu.sla.school.sync.Payloads.failed;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.fullPayload;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.list;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.ok;
+import static vn.edu.hcmiu.sla.school.sync.Payloads.outlookPayload;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,14 @@ import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolCourseRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolExamRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMail;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
+import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolTuition;
@@ -100,6 +110,18 @@ class IngestTest {
 
     @Autowired
     SchoolBbMaterialRepository bbMaterials;
+
+    @Autowired
+    SchoolMailRepository mails;
+
+    @Autowired
+    SchoolMailChangeRepository mailChanges;
+
+    @Autowired
+    SchoolMailChoiceRepository mailChoices;
+
+    @Autowired
+    SchoolMailStatusRepository mailStatus;
 
     Integer userId;
 
@@ -322,5 +344,118 @@ class IngestTest {
         syncBlackboard(ok(blackboardPayload()));
 
         assertThat(changes.findBySyncRunIdOrderById(lastRun().getId())).isEmpty();
+    }
+
+    // ---- Outlook ------------------------------------------------------------------
+
+    static final String KEY_1 = "e59f2b527cc57265e4719faaa2bed978ce0cb5468cc8fb109fb90b137e85b860";
+    static final String KEY_2 = "51e77916873ea9f29962ffb91e14c24907e439a41fc6bfdfad52010416af1631";
+
+    String syncOutlook(Integer userId, Object part) {
+        Map<String, Object> payload = fullPayload();
+        payload.put("outlook", part);
+        return sync(userId, payload);
+    }
+
+    void choose(Integer userId, String key) {
+        SchoolMailChoice choice = new SchoolMailChoice(userId, key, LocalDateTime.of(2026, 9, 28, 1, 0));
+        choice.setDone(true, LocalDateTime.of(2026, 9, 28, 1, 0));
+        mailChoices.save(choice);
+    }
+
+    @Test
+    void anOutlookPartSavesEachEmailsResultsInUtc() {
+        assertThat(syncOutlook(userId, ok(outlookPayload()))).isEqualTo("success");
+
+        List<SchoolMail> saved = mails.findByUserIdOrderByReceivedAtDescIdDesc(userId);
+        assertThat(saved).extracting(SchoolMail::getSubject).containsExactly("Make-up class",
+                "[THƯ MỜI] Workshop “Từ giảng đường tới công sở”",
+                "Web Application Development_S1_2026-27_G02: Online class on 22/9");
+        SchoolMail workshop = saved.get(1);
+        assertThat(workshop.getCategories()).containsExactly("event", "training_points");
+        assertThat(workshop.getDates()).containsExactly(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 10, 2));
+        assertThat(List.of(workshop.isLosesPoints(), workshop.isFromLecturer(), workshop.isSorted()))
+                .containsExactly(true, false, true);
+        assertThat(workshop.getReceivedAt()).isEqualTo(LocalDateTime.of(2026, 9, 24, 3, 30));
+        assertThat(saved.get(0).isSorted()).isFalse();
+        assertThat(saved.get(2).getBlackboardTitle()).isEqualTo("Online class on 22/9");
+        SchoolMailChange makeup = mailChanges.findOfUser(userId).stream()
+                .filter(c -> c.getKind().equals("makeup")).findFirst().orElseThrow();
+        assertThat(List.of(makeup.getCourseCode(), makeup.getDay(), makeup.getStart(), makeup.getEnd(), makeup.getRoom()))
+                .containsExactly("MA026IU", LocalDate.of(2026, 10, 3), LocalTime.of(13, 15), LocalTime.of(15, 45),
+                        "A2.401");
+        SchoolMailStatus status = mailStatus.findById(userId).orElseThrow();
+        assertThat(List.of(status.getSince(), status.isConnected())).containsExactly(LocalDate.of(2026, 8, 1), true);
+        assertThat(lastRun().getSections().get("outlook")).isEqualTo(Map.of("status", "ok"));
+    }
+
+    @Test
+    void mailNeverReachesTheWhatChangedFeed() {
+        syncOutlook(userId, ok(outlookPayload()));
+
+        assertThat(changes.findBySyncRunIdOrderById(lastRun().getId()))
+                .noneMatch(change -> change.getSection().equals("outlook"));
+    }
+
+    @Test
+    void aNewSyncReplacesTheMailAndKeepsChoicesForEmailsStillThere() {
+        syncOutlook(userId, ok(outlookPayload()));
+        choose(userId, KEY_1);
+        choose(userId, KEY_2);
+        Map<String, Object> data = outlookPayload();
+        list(data, "emails").subList(1, 3).clear();
+
+        syncOutlook(userId, ok(data));
+
+        assertThat(mails.findByUserIdOrderByReceivedAtDescIdDesc(userId)).extracting(SchoolMail::getMailKey)
+                .containsExactly(KEY_1);
+        assertThat(mailChanges.findOfUser(userId)).hasSize(1);
+        assertThat(mailChoices.findByUserId(userId)).extracting(SchoolMailChoice::getMailKey).containsExactly(KEY_1);
+    }
+
+    @Test
+    void anEmptyInboxRemovesEveryChoice() {
+        syncOutlook(userId, ok(outlookPayload()));
+        choose(userId, KEY_1);
+        Map<String, Object> data = outlookPayload();
+        data.put("emails", List.of());
+
+        syncOutlook(userId, ok(data));
+
+        assertThat(mails.count()).isZero();
+        assertThat(mailChoices.findByUserId(userId)).isEmpty();
+    }
+
+    @Test
+    void aFailedOutlookPartKeepsTheMailItHad() {
+        syncOutlook(userId, ok(outlookPayload()));
+
+        assertThat(syncOutlook(userId, failed("outlook_blocked", "Outlook didn't let the agent read your mail.")))
+                .isEqualTo("partial");
+
+        assertThat(mails.count()).isEqualTo(3);
+        assertThat(lastRun().getSections().get("outlook")).containsEntry("error_code", "outlook_blocked");
+    }
+
+    @Test
+    void anEmailSentTwiceWithTheSameKeyIsKeptOnce() {
+        Map<String, Object> data = outlookPayload();
+        list(data, "emails").add(list(data, "emails").get(0));
+
+        assertThat(syncOutlook(userId, ok(data))).isEqualTo("success");
+
+        assertThat(mails.count()).isEqualTo(3);
+    }
+
+    @Test
+    void anotherUsersMailIsLeftAlone() {
+        Integer other = makeUser("binh@example.com");
+        syncOutlook(other, ok(outlookPayload()));
+        choose(other, KEY_1);
+
+        syncOutlook(userId, ok(outlookPayload()));
+
+        assertThat(mails.findByUserIdOrderByReceivedAtDescIdDesc(other)).hasSize(3);
+        assertThat(mailChoices.findByUserId(other)).hasSize(1);
     }
 }

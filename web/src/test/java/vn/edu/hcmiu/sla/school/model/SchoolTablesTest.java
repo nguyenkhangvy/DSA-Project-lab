@@ -87,4 +87,37 @@ class SchoolTablesTest {
         assertThat(again.getAnnouncements().get(0).getText()).isEqualTo(text);
         assertThat(again.getAssignments().get(0).getScore()).isEqualTo(6.666666667);
     }
+
+    @Test
+    void mailCategoriesAndDatesAreKeptAsCommaSeparatedText() {
+        SchoolMail mail = new SchoolMail(userId, "a".repeat(64), "00AB", null, SEPT_28, "P.CTSV [OSS]",
+                "oss@hcmiu.edu.vn", "Workshop", List.of("event", "training_points"), false,
+                List.of(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2)), true, true, null);
+        mail.getChanges().add(new SchoolMailChange(mail, "IT093IU", "makeup", LocalDate.of(2026, 10, 3),
+                java.time.LocalTime.of(13, 15), null, "A2.401"));
+        db.persist(mail);
+        SchoolMail empty = new SchoolMail(userId, "b".repeat(64), "00AC", "T1", SEPT_28, "", "", "", List.of(), false,
+                List.of(), false, false, null);
+        db.persist(empty);
+
+        SchoolMail again = reloaded(mail, mail.getId());
+
+        assertThat(again.getCategories()).containsExactly("event", "training_points");
+        assertThat(again.getDates()).containsExactly(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2));
+        assertThat(again.getChanges()).extracting(SchoolMailChange::getStart).containsExactly(java.time.LocalTime.of(13, 15));
+        SchoolMail emptyAgain = db.find(SchoolMail.class, empty.getId());
+        assertThat(List.of(emptyAgain.getCategories(), emptyAgain.getDates())).containsExactly(List.of(), List.of());
+    }
+
+    @Test
+    void aChoiceWithoutMoveToKeepsNoCategories() {
+        SchoolMailChoice choice = new SchoolMailChoice(userId, "a".repeat(64), SEPT_28);
+        choice.setDone(true, SEPT_28);
+        db.persist(choice);
+
+        SchoolMailChoice again = reloaded(choice, choice.getId());
+
+        assertThat(List.of(again.isDone(), again.isMoved())).containsExactly(true, false);
+        assertThat(again.getCategories()).isNull();
+    }
 }

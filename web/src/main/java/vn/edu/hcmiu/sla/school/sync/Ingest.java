@@ -6,8 +6,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +30,13 @@ import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolCourseRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolExamRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMail;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
+import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolTuition;
@@ -45,14 +54,18 @@ import vn.edu.hcmiu.sla.school.sync.SyncContract.Course;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Exam;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Exams;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.MailClassChange;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.MailItem;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.Outlook;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Section;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Timetable;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Tuition;
 
 /**
  * Saves the result of a sync run, in one transaction. Each part that arrived correctly replaces that
- * user's rows for that term (Blackboard: all of them), after comparing old and new rows for the
- * "What changed" feed. A part that failed keeps its old rows. The Java twin of ingest.py.
+ * user's rows for that term (Blackboard and Outlook: all of them), after comparing old and new rows for the
+ * "What changed" feed (mail never adds to it). A part that failed keeps its old rows. The Java twin of
+ * ingest.py.
  */
 @Service
 public class Ingest {
@@ -67,11 +80,17 @@ public class Ingest {
     private final SchoolBbAnnouncementRepository bbAnnouncements;
     private final SchoolBbAssignmentRepository bbAssignments;
     private final SchoolBbMaterialRepository bbMaterials;
+    private final SchoolMailRepository mails;
+    private final SchoolMailChangeRepository mailChanges;
+    private final SchoolMailChoiceRepository mailChoices;
+    private final SchoolMailStatusRepository mailStatus;
 
     public Ingest(SchoolSyncRunRepository runs, SchoolChangeRepository changes, SchoolCourseRepository courses,
             SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolTuitionRepository tuition,
             SchoolBbCourseRepository bbCourses, SchoolBbAnnouncementRepository bbAnnouncements,
-            SchoolBbAssignmentRepository bbAssignments, SchoolBbMaterialRepository bbMaterials) {
+            SchoolBbAssignmentRepository bbAssignments, SchoolBbMaterialRepository bbMaterials,
+            SchoolMailRepository mails, SchoolMailChangeRepository mailChanges, SchoolMailChoiceRepository mailChoices,
+            SchoolMailStatusRepository mailStatus) {
         this.runs = runs;
         this.changes = changes;
         this.courses = courses;
@@ -82,6 +101,10 @@ public class Ingest {
         this.bbAnnouncements = bbAnnouncements;
         this.bbAssignments = bbAssignments;
         this.bbMaterials = bbMaterials;
+        this.mails = mails;
+        this.mailChanges = mailChanges;
+        this.mailChoices = mailChoices;
+        this.mailStatus = mailStatus;
     }
 
     /** Aware time as sent -> UTC without an offset, as stored. */
@@ -104,6 +127,7 @@ public class Ingest {
         part(run, summary, "exams", payload.exams(), data -> saveExams(userId, data, now), now);
         part(run, summary, "tuition", payload.tuition(), data -> saveTuition(userId, data), now);
         part(run, summary, "blackboard", payload.blackboard(), data -> saveBlackboard(userId, data), now);
+        part(run, summary, "outlook", payload.outlook(), data -> saveOutlook(userId, data, now), now);
         run.setSections(summary);
         return run.getStatus();
     }
@@ -230,5 +254,35 @@ public class Ingest {
             bbCourses.save(row);
         }
         return Changes.blackboard(old, fresh);
+    }
+
+    /**
+     * Replaces the user's mail with this upload, keeping the student's Done and Move to… choices for the emails
+     * still there. An email sent twice with the same key is kept once (the first).
+     */
+    private List<Change> saveOutlook(Integer userId, Outlook data, LocalDateTime now) {
+        mailChanges.deleteAllOfUser(userId);
+        mails.deleteAllOfUser(userId);
+        Set<String> keys = new LinkedHashSet<>();
+        for (MailItem item : data.emails()) {
+            if (!keys.add(item.key())) {
+                continue;
+            }
+            SchoolMail mail = new SchoolMail(userId, item.key(), item.entryId(), item.threadId(),
+                    toUtc(item.receivedAt()), item.senderName(), item.senderAddress(), item.subject(), item.categories(),
+                    item.fromLecturer(), item.dates(), item.losesPoints(), item.sorted(), item.blackboardTitle());
+            for (MailClassChange c : item.classChanges()) {
+                mail.getChanges().add(new SchoolMailChange(mail, c.courseCode(), c.kind(), c.day(), c.start(), c.end(),
+                        c.room()));
+            }
+            mails.save(mail);
+        }
+        if (keys.isEmpty()) {
+            mailChoices.deleteAllOfUser(userId);
+        } else {
+            mailChoices.deleteOthers(userId, keys);
+        }
+        mailStatus.save(new SchoolMailStatus(userId, data.since(), data.connected(), now));
+        return List.of();
     }
 }

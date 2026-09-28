@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import vn.edu.hcmiu.sla.school.pages.SyncStatus.MailProblem;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.RunInfo;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.Status;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.SystemLine;
@@ -219,5 +220,66 @@ class SyncStatusTest {
         assertThat(result.state()).isEqualTo("paused");
         assertThat(result.headline()).contains("Blackboard");
         assertThat(result.detail()).contains("sla-agent setup --blackboard");
+    }
+
+    // ---- Outlook ------------------------------------------------------------------
+
+    @Test
+    void outlookHasItsOwnLineAndSaysWhatToDo() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("outlook", bad("outlook_blocked"));
+
+        List<SystemLine> lines = SyncStatus.systemLines(List.of(run("partial", "07:00", "07:05", null, sections)), NOW);
+
+        assertThat(lines).extracting(SystemLine::name, SystemLine::state)
+                .containsExactly(tuple("EduSoft", "ok"), tuple("Outlook", "failed"));
+        assertThat(lines.get(1).text()).isEqualTo(
+                "Outlook didn't let the agent read your mail; check Outlook, then press Sync now.");
+    }
+
+    @Test
+    void outlookFailureHeadlineNamesOutlook() {
+        Status result = status(run("failed", "07:00", "07:05", null,
+                parts(Map.entry("outlook", bad("outlook_not_set_up")))));
+
+        assertThat(result.headline()).isEqualTo("Sync failed: classic Outlook isn't set up on your laptop");
+        assertThat(result.detail()).contains("Open Outlook (classic)");
+    }
+
+    @Test
+    void aPartlyFailedOutlookIsNamedAmongThePartsThatFailed() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("outlook", bad("outlook_blocked"));
+
+        assertThat(status(run("partial", "07:00", "07:05", null, sections)).detail())
+                .isEqualTo("Couldn't read: Outlook. The previous data for it is still shown.");
+    }
+
+    @Test
+    void mailProblemComesFromTheNewestRunThatReadOutlook() {
+        RunInfo edusoftOnly = run("success", "07:00", "07:05", null, edu());
+        RunInfo blocked = run("partial", "05:00", "05:05", null, parts(Map.entry("timetable", OK),
+                Map.entry("outlook", bad("outlook_blocked"))));
+
+        MailProblem problem = SyncStatus.mailProblem(List.of(edusoftOnly, blocked));
+
+        assertThat(problem).isEqualTo(new MailProblem("Sync failed: Outlook didn't let the agent read your mail",
+                SyncStatus.CHECK_OUTLOOK, at("05:05")));
+    }
+
+    @Test
+    void noMailProblemWhenOutlookWasReadOrNeverTried() {
+        RunInfo read = run("success", "07:00", "07:05", null, parts(Map.entry("outlook", OK)));
+
+        assertThat(SyncStatus.mailProblem(List.of(read))).isNull();
+        assertThat(SyncStatus.mailProblem(List.of(run("success", "07:00", "07:05", null, edu())))).isNull();
+        assertThat(SyncStatus.mailProblem(List.of())).isNull();
+    }
+
+    @Test
+    void anUnknownOutlookProblemStillSaysSomething() {
+        RunInfo crashed = run("partial", "07:00", "07:05", null, parts(Map.entry("outlook", bad("unknown"))));
+
+        assertThat(SyncStatus.mailProblem(List.of(crashed)).headline()).isEqualTo("Sync failed");
     }
 }
