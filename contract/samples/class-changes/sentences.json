@@ -1,0 +1,541 @@
+{
+  "about": "Example announcements and the class changes each must give. Both the laptop agent's Python reader (agent/tests/test_class_changes.py) and the website's Java reader (ClassChangesTest) check every case, so the two readers can't drift apart. changes lists each distinct change once, in the order it is first found. posted_at is UTC without an offset; days and times are Vietnam time.",
+  "cases": [
+    {
+      "name": "real: probability online",
+      "title": "ONLINE CLASS ON SEPTEMBER 24",
+      "text": "Dear all, The class on September 24 is online on MS TEAMS. Please use the following code to access the class.",
+      "posted_at": "2026-09-23T16:07:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "real: web application online",
+      "title": "Online Class Notification – Web Application – 22 September 2026",
+      "text": "Dear Students, Please be informed that our Web Application class will be conducted online via Microsoft Teams. Date: Tuesday, 22 September 2026 Time: From 8:00 AM Platform: Microsoft Teams Online Class Link: https://teams.microsoft.com/l/meetup-join/19%3ameeting_x%40thread.v2/0?context=%7b%22Tid%22%3a%2212-10%22",
+      "posted_at": "2026-09-15T16:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-22"
+        }
+      ]
+    },
+    {
+      "name": "real: physics online",
+      "title": "Link học online sáng thứ Sáu, 18/9/2026, 8g00-9g40",
+      "text": "Link: Physics 4 Friday, September 18 Time zone: Asia/Ho_Chi_Minh Google Meet joining info Video call link: https://meet.google.com/abc-defg-hij",
+      "posted_at": "2026-09-17T09:30:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-18"
+        }
+      ]
+    },
+    {
+      "name": "real: probability cancelled",
+      "title": "Cancel class on September 17",
+      "text": "The class this week on September 17 will be canceled. The makeup schedule will be announced later",
+      "posted_at": "2026-09-15T02:36:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-17"
+        }
+      ]
+    },
+    {
+      "name": "real: only a sentence with a change word counts",
+      "title": "Logistics Reminder",
+      "text": "Lecture attendance: You will attend the first five lectures with me in person in Room A1.603 , with our last in-person lecture on 10/10. Attendance will be taken during these sessions. Starting the week of 12/10 , lectures will be taught online by Dr. Nguyen Van A via MS Teams. Please register your group in SkillsGroupTerm1-26-27_Sat.xlsx , available on our MS Teams Channel.",
+      "posted_at": "2026-09-22T03:59:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-10-12"
+        }
+      ]
+    },
+    {
+      "name": "date format: Online class on Sept. 24",
+      "title": "Online class on Sept. 24",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "date format: Online class on 24th September",
+      "title": "Online class on 24th September",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "date format: Online class on September 24th, 2026",
+      "title": "Online class on September 24th, 2026",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "date format: Lớp học trực tuyến ngày 24 tháng 9 năm 2026",
+      "title": "Lớp học trực tuyến ngày 24 tháng 9 năm 2026",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "date format: The lecture on 24/09 is online",
+      "title": "The lecture on 24/09 is online",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Lớp nghỉ ngày 24/09",
+      "title": "Lớp nghỉ ngày 24/09",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Hủy buổi học 24-9-2026",
+      "title": "Hủy buổi học 24-9-2026",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: No class on Sep 24",
+      "title": "No class on Sep 24",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Class on 24/9 is cancelled",
+      "title": "Class on 24/9 is cancelled",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Nghỉ học ngày 24/9",
+      "title": "Nghỉ học ngày 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Classes on 24/9 are cancelled",
+      "title": "Classes on 24/9 are cancelled",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: Class cancellation on 24/9",
+      "title": "Class cancellation on 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "cancelled: We are cancelling the lecture on 24/9",
+      "title": "We are cancelling the lecture on 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "online: Lectures on 24/9 will be online",
+      "title": "Lectures on 24/9 will be online",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "nothing (no class word): Submit your report online by 24/9",
+      "title": "Submit your report online by 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (before the posting day): The class on September 10 was online",
+      "title": "The class on September 10 was online",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (no date): Online class soon",
+      "title": "Online class soon",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (times are not dates): Online class from 10:30-11:45 in A2.401",
+      "title": "Online class from 10:30-11:45 in A2.401",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (dates inside links are ignored): Online class, see https://example.com/10-11/12",
+      "title": "Online class, see https://example.com/10-11/12",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (classmates is not a class word): Tell your classmates to submit online by 24/9",
+      "title": "Tell your classmates to submit online by 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (nor is classroom): The classroom booking system goes online on 24/9",
+      "title": "The classroom booking system goes online on 24/9",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "nothing (a deadline, not a class): Nộp bài trực tuyến trước ngày 24/9 cho môn học",
+      "title": "Nộp bài trực tuyến trước ngày 24/9 cho môn học",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": []
+    },
+    {
+      "name": "range: No class on Thursday 24/9 (8-10)",
+      "title": "No class on Thursday 24/9 (8-10)",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "range: online, 8-10am",
+      "title": "The class on Thursday 24/9 will be online, 8-10am",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "range: Học bù ngày 3/10, tiết 10-12",
+      "title": "Học bù ngày 3/10, tiết 10-12",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03"
+        }
+      ]
+    },
+    {
+      "name": "paragraphs stay separate sentences",
+      "title": "Notice",
+      "text": "our class on 24/9 will be online via MS Teams\nReminder: Homework 2 is due in class on 1/10",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "name": "a date without a year is placed near the posting date",
+      "title": "Online class on January 5",
+      "text": "",
+      "posted_at": "2026-12-28T02:00:00",
+      "changes": [
+        {
+          "kind": "online",
+          "day": "2027-01-05"
+        }
+      ]
+    },
+    {
+      "name": "each date takes the nearest change word",
+      "title": "The class on 26/9 is cancelled; make-up class on 3/10 from 8:00 to 9:40 in A2.401.",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-26"
+        },
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "08:00",
+          "end": "09:40",
+          "room": "A2.401"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Học bù ngày 3/10",
+      "title": "Học bù ngày 3/10",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up class on 3/10, 8g00-9g40",
+      "title": "Make-up class on 3/10, 8g00-9g40",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "08:00",
+          "end": "09:40"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make up class on 3/10 at 13h15",
+      "title": "Make up class on 3/10 at 13h15",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "13:15"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Makeup class online on 3/10, 1:15 PM",
+      "title": "Makeup class online on 3/10, 1:15 PM",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "13:15",
+          "room": "Online"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up lecture on 3/10 from 8:00 AM to 9:40 AM, room R109",
+      "title": "Make-up lecture on 3/10 from 8:00 AM to 9:40 AM, room R109",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "08:00",
+          "end": "09:40",
+          "room": "R109"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up class at 8:00 on 3/10",
+      "title": "Make-up class at 8:00 on 3/10",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "08:00"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up class on 3/10 from 1:15 to 3:45 PM",
+      "title": "Make-up class on 3/10 from 1:15 to 3:45 PM",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "13:15",
+          "end": "15:45"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up class on 3/10, 1:15-3:45pm",
+      "title": "Make-up class on 3/10, 1:15-3:45pm",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "13:15",
+          "end": "15:45"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Make-up class on 3/10 from 11:00 to 1:00 PM",
+      "title": "Make-up class on 3/10 from 11:00 to 1:00 PM",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "11:00",
+          "end": "13:00"
+        }
+      ]
+    },
+    {
+      "name": "make-up: Thầy dạy bù ngày 3/10",
+      "title": "Thầy dạy bù ngày 3/10",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-03"
+        }
+      ]
+    },
+    {
+      "name": "a make-up takes the time and room next to its own date",
+      "title": "Class on Thursday 24/9 13:15-15:45 cancelled, make-up class on Saturday 3/10 8:00-9:40 room A2.401",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "cancelled",
+          "day": "2026-09-24"
+        },
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "08:00",
+          "end": "09:40",
+          "room": "A2.401"
+        }
+      ]
+    },
+    {
+      "name": "two make-ups in one sentence keep their own times",
+      "title": "Make-up class on 1/10 at 8:00 and make-up class on 3/10 at 14:00 in R109",
+      "text": "",
+      "posted_at": "2026-09-20T02:00:00",
+      "changes": [
+        {
+          "kind": "makeup",
+          "day": "2026-10-01",
+          "start": "08:00"
+        },
+        {
+          "kind": "makeup",
+          "day": "2026-10-03",
+          "start": "14:00",
+          "room": "R109"
+        }
+      ]
+    }
+  ]
+}

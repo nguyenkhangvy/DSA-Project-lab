@@ -2,10 +2,14 @@ package vn.edu.hcmiu.sla.school.schedule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -15,6 +19,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Announced;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.ClassChange;
@@ -80,6 +87,33 @@ class ClassChangesTest {
     void theRealAnnouncements(Real announcement, Announced expected) {
         assertThat(ClassChanges.readAnnouncement(announcement.title(), announcement.text(), announcement.postedAt()))
                 .containsOnly(expected);
+    }
+
+    /** contract/samples/class-changes/sentences.json: the laptop agent's Python reader checks the same cases. */
+    static Stream<Arguments> sharedExamples() throws IOException {
+        JsonNode cases = JsonMapper.builder().build()
+                .readTree(Files.readString(Path.of("..", "contract", "samples", "class-changes", "sentences.json")))
+                .get("cases");
+        return cases.valueStream().map(c -> Arguments.of(c.get("name").asString(), c));
+    }
+
+    static LocalTime clock(JsonNode change, String field) {
+        return change.hasNonNull(field) ? LocalTime.parse(change.get(field).asString()) : null;
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("sharedExamples")
+    void everySharedExample(String name, JsonNode example) {
+        List<Announced> expected = example.get("changes").valueStream()
+                .map(c -> new Announced(c.get("kind").asString(), LocalDate.parse(c.get("day").asString()),
+                        clock(c, "start"), clock(c, "end"), c.hasNonNull("room") ? c.get("room").asString() : null))
+                .toList();
+
+        List<Announced> found = ClassChanges.readAnnouncement(example.get("title").asString(),
+                example.get("text").asString(), LocalDateTime.parse(example.get("posted_at").asString()));
+
+        // A title and a text that say the same thing give the same change twice; the file lists it once.
+        assertThat(List.copyOf(new LinkedHashSet<>(found))).isEqualTo(expected);
     }
 
     @Test
