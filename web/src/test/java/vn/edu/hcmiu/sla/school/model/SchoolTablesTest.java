@@ -31,6 +31,9 @@ class SchoolTablesTest {
     @Autowired
     UserRepository users;
 
+    @Autowired
+    SchoolMailSettingsRepository settings;
+
     Integer userId;
 
     @BeforeEach
@@ -124,5 +127,17 @@ class SchoolTablesTest {
 
         assertThat(List.of(again.isDone(), again.isMoved())).containsExactly(true, false);
         assertThat(again.getCategories()).isNull();
+    }
+
+    @Test
+    void aChoiceRemembersOpeningAndTheSettingIsOnWithoutARow() {
+        SchoolMailChoice choice = new SchoolMailChoice(userId, "a".repeat(64), SEPT_28);
+        choice.open(SEPT_28);
+        db.persist(choice);
+
+        assertThat(List.of(reloaded(choice, choice.getId()).isOpened(), settings.autoDone(userId)))
+                .containsExactly(true, true);
+        settings.save(new SchoolMailSettings(userId, false));
+        assertThat(settings.autoDone(userId)).isFalse();
     }
 }

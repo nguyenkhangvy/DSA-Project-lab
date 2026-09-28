@@ -32,6 +32,9 @@ public class SchoolMailChoice {
     @Column(nullable = false)
     private boolean done;
 
+    @Column(nullable = false)
+    private boolean opened;
+
     @Convert(converter = CommaLists.Words.class)
     @Column(length = 100)
     private List<String> categories;
@@ -67,6 +70,11 @@ public class SchoolMailChoice {
         return done;
     }
 
+    /** Whether the student opened this email from Mailbox (its subject or "Web ↗"). */
+    public boolean isOpened() {
+        return opened;
+    }
+
     public List<String> getCategories() {
         return categories;
     }
@@ -86,6 +94,11 @@ public class SchoolMailChoice {
 
     public void setDone(boolean done, LocalDateTime now) {
         this.done = done;
+        this.updatedAt = now;
+    }
+
+    public void open(LocalDateTime now) {
+        this.opened = true;
         this.updatedAt = now;
     }
 

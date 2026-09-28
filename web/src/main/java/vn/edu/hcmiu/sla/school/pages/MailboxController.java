@@ -2,6 +2,7 @@ package vn.edu.hcmiu.sla.school.pages;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -23,16 +26,21 @@ import vn.edu.hcmiu.sla.core.Flash;
 import vn.edu.hcmiu.sla.school.VietnamTime;
 import vn.edu.hcmiu.sla.school.mail.Mailbox;
 import vn.edu.hcmiu.sla.school.mail.Mailbox.Card;
+import vn.edu.hcmiu.sla.school.mail.Mailbox.Session;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSessionRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSettings;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSettingsRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.RunInfo;
 
 /**
- * The Mailbox tab: the student's emails in priority boxes, with Done and Move to…. Both only change the app,
- * never the real mailbox. A card of another user is 404.
+ * The Mailbox tab: the student's emails in priority boxes, with Done, Move to… and opening (which marks a card
+ * opened, and Done when auto-Done is on). They only change the app, never the real mailbox. A card of another
+ * user is 404.
  */
 @Controller
 @RequestMapping("/school/mailbox")
@@ -43,14 +51,19 @@ public class MailboxController {
     private final Clock clock;
     private final SchoolMailRepository mails;
     private final SchoolMailChoiceRepository choices;
+    private final SchoolMailSessionRepository sessions;
+    private final SchoolMailSettingsRepository settings;
     private final SchoolMailStatusRepository statuses;
     private final SchoolSyncRunRepository runs;
 
     public MailboxController(Clock clock, SchoolMailRepository mails, SchoolMailChoiceRepository choices,
+            SchoolMailSessionRepository sessions, SchoolMailSettingsRepository settings,
             SchoolMailStatusRepository statuses, SchoolSyncRunRepository runs) {
         this.clock = clock;
         this.mails = mails;
         this.choices = choices;
+        this.sessions = sessions;
+        this.settings = settings;
         this.statuses = statuses;
         this.runs = runs;
     }
@@ -62,7 +75,11 @@ public class MailboxController {
     private Mailbox.View view(Integer userId) {
         Map<String, SchoolMailChoice> byKey = choices.findByUserId(userId).stream()
                 .collect(Collectors.toMap(SchoolMailChoice::getMailKey, Function.identity()));
-        return Mailbox.build(mails.findByUserIdOrderByReceivedAtDescIdDesc(userId), byKey, VietnamTime.date(now()));
+        Map<String, List<Session>> sessionsByKey = sessions.findOfUser(userId).stream()
+                .collect(Collectors.groupingBy(s -> s.getMail().getMailKey(),
+                        Collectors.mapping(s -> new Session(s.getDay(), s.getStart(), s.getEnd()), Collectors.toList())));
+        return Mailbox.build(mails.findByUserIdOrderByReceivedAtDescIdDesc(userId), byKey, sessionsByKey,
+                VietnamTime.of(now()).toLocalDateTime());
     }
 
     /** The user's card whose newest email has this key, else 404. */
@@ -84,8 +101,34 @@ public class MailboxController {
         model.addAttribute("status", statuses.findById(user.id()).orElse(null));
         model.addAttribute("problem", SyncStatus.mailProblem(
                 runs.findTop10ByUserIdOrderByStartedAtDescIdDesc(user.id()).stream().map(RunInfo::of).toList()));
-        model.addAttribute("categories", Mailbox.CATEGORIES);
+        model.addAttribute("labels", Mailbox.LABELS);
+        model.addAttribute("autoDone", settings.autoDone(user.id()));
         return "school/mailbox";
+    }
+
+    /**
+     * The student opened this card's email from its subject or "Web ↗" (mailbox.js). It is marked opened, and
+     * Done too when auto-Done is on, unless it is an event or school task still ahead. Answers {"done": …}.
+     */
+    @PostMapping("/{key}/opened")
+    @ResponseBody
+    Map<String, Boolean> opened(@AuthenticationPrincipal AppUser user, @PathVariable String key) {
+        Card card = card(user.id(), key);
+        SchoolMailChoice choice = choice(user.id(), card.key());
+        choice.open(now());
+        if (settings.autoDone(user.id()) && card.doneWhenOpened()) {
+            choice.setDone(true, now());
+        }
+        choices.save(choice);
+        return Map.of("done", choice.isDone());
+    }
+
+    @PostMapping("/settings")
+    String saveSettings(@AuthenticationPrincipal AppUser user, @RequestParam(defaultValue = "false") boolean autoDone) {
+        SchoolMailSettings mine = settings.findById(user.id()).orElseGet(() -> new SchoolMailSettings(user.id(), true));
+        mine.setAutoDone(autoDone);
+        settings.save(mine);
+        return "redirect:/school/mailbox";
     }
 
     @PostMapping("/{key}/done")

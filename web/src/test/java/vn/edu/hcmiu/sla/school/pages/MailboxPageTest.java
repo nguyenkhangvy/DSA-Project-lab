@@ -123,13 +123,15 @@ class MailboxPageTest {
 
         assertThat(html.indexOf("From lecturers")).isLessThan(html.indexOf("School tasks"));
         assertThat(box(html, "lecturers")).contains("Re: Slide bài tập bị thiếu số trang").contains("2 messages")
-                .doesNotContain("id=\"mail-" + LAB_QUESTION + "\"");
+                .contains("<span class=\"count\">(1)</span>").doesNotContain("id=\"mail-" + LAB_QUESTION + "\"");
         assertThat(box(html, "money")).contains("Xuất hóa đơn điện tử")
-                .contains("Couldn't sort this email automatically. Use Move to…");
-        assertThat(box(html, "events")).contains("★ Training points").contains("Next: Wed 30/09")
+                .contains("title=\"Couldn't sort this email automatically. Use Move to…\">Not sorted</span>");
+        assertThat(box(html, "events")).contains("<span class=\"cat cat-event\">Event</span>")
+                .contains("<span class=\"cat cat-training_points\">★ Points</span>").contains("Next: Wed 30/09")
                 .doesNotContain("lose points");
         assertThat(box(html, "tasks")).contains("Nothing here.");
-        assertThat(html).contains("Mail read from Outlook Mon 28/09 07:00");
+        assertThat(html).contains("Mail read from Outlook Mon 28/09 07:00").doesNotContain("Show all")
+                .doesNotContain("Open in Outlook");
     }
 
     @Test
@@ -138,8 +140,10 @@ class MailboxPageTest {
 
         String card = box(page(), "events");
 
-        assertThat(card).contains("href=\"sla-mail:00A1AAAA\"");
+        assertThat(card).containsPattern("class=\"mail-subject\" href=\"sla-mail:00A1AAAA\"[^>]*"
+                + "data-opened=\"/school/mailbox/" + TCL + "/opened\"");
         assertThat(card).contains("href=\"https://outlook.office.com/mail/\" target=\"_blank\" rel=\"noopener noreferrer\"");
+        assertThat(card).contains("class=\"done-button\">✓ Done</button>");
     }
 
     @Test
@@ -182,6 +186,53 @@ class MailboxPageTest {
         assertThat(box(page(), "money")).contains("Xuất hóa đơn");
     }
 
+    String open(String key) throws Exception {
+        return mvc.perform(post("/school/mailbox/" + key + "/opened").with(user(an)).with(csrf()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void openingAnEmailMarksItDoneWhenAutoDoneIsOn() throws Exception {
+        inbox(an);
+
+        assertThat(open(INVOICE)).isEqualTo("{\"done\":true}");
+
+        assertThat(box(page(), "money")).doesNotContain("Xuất hóa đơn");
+        assertThat(box(page(), "done")).contains("Done (1)").contains("mail-row is-opened is-done");
+    }
+
+    @Test
+    void openingAnEventStillAheadOnlyMarksItOpened() throws Exception {
+        inbox(an);
+
+        assertThat(open(TCL)).isEqualTo("{\"done\":false}");
+
+        assertThat(box(page(), "events")).containsPattern("id=\"mail-" + TCL + "\"\\s+class=\"mail-row is-opened\"");
+    }
+
+    @Test
+    void withAutoDoneOffOpeningOnlyMarksItOpened() throws Exception {
+        inbox(an);
+        mvc.perform(post("/school/mailbox/settings").with(user(an)).with(csrf()))
+                .andExpect(redirectedUrl("/school/mailbox"));
+
+        assertThat(open(INVOICE)).isEqualTo("{\"done\":false}");
+
+        String html = page();
+        assertThat(box(html, "money")).contains("class=\"mail-row is-opened\"");
+        assertThat(html).containsPattern("id=\"auto-done\" name=\"autoDone\" value=\"true\">");
+    }
+
+    @Test
+    void autoDoneIsOnUntilTheStudentTurnsItOff() throws Exception {
+        inbox(an);
+
+        assertThat(page()).contains("id=\"auto-done\" name=\"autoDone\" value=\"true\" checked=\"checked\"");
+
+        mvc.perform(post("/school/mailbox/settings").with(user(an)).with(csrf()).param("autoDone", "true"));
+        assertThat(page()).contains("checked=\"checked\"");
+    }
+
     @Test
     void moveToPutsACardWhereTheStudentChoseForEveryEmailOfTheThread() throws Exception {
         inbox(an);
@@ -190,9 +241,19 @@ class MailboxPageTest {
                         .param("category1", "school_task").param("category2", "").param("fromLecturer", "false"))
                 .andExpect(redirectedUrl("/school/mailbox#mail-" + LAB_REPLY));
 
-        assertThat(box(page(), "tasks")).contains("Re: Slide bài tập").contains("School task");
+        assertThat(box(page(), "tasks")).contains("Re: Slide bài tập").contains(">Task</span>");
         assertThat(choices.findByUserId(an.id())).extracting(SchoolMailChoice::getMailKey)
                 .containsExactlyInAnyOrder(LAB_QUESTION, LAB_REPLY);
+    }
+
+    @Test
+    void anUnsortedEmailMovedByTheStudentIsNoLongerMarkedNotSorted() throws Exception {
+        inbox(an);
+
+        mvc.perform(post("/school/mailbox/" + INVOICE + "/edit").with(user(an)).with(csrf())
+                .param("category1", "money").param("category2", ""));
+
+        assertThat(box(page(), "money")).contains("Xuất hóa đơn").doesNotContain("Not sorted");
     }
 
     @Test
@@ -237,6 +298,8 @@ class MailboxPageTest {
 
         mvc.perform(post("/school/mailbox/" + TCL + "/done").with(user(an)).with(csrf())).andExpect(status().isNotFound());
         mvc.perform(get("/school/mailbox/" + TCL + "/edit").with(user(an))).andExpect(status().isNotFound());
+        mvc.perform(post("/school/mailbox/" + TCL + "/opened").with(user(an)).with(csrf()))
+                .andExpect(status().isNotFound());
         assertThat(page()).doesNotContain("Workshop");
     }
 
@@ -245,6 +308,8 @@ class MailboxPageTest {
         inbox(an);
 
         mvc.perform(post("/school/mailbox/" + TCL + "/done").with(user(an))).andExpect(status().isForbidden());
+        mvc.perform(post("/school/mailbox/" + TCL + "/opened").with(user(an))).andExpect(status().isForbidden());
+        mvc.perform(post("/school/mailbox/settings").with(user(an))).andExpect(status().isForbidden());
     }
 
     @Test

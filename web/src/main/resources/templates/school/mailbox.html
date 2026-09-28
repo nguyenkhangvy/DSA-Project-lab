@@ -20,30 +20,33 @@
       <code>sla-agent setup --outlook</code>.</p>
   </section>
 
-  <th:block th:if="${status != null}">
-    <p class="muted mail-read" th:text="|Mail read from Outlook ${@schoolFormat.when(status.syncedAt)}|">Mail read from
-      Outlook Mon 28/09 07:02</p>
+  <div class="mailbox" th:if="${status != null}"
+       th:attr="data-csrf-header=${_csrf.headerName},data-csrf=${_csrf.token}">
+    <div class="mail-top">
+      <p class="muted mail-read" th:text="|Mail read from Outlook ${@schoolFormat.when(status.syncedAt)}|">Mail read
+        from Outlook Mon 28/09 07:02</p>
+      <form class="mail-setting" method="post" th:action="@{/school/mailbox/settings}">
+        <label class="check"><input type="checkbox" id="auto-done" name="autoDone" value="true" th:checked="${autoDone}">
+          Mark emails as done when I open them</label>
+        <noscript><button type="submit" class="link-button">Save</button></noscript>
+      </form>
+    </div>
     <p class="status-warning" th:unless="${status.connected}">Outlook was offline when your laptop last read it, so the
       newest mail may be missing. Open Outlook (classic) and check that you're signed in.</p>
 
     <section class="card mailbox-box" th:each="box : ${view.boxes}" th:id="|box-${box.id}|">
-      <h2 th:text="${box.title}">From lecturers</h2>
+      <h2><th:block th:text="${box.title}">From lecturers</th:block> <span class="count"
+          th:text="|(${box.cards.size()})|">(3)</span></h2>
       <p class="muted" th:if="${box.empty()}">Nothing here.</p>
-      <ul class="mail-cards" th:unless="${box.cards.isEmpty()}">
+      <ul class="mail-rows" th:unless="${box.cards.isEmpty()}">
         <!--/* th:replace runs before th:each on one element, so the loop is on a block around it. */-->
         <th:block th:each="card : ${box.cards}"><li
-            th:replace="~{school/mailbox :: card(${card}, ${box.id == 'events' or box.id == 'tasks'})}"></li></th:block>
+            th:replace="~{school/mailbox :: row(${card}, ${box.id == 'events' or box.id == 'tasks'})}"></li></th:block>
       </ul>
-      <details th:unless="${box.more.isEmpty()}">
-        <summary th:text="|Show all (${box.cards.size() + box.more.size()})|">Show all (14)</summary>
-        <ul class="mail-cards">
-          <th:block th:each="card : ${box.more}"><li th:replace="~{school/mailbox :: card(${card}, false)}"></li></th:block>
-        </ul>
-      </details>
       <details th:unless="${box.past.isEmpty()}">
         <summary th:text="|${box.pastTitle} (${box.past.size()})|">Past events (15)</summary>
-        <ul class="mail-cards">
-          <th:block th:each="card : ${box.past}"><li th:replace="~{school/mailbox :: card(${card}, false)}"></li></th:block>
+        <ul class="mail-rows">
+          <th:block th:each="card : ${box.past}"><li th:replace="~{school/mailbox :: row(${card}, false)}"></li></th:block>
         </ul>
       </details>
     </section>
@@ -51,39 +54,48 @@
     <section class="card mailbox-box" id="box-done">
       <details>
         <summary th:text="|Done (${view.done.size()})|">Done (0)</summary>
-        <ul class="mail-cards" th:unless="${view.done.isEmpty()}">
-          <th:block th:each="card : ${view.done}"><li th:replace="~{school/mailbox :: card(${card}, false)}"></li></th:block>
+        <ul class="mail-rows" th:unless="${view.done.isEmpty()}">
+          <th:block th:each="card : ${view.done}"><li th:replace="~{school/mailbox :: row(${card}, false)}"></li></th:block>
         </ul>
       </details>
     </section>
-  </th:block>
+  </div>
+  <script th:src="@{/js/mailbox.js}"></script>
 </main>
 
-<!--/* One card (Mailbox.Card). showNext: Events and School tasks show the next date instead of the time received. */-->
-<li th:fragment="card(card, showNext)" class="mail-card" th:id="|mail-${card.key}|">
-  <div class="mail-head">
-    <span class="mail-sender" th:text="${card.senderName.isEmpty() ? card.subject : card.senderName}">P.CTSV [OSS]</span>
-    <span class="mail-when" th:text="${showNext and card.nextDate != null
-        ? 'Next: ' + @schoolFormat.dayLabel(card.nextDate) : @schoolFormat.when(card.receivedAt)}">Next: Tue 29/09</span>
-  </div>
-  <p class="mail-subject" th:text="${card.subject.isEmpty() ? '(no subject)' : card.subject}">[THƯ MỜI] Workshop</p>
-  <p class="mail-tags">
-    <span th:each="category : ${card.categories}" th:class="|tag tag-${category}|"
-          th:text="${(category == 'training_points' ? '★ ' : '') + categories.get(category)}">Event</span>
-    <span class="tag tag-count" th:if="${card.copies > 1}" th:text="|sent ${card.copies}×|">sent 2×</span>
-    <span class="tag tag-count" th:if="${card.copies <= 1 and card.messages > 1}"
-          th:text="|${card.messages} messages|">3 messages</span>
-  </p>
-  <p class="mail-unsorted" th:unless="${card.sorted}">Couldn't sort this email automatically. Use Move to…</p>
-  <div class="mail-actions">
-    <a class="button mail-open" th:href="|sla-mail:${card.entryId}|">Open in Outlook</a>
-    <a href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer">Outlook on the web ↗</a>
-    <form class="inline" method="post" th:unless="${card.done}"
-          th:action="@{/school/mailbox/{key}/done(key=${card.key})}"><button type="submit" class="link-button">✓ Done</button></form>
-    <form class="inline" method="post" th:if="${card.done}"
-          th:action="@{/school/mailbox/{key}/undone(key=${card.key})}"><button type="submit" class="link-button">Undo</button></form>
-    <a th:href="@{/school/mailbox/{key}/edit(key=${card.key})}">Move to…</a>
-  </div>
+<!--/* One row (Mailbox.Card). showNext: Events and School tasks show the next date instead of the time received.
+     Clicking the subject or "Web ↗" opens the email; mailbox.js then tells the site (data-opened). */-->
+<li th:fragment="row(card, showNext)" th:id="|mail-${card.key}|"
+    th:class="|mail-row${card.opened ? ' is-opened' : ''}${card.done ? ' is-done' : ''}|">
+  <span class="mail-labels">
+    <span th:each="category : ${card.categories}" th:class="|cat cat-${category}|" th:text="${labels.get(category)}">Event</span>
+    <span class="cat cat-other" th:if="${card.sorted and card.categories.isEmpty()}">Other</span>
+    <span class="cat cat-unsorted" th:if="${!card.sorted and !card.moved}"
+          title="Couldn't sort this email automatically. Use Move to…">Not sorted</span>
+  </span>
+  <span class="mail-text">
+    <span class="mail-sender" th:text="${card.senderName.isEmpty() ? '—' : card.senderName}"
+          th:title="${card.senderName}">P.CTSV [OSS]</span>
+    <a class="mail-subject" th:href="|sla-mail:${card.entryId}|" th:title="${card.subject}"
+       th:attr="data-opened=@{/school/mailbox/{key}/opened(key=${card.key})}"
+       th:text="${card.subject.isEmpty() ? '(no subject)' : card.subject}">[THƯ MỜI] Workshop</a>
+  </span>
+  <span class="mail-extra">
+    <span class="tag" th:if="${card.copies > 1}" th:text="|sent ${card.copies}×|">sent 2×</span>
+    <span class="tag" th:if="${card.copies <= 1 and card.messages > 1}" th:text="|${card.messages} messages|">3
+      messages</span>
+  </span>
+  <span class="mail-when" th:text="${showNext and card.nextDate != null
+      ? 'Next: ' + @schoolFormat.dayLabel(card.nextDate) : @schoolFormat.when(card.receivedAt)}">Next: Tue 29/09</span>
+  <span class="mail-actions">
+    <a href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer"
+       th:attr="data-opened=@{/school/mailbox/{key}/opened(key=${card.key})}">Web ↗</a>
+    <a th:href="@{/school/mailbox/{key}/edit(key=${card.key})}">Move…</a>
+    <form class="inline mail-done" method="post" th:action="@{/school/mailbox/{key}/done(key=${card.key})}"><button
+        type="submit" class="done-button">✓ Done</button></form>
+    <form class="inline mail-undo" method="post" th:action="@{/school/mailbox/{key}/undone(key=${card.key})}"><span
+        class="muted">Done ✓</span> <button type="submit" class="done-button">Undo</button></form>
+  </span>
 </li>
 
 </body>

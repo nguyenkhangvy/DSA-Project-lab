@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import vn.edu.hcmiu.sla.school.mail.Mailbox.Box;
 import vn.edu.hcmiu.sla.school.mail.Mailbox.Card;
+import vn.edu.hcmiu.sla.school.mail.Mailbox.Session;
 import vn.edu.hcmiu.sla.school.mail.Mailbox.View;
 import vn.edu.hcmiu.sla.school.model.SchoolMail;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
@@ -23,7 +25,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
 class MailboxTest {
 
     static final LocalDate TODAY = LocalDate.of(2026, 9, 28); // Mon, in Vietnam
-    static final LocalDateTime NOW = LocalDateTime.of(2026, 9, 28, 1, 0);
+    static final LocalDateTime NOW = LocalDateTime.of(2026, 9, 28, 1, 0); // UTC
+    static final LocalDateTime NOW_IN_VIETNAM = LocalDateTime.of(2026, 9, 28, 8, 0);
 
     /** An email; key and subject are the same short name, e.g. "tcl". Times are hours before NOW. */
     static final class Mail {
@@ -80,10 +83,19 @@ class MailboxTest {
         }
     }
 
-    static View build(Map<String, SchoolMailChoice> choices, Mail... mails) {
+    static View build(Map<String, SchoolMailChoice> choices, Map<String, List<Session>> sessions, Mail... mails) {
         List<SchoolMail> rows = new ArrayList<>(Arrays.stream(mails).map(Mail::row).toList());
         rows.sort(Comparator.comparing(SchoolMail::getReceivedAt).reversed());
-        return Mailbox.build(rows, choices, TODAY);
+        return Mailbox.build(rows, choices, sessions, NOW_IN_VIETNAM);
+    }
+
+    static View build(Map<String, SchoolMailChoice> choices, Mail... mails) {
+        return build(choices, Map.of(), mails);
+    }
+
+    /** A session on the day `daysFromToday` from today, "13:30" to "16:30" (end may be null). */
+    static Session session(int daysFromToday, String start, String end) {
+        return new Session(TODAY.plusDays(daysFromToday), LocalTime.parse(start), end == null ? null : LocalTime.parse(end));
     }
 
     static View build(Mail... mails) {
@@ -101,6 +113,12 @@ class MailboxTest {
     static SchoolMailChoice done(String key) {
         SchoolMailChoice choice = new SchoolMailChoice(1, key, NOW);
         choice.setDone(true, NOW);
+        return choice;
+    }
+
+    static SchoolMailChoice opened(String key) {
+        SchoolMailChoice choice = new SchoolMailChoice(1, key, NOW);
+        choice.open(NOW);
         return choice;
     }
 
@@ -247,16 +265,87 @@ class MailboxTest {
     }
 
     @Test
-    void everythingElseShowsTheNewest10() {
+    void everythingElseShowsEveryCard() {
         Mail[] mails = new Mail[14];
         for (int i = 0; i < 14; i++) {
             mails[i] = new Mail("m" + i, i + 1);
         }
 
-        Box other = box(build(mails), "other");
+        assertThat(box(build(mails), "other").cards()).hasSize(14);
+    }
 
-        assertThat(other.cards()).hasSize(10);
-        assertThat(keys(other.more())).containsExactly("m10", "m11", "m12", "m13");
+    @Test
+    void anEventsSessionsDecideItsNextDate() {
+        Card card = build(Map.of(), Map.of("talk", List.of(session(0, "06:00", "07:30"), session(1, "13:30", "16:30"))),
+                new Mail("talk", 1, "event").on(0, 1, 5)).card("talk");
+
+        assertThat(card.sessions()).containsExactly(session(1, "13:30", "16:30"));
+        assertThat(List.of(card.nextDate(), card.past())).containsExactly(TODAY.plusDays(1), false);
+    }
+
+    @Test
+    void anEventIsPastOnceEverySessionHasEndedEvenWithALaterDate() {
+        View view = build(Map.of(), Map.of("talk", List.of(session(0, "06:00", "07:30"))),
+                new Mail("talk", 1, "event").on(0, 5));
+
+        assertThat(keys(box(view, "events").past())).containsExactly("talk");
+        assertThat(view.card("talk").sessions()).isEmpty();
+    }
+
+    @Test
+    void aSessionWithoutAnEndLastsAnHour() {
+        Card going = build(Map.of(), Map.of("a", List.of(session(0, "07:30", null))), new Mail("a", 1, "event"))
+                .card("a");
+        Card over = build(Map.of(), Map.of("b", List.of(session(0, "06:30", null))), new Mail("b", 1, "event"))
+                .card("b");
+
+        assertThat(List.of(going.past(), over.past())).containsExactly(false, true);
+        assertThat(going.sessions().get(0).endAt()).isEqualTo(TODAY.atTime(8, 30));
+    }
+
+    @Test
+    void onlyEventsAndSchoolTasksUseTheirSessions() {
+        Card invoice = build(Map.of(), Map.of("invoice", List.of(session(1, "09:00", null))),
+                new Mail("invoice", 1, "money").on(3)).card("invoice");
+
+        assertThat(invoice.sessions()).isEmpty();
+        assertThat(invoice.nextDate()).isEqualTo(TODAY.plusDays(3));
+    }
+
+    @Test
+    void aThreadsSessionsAreKeptOnceWithAnEnd() {
+        Card card = build(Map.of(), Map.of("new", List.of(session(1, "13:30", null)),
+                        "old", List.of(session(1, "13:30", "16:30"), session(2, "08:00", null))),
+                new Mail("new", 1, "event").thread("T"), new Mail("old", 5, "event").thread("T")).card("new");
+
+        assertThat(card.sessions()).containsExactly(session(1, "13:30", "16:30"), session(2, "08:00", null));
+    }
+
+    @Test
+    void openedComesFromTheNewestEmailSoANewReplyIsUnread() {
+        Map<String, SchoolMailChoice> choices = Map.of("first", opened("first"));
+
+        Card before = build(choices, new Mail("first", 30, "class").thread("T")).card("first");
+        Card after = build(choices, new Mail("first", 30, "class").thread("T"),
+                new Mail("reply", 1, "class").thread("T")).card("reply");
+
+        assertThat(List.of(before.opened(), after.opened())).containsExactly(true, false);
+    }
+
+    @Test
+    void openingMarksDoneUnlessItIsAnEventOrTaskStillAhead() {
+        View view = build(Map.of(), Map.of("talk", List.of(session(2, "13:30", null))),
+                new Mail("talk", 1, "event"), new Mail("survey", 2, "school_task").on(4),
+                new Mail("over", 3, "event").on(-2), new Mail("undated", 4, "event"), new Mail("invoice", 5, "money").on(4));
+
+        assertThat(List.of("talk", "survey", "over", "undated", "invoice")).map(k -> view.card(k).doneWhenOpened())
+                .containsExactly(false, false, true, true, true);
+    }
+
+    @Test
+    void everyCategoryHasAShortLabel() {
+        assertThat(Mailbox.LABELS.keySet()).containsExactlyElementsOf(Mailbox.CATEGORIES.keySet());
+        assertThat(Mailbox.LABELS.get("training_points")).isEqualTo("★ Points");
     }
 
     @Test
