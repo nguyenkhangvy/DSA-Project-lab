@@ -55,3 +55,20 @@ class ServerUnreachable(ServerError):
 
 class RunInProgress(ServerError):
     pass
+
+
+class OutlookNotSetUp(AgentError):
+    """Classic Outlook is missing, has no account, or the account chosen at setup is gone."""
+
+    code = "outlook_not_set_up"
+
+
+class OutlookBlocked(AgentError):
+    """Outlook refused to be read, or didn't answer in time (e.g. a security prompt nobody answered).
+    The agent never answers Outlook's prompts."""
+
+    code = "outlook_blocked"
+
+
+class EmailNotFound(AgentError):
+    """The email a link points to is no longer in Outlook."""
