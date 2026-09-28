@@ -99,7 +99,7 @@ public final class SchoolTestData {
     public SchoolMail lecturerEmail(AppUser user, String key, LocalDateTime receivedAt, String blackboardTitle) {
         return new SchoolMail(user.id(), key, "00A1", null, receivedAt, "Tran Van An", "tvan@hcmiu.edu.vn",
                 blackboardTitle != null ? "Course_S1: " + blackboardTitle : "Class notice", List.of("class"), true,
-                List.of(), false, true, blackboardTitle);
+                List.of(), true, blackboardTitle);
     }
 
     public SchoolMail emailChange(SchoolMail mail, String code, String kind, LocalDate day, LocalTime start,

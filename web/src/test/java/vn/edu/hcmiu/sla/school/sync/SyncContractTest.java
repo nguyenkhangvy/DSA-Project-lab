@@ -236,6 +236,9 @@ class SyncContractTest {
         assertThat(emails.get(2).classChanges().get(0).start()).isEqualTo(LocalTime.of(13, 15));
         assertThat(List.of(emails.get(1).fromLecturer(), emails.get(1).sorted(), emails.get(1).classChanges()))
                 .containsExactly(false, true, List.of());
+        assertThat(emails.get(1).sessions()).extracting(s -> s.day() + " " + s.start() + "-" + s.end())
+                .containsExactly("2026-09-25 13:30-16:30", "2026-10-02 08:00-null");
+        assertThat(emails.get(0).sessions()).isEmpty();
     }
 
     static Stream<Arguments> badOutlookData() {
@@ -266,7 +269,22 @@ class SyncContractTest {
                         emails.addAll(list(p, "emails"));
                     }
                     p.put("emails", emails);
-                }));
+                }),
+                Arguments.of("loses-points", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1)
+                        .put("loses_points", true)),
+                Arguments.of("eleven-sessions", (Consumer<Map<String, Object>>) p -> {
+                    List<Object> sessions = new ArrayList<>();
+                    for (int i = 0; i < 11; i++) {
+                        sessions.add(list(p, "emails", 1, "sessions").get(0));
+                    }
+                    at(p, "emails", 1).put("sessions", sessions);
+                }),
+                Arguments.of("end-not-after-start", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1, "sessions", 0)
+                        .put("end", "13:30:00")),
+                Arguments.of("bad-session-time", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1, "sessions", 0)
+                        .put("start", "25:00:00")),
+                Arguments.of("session-without-start", (Consumer<Map<String, Object>>) p -> at(p, "emails", 1,
+                        "sessions", 1).remove("start")));
     }
 
     @ParameterizedTest(name = "{0}")

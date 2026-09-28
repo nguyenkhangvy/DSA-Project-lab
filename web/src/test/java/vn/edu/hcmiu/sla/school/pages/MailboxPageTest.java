@@ -75,22 +75,22 @@ class MailboxPageTest {
     }
 
     void mail(AppUser who, String key, String thread, int hoursAgo, String sender, String subject,
-            List<String> categories, boolean lecturer, List<LocalDate> dates, boolean losesPoints, boolean sorted) {
+            List<String> categories, boolean lecturer, List<LocalDate> dates, boolean sorted) {
         db.persist(new SchoolMail(who.id(), key, "00A1" + key.substring(0, 4).toUpperCase(), thread,
                 NOW.minusHours(hoursAgo), sender, sender.toLowerCase().replace(' ', '.') + "@hcmiu.edu.vn", subject,
-                categories, lecturer, dates, losesPoints, sorted, null));
+                categories, lecturer, dates, sorted, null));
         db.flush();
     }
 
     void inbox(AppUser who) {
         mail(who, TCL, null, 5, "P.CTSV [OSS]", "[THƯ MỜI] Workshop “Từ giảng đường tới công sở”",
-                List.of("event", "training_points"), false, List.of(LocalDate.of(2026, 9, 30)), true, true);
+                List.of("event", "training_points"), false, List.of(LocalDate.of(2026, 9, 30)), true);
         mail(who, LAB_QUESTION, "T1", 30, "Vo Minh Khoa", "Slide bài tập bị thiếu số trang", List.of("class"), true,
-                List.of(), false, true);
+                List.of(), true);
         mail(who, LAB_REPLY, "T1", 2, "Vo Minh Khoa", "Re: Slide bài tập bị thiếu số trang", List.of("class"), true,
-                List.of(), false, true);
+                List.of(), true);
         mail(who, INVOICE, null, 8, "M-Invoice", "[ M-Invoice ] TB: Xuất hóa đơn điện tử số 80652", List.of("money"),
-                false, List.of(), false, false);
+                false, List.of(), false);
         db.persist(new SchoolMailStatus(who.id(), LocalDate.of(2026, 8, 1), true, NOW.minusHours(1)));
         db.flush();
     }
@@ -126,8 +126,8 @@ class MailboxPageTest {
                 .doesNotContain("id=\"mail-" + LAB_QUESTION + "\"");
         assertThat(box(html, "money")).contains("Xuất hóa đơn điện tử")
                 .contains("Couldn't sort this email automatically. Use Move to…");
-        assertThat(box(html, "events")).contains("★ Training points").contains("⚠ lose points if absent")
-                .contains("Next: Wed 30/09");
+        assertThat(box(html, "events")).contains("★ Training points").contains("Next: Wed 30/09")
+                .doesNotContain("lose points");
         assertThat(box(html, "tasks")).contains("Nothing here.");
         assertThat(html).contains("Mail read from Outlook Mon 28/09 07:00");
     }

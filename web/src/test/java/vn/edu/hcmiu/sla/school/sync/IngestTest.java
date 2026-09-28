@@ -50,6 +50,7 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoice;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSessionRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
@@ -116,6 +117,9 @@ class IngestTest {
 
     @Autowired
     SchoolMailChangeRepository mailChanges;
+
+    @Autowired
+    SchoolMailSessionRepository mailSessions;
 
     @Autowired
     SchoolMailChoiceRepository mailChoices;
@@ -374,8 +378,11 @@ class IngestTest {
         SchoolMail workshop = saved.get(1);
         assertThat(workshop.getCategories()).containsExactly("event", "training_points");
         assertThat(workshop.getDates()).containsExactly(LocalDate.of(2026, 9, 25), LocalDate.of(2026, 10, 2));
-        assertThat(List.of(workshop.isLosesPoints(), workshop.isFromLecturer(), workshop.isSorted()))
-                .containsExactly(true, false, true);
+        assertThat(List.of(workshop.isFromLecturer(), workshop.isSorted())).containsExactly(false, true);
+        assertThat(mailSessions.findOfUser(userId))
+                .extracting(s -> s.getMail().getMailKey() + " " + s.getDay() + " " + s.getStart() + "-" + s.getEnd())
+                .containsExactly(workshop.getMailKey() + " 2026-09-25 13:30-16:30",
+                        workshop.getMailKey() + " 2026-10-02 08:00-null");
         assertThat(workshop.getReceivedAt()).isEqualTo(LocalDateTime.of(2026, 9, 24, 3, 30));
         assertThat(saved.get(0).isSorted()).isFalse();
         assertThat(saved.get(2).getBlackboardTitle()).isEqualTo("Online class on 22/9");
@@ -410,6 +417,7 @@ class IngestTest {
         assertThat(mails.findByUserIdOrderByReceivedAtDescIdDesc(userId)).extracting(SchoolMail::getMailKey)
                 .containsExactly(KEY_1);
         assertThat(mailChanges.findOfUser(userId)).hasSize(1);
+        assertThat(mailSessions.findOfUser(userId)).isEmpty();
         assertThat(mailChoices.findByUserId(userId)).extracting(SchoolMailChoice::getMailKey).containsExactly(KEY_1);
     }
 
@@ -456,6 +464,7 @@ class IngestTest {
         syncOutlook(userId, ok(outlookPayload()));
 
         assertThat(mails.findByUserIdOrderByReceivedAtDescIdDesc(other)).hasSize(3);
+        assertThat(mailSessions.findOfUser(other)).hasSize(2);
         assertThat(mailChoices.findByUserId(other)).hasSize(1);
     }
 }

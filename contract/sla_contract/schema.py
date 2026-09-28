@@ -158,6 +158,20 @@ class MailClassChange(_Strict):
     room: Room | None = None
 
 
+class MailSession(_Strict):
+    """One time an event or school task takes place, as the laptop found it in the email. Vietnam time."""
+
+    day: date
+    start: time
+    end: time | None = None
+
+    @model_validator(mode="after")
+    def _end_after_start(self):
+        if self.end is not None and self.end <= self.start:
+            raise ValueError("end must be after start")
+        return self
+
+
 class MailItem(_Strict):
     """What the website may know about one email: never its text."""
 
@@ -171,7 +185,7 @@ class MailItem(_Strict):
     categories: Annotated[list[MailCategory], Field(max_length=2)] = []
     from_lecturer: bool = False
     dates: Annotated[list[date], Field(max_length=30)] = []
-    loses_points: bool = False
+    sessions: Annotated[list[MailSession], Field(max_length=10)] = []  # found in any email; shown for events
     sorted: bool = True  # False: the sorting rules failed on this email
     blackboard_title: Annotated[str, Field(max_length=255)] | None = None
     class_changes: Annotated[list[MailClassChange], Field(max_length=10)] = []

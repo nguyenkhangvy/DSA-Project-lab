@@ -13,6 +13,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 /**
@@ -62,9 +63,6 @@ public class SchoolMail {
     @Column(nullable = false, length = 400)
     private List<LocalDate> dates;
 
-    @Column(name = "loses_points", nullable = false)
-    private boolean losesPoints;
-
     @Column(name = "is_sorted", nullable = false)
     private boolean sorted;
 
@@ -74,12 +72,16 @@ public class SchoolMail {
     @OneToMany(mappedBy = "mail", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SchoolMailChange> changes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "mail", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("day, start")
+    private List<SchoolMailSession> sessions = new ArrayList<>();
+
     protected SchoolMail() {
     }
 
     public SchoolMail(Integer userId, String mailKey, String entryId, String threadId, LocalDateTime receivedAt,
             String senderName, String senderAddress, String subject, List<String> categories, boolean fromLecturer,
-            List<LocalDate> dates, boolean losesPoints, boolean sorted, String blackboardTitle) {
+            List<LocalDate> dates, boolean sorted, String blackboardTitle) {
         this.userId = userId;
         this.mailKey = mailKey;
         this.entryId = entryId;
@@ -91,7 +93,6 @@ public class SchoolMail {
         this.categories = categories;
         this.fromLecturer = fromLecturer;
         this.dates = dates;
-        this.losesPoints = losesPoints;
         this.sorted = sorted;
         this.blackboardTitle = blackboardTitle;
     }
@@ -144,10 +145,6 @@ public class SchoolMail {
         return dates;
     }
 
-    public boolean isLosesPoints() {
-        return losesPoints;
-    }
-
     public boolean isSorted() {
         return sorted;
     }
@@ -158,5 +155,9 @@ public class SchoolMail {
 
     public List<SchoolMailChange> getChanges() {
         return changes;
+    }
+
+    public List<SchoolMailSession> getSessions() {
+        return sessions;
     }
 }

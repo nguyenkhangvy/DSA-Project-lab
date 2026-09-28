@@ -86,7 +86,6 @@ ACCOUNT = _phrase(ACCOUNT_WORDS)
 PROMOTION = _phrase(PROMOTION_WORDS)
 TRAINING = _phrase([TRAINING_POINTS])
 TEAMS_ADDED = _phrase(TEAMS_ADDED_WORDS)
-LOSES_POINTS = re.compile(r"\btru\b.{0,30}?\bdiem\s+ren\s+luyen\b", re.DOTALL)
 
 
 def _domain(address):
@@ -187,11 +186,6 @@ def categories(email, from_lecturer):
     return [name for name in ORDER if name in found][:MAX_CATEGORIES]
 
 
-def loses_points(email):
-    """Spec 5.4: "trừ" followed within 30 characters by "điểm rèn luyện"."""
-    return bool(LOSES_POINTS.search(fold(email.subject) + "\n" + fold(email.text)))
-
-
 def course_of(email, context):
     """Spec 5.5: the one course a lecturer's email is about, or None."""
     for name, code in context.bb_courses:
@@ -237,7 +231,6 @@ def sort_email(email, context):
             categories=categories(email, lecturer),
             from_lecturer=lecturer,
             dates=dates_in(email.subject + "\n" + email.text, arrived)[:MAX_DATES],
-            loses_points=loses_points(email),
             blackboard_title=blackboard_title(email),
             class_changes=class_changes(email, code) if code else [],
         )

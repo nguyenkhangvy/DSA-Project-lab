@@ -174,6 +174,15 @@ public final class SyncContract {
             @Chars(max = 50) String room) {
     }
 
+    /** One time an event or school task takes place, as the laptop found it in the email. Vietnam time. */
+    public record MailSession(@NotNull LocalDate day, @NotNull LocalTime start, LocalTime end) {
+
+        @AssertTrue(message = "end must be after start")
+        boolean isEndAfterStart() {
+            return end == null || start == null || end.isAfter(start);
+        }
+    }
+
     /** What the website may know about one email: never its text. */
     public record MailItem(
             @NotNull @Pattern(regexp = "[0-9a-f]{64}") String key,
@@ -186,7 +195,7 @@ public final class SyncContract {
             @Size(max = 2) List<@NotNull @Pattern(regexp = MAIL_CATEGORIES) String> categories,
             Boolean fromLecturer,
             @Size(max = 30) List<@NotNull LocalDate> dates,
-            Boolean losesPoints,
+            @Size(max = 10) List<@Valid MailSession> sessions,
             Boolean sorted,
             @Chars(max = 255) String blackboardTitle,
             @Size(max = 10) List<@Valid MailClassChange> classChanges) {
@@ -198,7 +207,7 @@ public final class SyncContract {
             categories = categories == null ? List.of() : categories;
             fromLecturer = fromLecturer != null && fromLecturer;
             dates = dates == null ? List.of() : dates;
-            losesPoints = losesPoints != null && losesPoints;
+            sessions = sessions == null ? List.of() : sessions;
             sorted = sorted == null || sorted;
             classChanges = classChanges == null ? List.of() : classChanges;
         }

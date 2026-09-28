@@ -45,7 +45,7 @@ class MigrationTest {
                 "users", "school_sync_devices", "school_sync_settings", "school_sync_runs", "school_changes",
                 "school_courses", "school_class_meetings", "school_exams", "school_tuition", "school_events",
                 "school_bb_courses", "school_bb_announcements", "school_bb_assignments", "school_bb_materials",
-                "school_mail", "school_mail_changes", "school_mail_choices", "school_mail_status",
+                "school_mail", "school_mail_changes", "school_mail_choices", "school_mail_status", "school_mail_sessions",
                 "flyway_schema_history");
     }
 

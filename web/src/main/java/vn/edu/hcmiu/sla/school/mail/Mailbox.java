@@ -48,7 +48,7 @@ public final class Mailbox {
      */
     public record Card(String key, List<String> keys, String entryId, String senderName, String subject,
             LocalDateTime receivedAt, List<String> categories, boolean fromLecturer, boolean moved,
-            List<LocalDate> dates, LocalDate nextDate, boolean losesPoints, boolean sorted, boolean done,
+            List<LocalDate> dates, LocalDate nextDate, boolean sorted, boolean done,
             int messages, int copies) {
 
         public boolean trainingPoints() {
@@ -155,8 +155,8 @@ public final class Mailbox {
                 : newest.isFromLecturer();
         return new Card(newest.getMailKey(), mails.stream().map(SchoolMail::getMailKey).toList(), newest.getEntryId(),
                 newest.getSenderName(), newest.getSubject(), newest.getReceivedAt(), categories, fromLecturer,
-                moved != null, List.copyOf(dates), next, mails.stream().anyMatch(SchoolMail::isLosesPoints),
-                newest.isSorted(), newestChoice != null && newestChoice.isDone(), mails.size(), group.copies());
+                moved != null, List.copyOf(dates), next, newest.isSorted(),
+                newestChoice != null && newestChoice.isDone(), mails.size(), group.copies());
     }
 
     private static final Comparator<Card> NEWEST_FIRST = Comparator.comparing(Card::receivedAt).reversed();

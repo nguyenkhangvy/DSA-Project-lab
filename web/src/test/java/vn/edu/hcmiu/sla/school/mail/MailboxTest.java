@@ -35,7 +35,6 @@ class MailboxTest {
         List<String> categories = List.of();
         boolean lecturer;
         List<LocalDate> dates = List.of();
-        boolean losesPoints;
         boolean sorted = true;
 
         Mail(String key, int hoursAgo, String... categories) {
@@ -70,11 +69,6 @@ class MailboxTest {
             return this;
         }
 
-        Mail losesPoints() {
-            this.losesPoints = true;
-            return this;
-        }
-
         Mail unsorted() {
             this.sorted = false;
             return this;
@@ -82,7 +76,7 @@ class MailboxTest {
 
         SchoolMail row() {
             return new SchoolMail(1, key, "00" + key.hashCode(), thread, NOW.minusHours(hoursAgo), "Sender", sender,
-                    subject, categories, lecturer, dates, losesPoints, sorted, null);
+                    subject, categories, lecturer, dates, sorted, null);
         }
     }
 
@@ -218,13 +212,12 @@ class MailboxTest {
     }
 
     @Test
-    void aCardsDatesAndWarningComeFromAllItsEmails() {
+    void aCardsDatesComeFromAllItsEmails() {
         Card card = build(
                 new Mail("new", 1, "event").thread("T").on(4),
-                new Mail("old", 5, "event").thread("T").on(2).losesPoints()).card("new");
+                new Mail("old", 5, "event").thread("T").on(2)).card("new");
 
         assertThat(card.dates()).containsExactly(TODAY.plusDays(2), TODAY.plusDays(4));
-        assertThat(card.losesPoints()).isTrue();
     }
 
     @Test

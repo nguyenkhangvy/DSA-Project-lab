@@ -73,7 +73,6 @@
     <span class="tag tag-count" th:if="${card.copies > 1}" th:text="|sent ${card.copies}×|">sent 2×</span>
     <span class="tag tag-count" th:if="${card.copies <= 1 and card.messages > 1}"
           th:text="|${card.messages} messages|">3 messages</span>
-    <span class="tag tag-warning" th:if="${card.losesPoints}">⚠ lose points if absent</span>
   </p>
   <p class="mail-unsorted" th:unless="${card.sorted}">Couldn't sort this email automatically. Use Move to…</p>
   <div class="mail-actions">

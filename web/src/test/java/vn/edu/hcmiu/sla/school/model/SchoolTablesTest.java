@@ -92,12 +92,15 @@ class SchoolTablesTest {
     void mailCategoriesAndDatesAreKeptAsCommaSeparatedText() {
         SchoolMail mail = new SchoolMail(userId, "a".repeat(64), "00AB", null, SEPT_28, "P.CTSV [OSS]",
                 "oss@hcmiu.edu.vn", "Workshop", List.of("event", "training_points"), false,
-                List.of(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2)), true, true, null);
+                List.of(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2)), true, null);
         mail.getChanges().add(new SchoolMailChange(mail, "IT093IU", "makeup", LocalDate.of(2026, 10, 3),
                 java.time.LocalTime.of(13, 15), null, "A2.401"));
+        mail.getSessions().add(new SchoolMailSession(mail, LocalDate.of(2026, 10, 2), java.time.LocalTime.of(8, 0), null));
+        mail.getSessions().add(new SchoolMailSession(mail, LocalDate.of(2026, 9, 29), java.time.LocalTime.of(13, 30),
+                java.time.LocalTime.of(16, 30)));
         db.persist(mail);
         SchoolMail empty = new SchoolMail(userId, "b".repeat(64), "00AC", "T1", SEPT_28, "", "", "", List.of(), false,
-                List.of(), false, false, null);
+                List.of(), false, null);
         db.persist(empty);
 
         SchoolMail again = reloaded(mail, mail.getId());
@@ -105,6 +108,8 @@ class SchoolTablesTest {
         assertThat(again.getCategories()).containsExactly("event", "training_points");
         assertThat(again.getDates()).containsExactly(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 2));
         assertThat(again.getChanges()).extracting(SchoolMailChange::getStart).containsExactly(java.time.LocalTime.of(13, 15));
+        assertThat(again.getSessions()).extracting(s -> s.getDay() + " " + s.getStart() + "-" + s.getEnd())
+                .containsExactly("2026-09-29 13:30-16:30", "2026-10-02 08:00-null");
         SchoolMail emptyAgain = db.find(SchoolMail.class, empty.getId());
         assertThat(List.of(emptyAgain.getCategories(), emptyAgain.getDates())).containsExactly(List.of(), List.of());
     }

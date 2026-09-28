@@ -35,6 +35,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChoiceRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSession;
+import vn.edu.hcmiu.sla.school.model.SchoolMailSessionRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
@@ -56,6 +58,7 @@ import vn.edu.hcmiu.sla.school.sync.SyncContract.Exams;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.MailClassChange;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.MailItem;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.MailSession;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Outlook;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Section;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Timetable;
@@ -82,6 +85,7 @@ public class Ingest {
     private final SchoolBbMaterialRepository bbMaterials;
     private final SchoolMailRepository mails;
     private final SchoolMailChangeRepository mailChanges;
+    private final SchoolMailSessionRepository mailSessions;
     private final SchoolMailChoiceRepository mailChoices;
     private final SchoolMailStatusRepository mailStatus;
 
@@ -89,7 +93,8 @@ public class Ingest {
             SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolTuitionRepository tuition,
             SchoolBbCourseRepository bbCourses, SchoolBbAnnouncementRepository bbAnnouncements,
             SchoolBbAssignmentRepository bbAssignments, SchoolBbMaterialRepository bbMaterials,
-            SchoolMailRepository mails, SchoolMailChangeRepository mailChanges, SchoolMailChoiceRepository mailChoices,
+            SchoolMailRepository mails, SchoolMailChangeRepository mailChanges,
+            SchoolMailSessionRepository mailSessions, SchoolMailChoiceRepository mailChoices,
             SchoolMailStatusRepository mailStatus) {
         this.runs = runs;
         this.changes = changes;
@@ -103,6 +108,7 @@ public class Ingest {
         this.bbMaterials = bbMaterials;
         this.mails = mails;
         this.mailChanges = mailChanges;
+        this.mailSessions = mailSessions;
         this.mailChoices = mailChoices;
         this.mailStatus = mailStatus;
     }
@@ -262,6 +268,7 @@ public class Ingest {
      */
     private List<Change> saveOutlook(Integer userId, Outlook data, LocalDateTime now) {
         mailChanges.deleteAllOfUser(userId);
+        mailSessions.deleteAllOfUser(userId);
         mails.deleteAllOfUser(userId);
         Set<String> keys = new LinkedHashSet<>();
         for (MailItem item : data.emails()) {
@@ -270,10 +277,13 @@ public class Ingest {
             }
             SchoolMail mail = new SchoolMail(userId, item.key(), item.entryId(), item.threadId(),
                     toUtc(item.receivedAt()), item.senderName(), item.senderAddress(), item.subject(), item.categories(),
-                    item.fromLecturer(), item.dates(), item.losesPoints(), item.sorted(), item.blackboardTitle());
+                    item.fromLecturer(), item.dates(), item.sorted(), item.blackboardTitle());
             for (MailClassChange c : item.classChanges()) {
                 mail.getChanges().add(new SchoolMailChange(mail, c.courseCode(), c.kind(), c.day(), c.start(), c.end(),
                         c.room()));
+            }
+            for (MailSession s : item.sessions()) {
+                mail.getSessions().add(new SchoolMailSession(mail, s.day(), s.start(), s.end()));
             }
             mails.save(mail);
         }

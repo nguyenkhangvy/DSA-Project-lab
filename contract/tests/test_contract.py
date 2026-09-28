@@ -191,6 +191,9 @@ def test_an_outlook_section_is_accepted_next_to_the_others():
     assert second.categories == ["event", "training_points"]
     assert (third.sorted, third.class_changes[0].start.isoformat()) == (False, "13:15:00")
     assert (second.from_lecturer, second.sorted, second.class_changes) == (False, True, [])
+    assert [(s.day.isoformat(), s.start.isoformat(), s.end and s.end.isoformat()) for s in second.sessions] == [
+        ("2026-09-25", "13:30:00", "16:30:00"), ("2026-10-02", "08:00:00", None)]
+    assert first.sessions == []
 
 
 @pytest.mark.parametrize(
@@ -208,9 +211,15 @@ def test_an_outlook_section_is_accepted_next_to_the_others():
         lambda p: p["emails"][0]["class_changes"][0].update(kind="moved"),
         lambda p: p["emails"][0].update(dates=["2026-09-22"] * 31),
         lambda p: p.update(emails=p["emails"] * 667),
+        lambda p: p["emails"][1].update(loses_points=True),
+        lambda p: p["emails"][1].update(sessions=p["emails"][1]["sessions"] * 5 + [p["emails"][1]["sessions"][0]]),
+        lambda p: p["emails"][1]["sessions"][0].update(end="13:30:00"),
+        lambda p: p["emails"][1]["sessions"][0].update(start="25:00:00"),
+        lambda p: p["emails"][1]["sessions"][1].pop("start"),
     ],
     ids=["text", "html", "three-categories", "repeated-category", "unknown-category", "lower-case-entry-id",
-         "script-entry-id", "bad-key", "naive-time", "unknown-change", "too-many-dates", "too-many-emails"],
+         "script-entry-id", "bad-key", "naive-time", "unknown-change", "too-many-dates", "too-many-emails",
+         "loses-points", "eleven-sessions", "end-not-after-start", "bad-session-time", "session-without-start"],
 )
 def test_bad_outlook_data_is_rejected(change):
     data = outlook_payload()

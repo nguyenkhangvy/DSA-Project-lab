@@ -107,12 +107,6 @@ def test_a_lecturers_email_is_class_first():
     assert categories(email("Thư mời workshop", "điểm rèn luyện"), True) == ["class", "event"]
 
 
-def test_loses_points():
-    assert sort_email(email("Workshop", "Sinh viên đã đăng ký mà vắng sẽ bị trừ 05 điểm rèn luyện."), CONTEXT) \
-        .loses_points
-    assert not sort_email(email("Workshop", "Được cộng điểm rèn luyện."), CONTEXT).loses_points
-
-
 # ---- dates (5.4) -------------------------------------------------------------------
 
 
