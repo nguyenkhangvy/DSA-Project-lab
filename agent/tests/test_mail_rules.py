@@ -168,6 +168,16 @@ def test_sessions_are_found_in_every_email_whatever_its_categories():
     assert [(s.day, s.start, s.end) for s in item.sessions] == [(date(2026, 9, 30), time(14, 0), time(15, 30))]
 
 
+def test_sessions_come_from_the_text_never_the_subject():
+    with_check_in = email("[THƯ MỜI] Workshop 29/9 lúc 14h",
+                          "Thời gian: 14:00 - 16:30, ngày 29/09/2026\nCheck in: 13:00 - 13:45, ngày 29/09/2026")
+    subject_only = email("Link học online sáng thứ Sáu, 18/9/2026, 8g00-9g40", "Friday, September 18")
+
+    assert [(s.day, s.start, s.end) for s in sort_email(with_check_in, CONTEXT).sessions] == [
+        (date(2026, 9, 29), time(13, 0), time(16, 30))]
+    assert sort_email(subject_only, CONTEXT).sessions == []
+
+
 def test_an_email_the_session_finder_fails_on_keeps_its_sorting_and_logs_no_text(monkeypatch, caplog):
     def broken(text, from_day):
         raise ValueError(text)

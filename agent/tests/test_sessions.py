@@ -48,8 +48,8 @@ def test_a_time_takes_the_day_from_the_sentence_above():
     assert found("Ngày: 01/10/2026\nThời gian: 13h00 – 16h00\nĐịa điểm: Hội trường A2") == [("01/10", "13:00", "16:00")]
 
 
-def test_the_subject_can_give_the_day():
-    assert found("[THƯ MỜI] Workshop ngày 01/10\nThời gian: 13h30 – 16h30") == [("01/10", "13:30", "16:30")]
+def test_a_heading_line_can_give_the_day():
+    assert found("Workshop ngày 01/10\nThời gian: 13h30 – 16h30") == [("01/10", "13:30", "16:30")]
 
 
 def test_several_days_with_one_time_give_one_session_each():
@@ -176,6 +176,14 @@ def test_a_check_in_joins_the_earliest_session_after_it_that_day():
     text = "Ngày 03/10: sáng 8h00 - 10h00, chiều 13h30 - 15h00. Check in: 13h00 - 13h20, ngày 03/10"
 
     assert found(text) == [("03/10", "08:00", "10:00"), ("03/10", "13:00", "15:00")]
+
+
+@pytest.mark.parametrize("text", [
+    "Ngày 29/9: check-in 13h00, chương trình 14h00 - 16h30",
+    "Ngày 29/9: chương trình 14h00 - 16h30; điểm danh lúc 13h00",
+])
+def test_a_check_in_in_the_same_sentence_as_the_programme_joins_it(text):
+    assert found(text) == [("29/09", "13:00", "16:30")]
 
 
 def test_a_check_in_without_a_later_session_stays_on_its_own():

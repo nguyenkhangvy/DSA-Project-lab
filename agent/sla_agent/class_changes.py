@@ -228,8 +228,8 @@ def _is_length(sentence, match, ampm):
 
 
 def _session_times(sentence, taken):
-    """[(start, end)] of every time in `sentence` outside the spans in `taken` (its dates), lengths left out, in
-    order. A start and an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after
+    """[(start, end, position)] of every time in `sentence` outside the spans in `taken` (its dates), lengths left
+    out, in order; position is where the time starts in `sentence`. A start and an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after
     the start. In a range, a start without AM/PM (or a time of day) takes the end's when that keeps it before the
     end: "1:00 – 2:30 PM", "1h - 3h chiều"."""
     matches = [m for m in SESSION_TIME.finditer(sentence)
@@ -250,15 +250,24 @@ def _session_times(sentence, taken):
                 if shifted and shifted < end:
                     start, first_ampm = shifted, second_ampm
         if start is not None and not _is_length(sentence, first, first_ampm):
-            found.append((start, end if end is not None and end > start else None))
+            found.append((start, end if end is not None and end > start else None, first.start()))
     return found
+
+
+def _is_check_in(sentence, position):
+    """Whether the time at `position` is a check-in time: its own part of the sentence (between commas or
+    semicolons) says "check in" or "điểm danh", so "check-in 13h00, chương trình 14h00" has one of each."""
+    begin = max(sentence.rfind(",", 0, position), sentence.rfind(";", 0, position)) + 1
+    ends = [i for i in (sentence.find(",", position), sentence.find(";", position)) if i >= 0]
+    return bool(CHECK_IN.search(fold(sentence[begin:min(ends, default=len(sentence))])))
 
 
 def sessions_in(text, from_day):
     """The times an event takes place (mailbox-events 3.2): each sentence's times go with its dates, or with the
     dates of the nearest sentence above that has some. Several dates and one time, or one date and several
     times, give one session each; equal numbers pair in order. Sentences about a deadline are skipped. A check-in
-    time joins the earliest other session of its day that starts at or after it (addendum A.1). Sessions before
+    time (addendum A.1; only the part of a sentence that says "check in") joins the earliest other session of its
+    day that starts at or after it. Sessions before
     `from_day` are dropped; a repeated day and start is kept once, with the first end found; at most
     MAX_SESSIONS, in time order."""
     text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
@@ -275,8 +284,8 @@ def sessions_in(text, from_day):
         if not times or not above:
             continue
         pairs = zip(above, times) if len(above) == len(times) else [(d, t) for d in above for t in times]
-        target = check_ins if CHECK_IN.search(folded) else found
-        target.extend(Session(day, start, end) for day, (start, end) in pairs)
+        for day, (start, end, position) in pairs:
+            (check_ins if _is_check_in(sentence, position) else found).append(Session(day, start, end))
     for check_in in check_ins:
         later = [i for i, s in enumerate(found) if s.day == check_in.day and s.start >= check_in.start]
         if later:

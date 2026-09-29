@@ -63,7 +63,7 @@ Website
 
 ### 3.2 Finding sessions
 
-The subject and the text are read together, line by line. A **session** is a day and a start time, with an end time when the email gives one. Days and times are Vietnam time.
+Only the email's **text** is read, line by line; the subject is not (decided with the student on 2026-09-29: a time in the subject often repeats or rounds the text's, and read together the two could split one event in two). An email whose time is only in its subject has no sessions; the student can add one on the Join page. A **session** is a day and a start time, with an end time when the email gives one. Days and times are Vietnam time.
 
 **Times** (a start alone, or a start and an end joined by `-`, `–`, `—`, `đến`, `to`, `until`):
 
@@ -270,7 +270,7 @@ Decided with the student at the real-sync check of 2026-09-29, after two real em
 
 ### A.1 A check-in time joins its event (changes §3.2)
 
-- A time in a sentence that says "check in", "check-in", "checkin" or "điểm danh" (accents and letter case ignored) is a **check-in time**.
+- A time in a sentence that says "check in", "check-in", "checkin" or "điểm danh" (accents and letter case ignored) is a **check-in time** — only in the part of the sentence that says it (between commas or semicolons): in "Ngày 29/9: check-in 13h00, chương trình 14h00 - 16h30", 13:00 is the check-in and 14:00–16:30 the programme.
 - A check-in time joins the **earliest other session on the same day that starts at or after it**: that session now starts at the check-in's start, so conflicts count the check-in too. "Thời gian chương trình: 14:00 - 16:30, ngày 29/09/2026" with "Thời gian check in: 13:00 - 13:45, ngày 29/09/2026" is one session, 29/09 13:00–16:30.
 - A check-in time with no later session on its day stays a session of its own.
 

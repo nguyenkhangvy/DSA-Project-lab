@@ -681,13 +681,7 @@
     "dates": [
      "2026-09-18"
     ],
-    "sessions": [
-     {
-      "day": "2026-09-18",
-      "start": "08:00:00",
-      "end": "09:40:00"
-     }
-    ],
+    "sessions": [],
     "register_by": null,
     "blackboard_title": "Link học online sáng thứ Sáu, 18/9/2026, 8g00-9g40",
     "class_changes": [

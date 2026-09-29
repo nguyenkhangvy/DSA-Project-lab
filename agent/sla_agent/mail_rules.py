@@ -212,10 +212,10 @@ def class_changes(email, code):
 
 def sessions_of(email, arrived):
     """The times the email's event or school task takes place (mailbox-events 3.2), found in every email so they
-    are ready when the student moves one to Event. [] when the finder fails on it."""
+    are ready when the student moves one to Event. Only the text is read: a time in the subject is often a summary
+    that repeats (or rounds) the text's. [] when the finder fails on it."""
     try:
-        return [MailSession(day=s.day, start=s.start, end=s.end)
-                for s in sessions_in(email.subject + "\n" + email.text, arrived)]
+        return [MailSession(day=s.day, start=s.start, end=s.end) for s in sessions_in(email.text, arrived)]
     except Exception as error:  # the message could quote the email
         log.warning("Couldn't read the times in an email (%s); it is uploaded without them",
                     error.__class__.__name__)
