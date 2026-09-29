@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -160,12 +161,21 @@ public final class Mailbox {
         }
         List<List<SchoolMail>> merged = new ArrayList<>();
         List<Integer> copies = new ArrayList<>();
+        // The groups so far by sender and subject, so a thread is only compared with those it could be a copy of.
+        Map<String, List<Integer>> alike = new HashMap<>();
         for (List<SchoolMail> thread : threads.values()) {
-            int same = sameEmail(merged, thread.get(0));
-            if (same >= 0) {
+            SchoolMail mail = thread.get(0);
+            List<Integer> candidates = alike.computeIfAbsent(
+                    mail.getSenderAddress().toLowerCase(Locale.ROOT) + "\n" + sameSubject(mail.getSubject()),
+                    k -> new ArrayList<>());
+            Integer same = candidates.stream().filter(i -> Duration.between(mail.getReceivedAt(),
+                    merged.get(i).get(0).getReceivedAt()).abs().compareTo(SAME_EMAIL_WINDOW) <= 0)
+                    .findFirst().orElse(null);
+            if (same != null) {
                 merged.get(same).addAll(thread);
                 copies.set(same, copies.get(same) + 1);
             } else {
+                candidates.add(merged.size());
                 merged.add(new ArrayList<>(thread));
                 copies.add(1);
             }
@@ -177,20 +187,6 @@ public final class Mailbox {
             groups.add(new Group(mails, copies.get(i)));
         }
         return groups;
-    }
-
-    /** The group whose newest email is this email sent again, or -1. */
-    private static int sameEmail(List<List<SchoolMail>> groups, SchoolMail mail) {
-        for (int i = 0; i < groups.size(); i++) {
-            SchoolMail other = groups.get(i).get(0);
-            if (other.getSenderAddress().equalsIgnoreCase(mail.getSenderAddress())
-                    && sameSubject(other.getSubject()).equals(sameSubject(mail.getSubject()))
-                    && Duration.between(mail.getReceivedAt(), other.getReceivedAt()).abs()
-                            .compareTo(SAME_EMAIL_WINDOW) <= 0) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     /** A card's emails' sessions, each day and start once (one with an end wins), in time order. */

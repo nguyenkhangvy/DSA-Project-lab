@@ -1,7 +1,9 @@
 package vn.edu.hcmiu.sla.school.mail;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
@@ -231,6 +234,17 @@ class MailboxTest {
         Card card = box(view, "events").cards().get(0);
         assertThat(box(view, "events").cards()).hasSize(1);
         assertThat(List.of(card.key(), card.copies())).containsExactly("tcl-2", 2);
+    }
+
+    @Test
+    void aBigInboxIsGroupedWithoutComparingEveryEmailWithEveryOther() {
+        // Each opening rebuilds the tab, so building it must stay quick as the Inbox grows.
+        Mail[] mails = IntStream.range(0, 3000).mapToObj(i -> new Mail("notice " + i, i % 700, "class"))
+                .toArray(Mail[]::new);
+
+        View view = assertTimeout(Duration.ofSeconds(1), () -> build(mails));
+
+        assertThat(box(view, "other").cards()).hasSize(3000).allMatch(card -> card.copies() == 1);
     }
 
     @Test
