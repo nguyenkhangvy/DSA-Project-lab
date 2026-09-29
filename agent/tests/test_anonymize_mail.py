@@ -38,6 +38,26 @@ def test_people_are_replaced_by_made_up_people_who_sort_the_same():
     assert sort_email(fake[0], context).class_changes[0].course_code == "IT093IU"
 
 
+def test_private_people_outside_iu_staff_get_made_up_names_and_companies_keep_theirs():
+    emails = [
+        email("5", "Hỏi bài - Nguyễn Hoàng Long", "", "hoanglong.nguyen99@gmail.com", "Nguyễn Hoàng Long"),
+        email("6", "Nhóm đồ án - Phan Thanh Tâm", "", "ititiu99002@student.hcmiu.edu.vn", "Phan Thanh Tâm"),
+        email("7", "[ M-Invoice ] TB: Xuất hóa đơn", "", "noreply@m-invoice.vn", "M-INVOICE"),
+        email("8", "Ghi chú", "", "ititiu99001@student.hcmiu.edu.vn", "Trần Thị Mai"),
+    ]
+
+    fake, context, _ = anonymize(emails, CONTEXT, "Trần Thị Mai", "ITITIU99001")
+
+    text = repr(fake)
+    for real in ("Hoàng Long", "Hoang Long", "hoanglong", "Thanh Tâm", "Thanh Tam", "ititiu99002"):
+        assert real not in text
+    assert fake[0].sender_address.endswith("@gmail.com")
+    assert fake[1].sender_address.endswith("@student.hcmiu.edu.vn")
+    assert (fake[2].sender_name, fake[2].sender_address) == ("M-INVOICE", "noreply@m-invoice.vn")
+    assert fake[3].sender_name == "Student Name"
+    assert [sort_email(e, context).categories for e in fake] == [sort_email(e, CONTEXT).categories for e in emails]
+
+
 def test_texts_are_kept_only_for_announcements_without_links_or_long_numbers():
     fake, _, _ = anonymize(EMAILS, CONTEXT, "Trần Thị Mai", "ITITIU99001")
 

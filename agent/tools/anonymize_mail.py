@@ -9,7 +9,8 @@ Keeps each email's subject, time and thread, and the text of announcements (even
 training points, promotions, Blackboard announcements). Replaces:
 - the student's name, ID and address, and every --private text;
 - every person (lecturers, IU staff) with a made-up person whose address is built from the made-up name
-  the same way, so the lecturer rules still apply;
+  the same way, so the lecturer rules still apply; private senders (classmates, personal mail such as Gmail)
+  too, keeping their domain; companies keep their names;
 - links, and runs of 6 or more digits;
 - the whole text of every other email (replies from people, tickets, password resets, receipts, invoices).
 
@@ -45,6 +46,10 @@ FAKE_PEOPLE = [("Trần", "Văn", "An"), ("Lê", "Thị", "Bình"), ("Phạm", "
                ("Võ", "Thanh", "Giang"), ("Đặng", "Hữu", "Hải"), ("Bùi", "Ngọc", "Khánh"), ("Đỗ", "Thu", "Lan"),
                ("Ngô", "Đức", "Minh"), ("Dương", "Mai", "Nga"), ("Lý", "Gia", "Phúc"), ("Mai", "Anh", "Quân"),
                ("Hồ", "Bảo", "Sơn"), ("Tạ", "Kim", "Thoa"), ("Châu", "Hoài", "Uyên"), ("Kiều", "Tuấn", "Vinh")]
+# Addresses of private people outside IU's staff: classmates, and personal mail. Companies write from their own
+# domains and keep their names (they aren't private, and the rules never read a non-staff sender's name).
+PRIVATE_DOMAINS = {"student.hcmiu.edu.vn", "gmail.com", "googlemail.com", "yahoo.com", "yahoo.com.vn", "outlook.com",
+                   "hotmail.com", "live.com", "icloud.com", "me.com", "proton.me", "protonmail.com"}
 URL = re.compile(r"https?://\S+")
 DIGITS = re.compile(r"\d{6,}")
 
@@ -147,6 +152,8 @@ def anonymize(emails, context, student_name, student_id, private=()):
         elif handle and (handle in name_handles(email.sender_name)
                          or any(handle == lecturer_handle(c[2]) for c in context.courses if c[2])):
             fakes[email.key] = person(handle, email.sender_name, domain)
+        elif domain.lower() in PRIVATE_DOMAINS and student_id.lower() not in email.sender_address.lower():
+            fakes[email.key] = person(email.sender_address.rpartition("@")[0].lower(), email.sender_name, domain)
 
     swaps.sort(key=lambda pair: len(pair[0]), reverse=True)
 
