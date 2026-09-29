@@ -108,6 +108,18 @@ def test_small_hours_are_still_times_with_am_or_minutes():
     assert found("Chạy bộ ngày 30/9 lúc 5h30") == [("30/09", "05:30", None)]
 
 
+@pytest.mark.parametrize("written, start", [
+    ("2h chiều", "14:00"), ("2h30 chiều", "14:30"), ("7h tối", "19:00"), ("8 giờ sáng", None), ("8h sáng", "08:00"),
+    ("5h sáng", "05:00"), ("1h trưa", "13:00"), ("11h trưa", "11:00"), ("12h trưa", "12:00"), ("14h chiều", "14:00"),
+])
+def test_a_time_of_day_word_after_the_hour(written, start):
+    assert found(f"Ngày 30/9 lúc {written}") == ([("30/09", start, None)] if start else [])
+
+
+def test_a_range_ending_in_the_afternoon():
+    assert found("Ngày 30/9, từ 1h - 3h chiều") == [("30/09", "13:00", "15:00")]
+
+
 def test_due_to_is_not_a_deadline():
     assert found("Due to the rain, the talk moves to 14h ngày 30/9") == [("30/09", "14:00", None)]
     assert found("Report due 30/9 at 5 PM") == []

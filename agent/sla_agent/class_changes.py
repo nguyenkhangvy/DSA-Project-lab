@@ -93,6 +93,8 @@ def _words(words):
 
 
 DEADLINE = re.compile(r"\b(?:" + _words(DEADLINE_WORDS) + r"|due(?!\s+to\b))\b")
+# On folded text, right after a time: the time of day that says morning or afternoon ("2h chiều" is 14:00).
+TIME_OF_DAY = re.compile(r"\s*(sang|chieu|toi|trua)\b")
 LENGTH_BEFORE = re.compile(r"\b(?:" + _words(LENGTH_WORDS) + r")\s*:?\s*(?:khoang|about|around)?\s*$")
 # On folded text: "check in", "check-in", "checkin", "điểm danh" mark a check-in time; "đăng ký", "register",
 # "registration", "sign up" make a deadline sentence a registration deadline (addendum A.1 and A.2).
@@ -205,35 +207,49 @@ def dates_in(text, from_day):
     return sorted({day for _, _, day in _dates(text, from_day)})
 
 
-def _is_length(sentence, match):
+def _ampm(sentence, match):
+    """"a" / "p" for this time: its own AM/PM, else a time of day right after it ("2h chiều", "7h tối", "8h sáng";
+    "trưa" is noon, so only 1h–3h trưa are afternoon), else None."""
+    if match.group("ampm"):
+        return match.group("ampm").lower()
+    word = TIME_OF_DAY.match(fold(sentence[match.end():]))
+    if not word:
+        return None
+    if word.group(1) == "trua":
+        return "p" if int(match.group("hour")) <= 3 else None
+    return "a" if word.group(1) == "sang" else "p"
+
+
+def _is_length(sentence, match, ampm):
     """Whether this time in `sentence` is a length ("kéo dài 2h", "(2h)") rather than when something starts."""
     if LENGTH_BEFORE.search(fold(sentence[:match.start()])):
         return True
-    return (match.group("minute") is None and match.group("ampm") is None
-            and int(match.group("hour")) < EARLIEST_BARE_HOUR)
+    return match.group("minute") is None and ampm is None and int(match.group("hour")) < EARLIEST_BARE_HOUR
 
 
 def _session_times(sentence, taken):
     """[(start, end)] of every time in `sentence` outside the spans in `taken` (its dates), lengths left out, in
     order. A start and an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after
-    the start. In a range, a start without AM/PM takes the end's when that keeps it before the end: "1:00 – 2:30
-    PM"."""
+    the start. In a range, a start without AM/PM (or a time of day) takes the end's when that keeps it before the
+    end: "1:00 – 2:30 PM", "1h - 3h chiều"."""
     matches = [m for m in SESSION_TIME.finditer(sentence)
-               if not any(m.start() < end and start < m.end() for start, end in taken)
-               and not _is_length(sentence, m)]
+               if not any(m.start() < end and start < m.end() for start, end in taken)]
     found, i = [], 0
     while i < len(matches):
-        first, start, end = matches[i], _time(matches[i]), None
+        first, end = matches[i], None
+        first_ampm = _ampm(sentence, first)
+        start = _time(first, first_ampm)
         i += 1
         if i < len(matches) and SESSION_JOIN.fullmatch(sentence[first.end():matches[i].start()]):
             second = matches[i]
-            end = _time(second)
+            second_ampm = _ampm(sentence, second)
+            end = _time(second, second_ampm)
             i += 1
-            if start and end and not first.group("ampm") and second.group("ampm"):
-                shifted = _time(first, ampm=second.group("ampm"))
+            if start and end and not first_ampm and second_ampm:
+                shifted = _time(first, ampm=second_ampm)
                 if shifted and shifted < end:
-                    start = shifted
-        if start is not None:
+                    start, first_ampm = shifted, second_ampm
+        if start is not None and not _is_length(sentence, first, first_ampm):
             found.append((start, end if end is not None and end > start else None))
     return found
 
