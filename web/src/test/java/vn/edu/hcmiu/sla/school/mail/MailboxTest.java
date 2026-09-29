@@ -395,6 +395,13 @@ class MailboxTest {
     }
 
     @Test
+    void aSchoolTaskStaysInItsBoxWhenItsRegistrationClosed() {
+        View view = build(new Mail("civic", 1, "school_task").on(3).registerBy(-2));
+
+        assertThat(keys(box(view, "tasks").cards())).containsExactly("civic");
+    }
+
+    @Test
     void everyCategoryHasAShortLabel() {
         assertThat(Mailbox.LABELS.keySet()).containsExactlyElementsOf(Mailbox.CATEGORIES.keySet());
         assertThat(Mailbox.LABELS.get("training_points")).isEqualTo("★ Points");

@@ -71,8 +71,8 @@ public final class Mailbox {
      * One card: a thread, or the same email sent more than once. key, entryId, sender, subject and time come
      * from its newest email; keys are all its emails' keys. sessions: an event or school task's sessions that
      * haven't ended (none for other cards). nextDate: the day of the first of them, or else the earliest date
-     * from today on. past: every session has ended, or (without sessions) every date is over, or (an event or
-     * school task) its registration closed and the student joined none of its sessions. suggested: the student
+     * from today on. past: every session has ended, or (without sessions) every date is over, or (an event) its
+     * registration closed and the student joined none of its sessions. suggested: the student
      * moved it to Event or School task and the rules gave it neither, so its sessions are only suggestions.
      * registerBy: the latest registration deadline of its emails, or null; closed: that day is before today.
      */
@@ -208,7 +208,7 @@ public final class Mailbox {
         boolean closed = registerBy != null && registerBy.isBefore(now.toLocalDate());
         boolean joined = mails.stream().anyMatch(m -> joinedKeys.contains(m.getMailKey()));
         boolean past = (all.isEmpty() ? !dates.isEmpty() && next == null : ahead.isEmpty())
-                || (eventLike(categories) && closed && !joined);
+                || (categories.contains("event") && closed && !joined);
         return new Card(newest.getMailKey(), mails.stream().map(SchoolMail::getMailKey).toList(), newest.getEntryId(),
                 newest.getSenderName(), newest.getSubject(), newest.getReceivedAt(), categories, fromLecturer,
                 moved != null, List.copyOf(dates), ahead, next, past, newest.isSorted(),
