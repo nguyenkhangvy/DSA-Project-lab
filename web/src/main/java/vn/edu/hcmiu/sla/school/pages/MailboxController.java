@@ -121,10 +121,10 @@ public class MailboxController {
         return card;
     }
 
-    /** The user's event or school-task card with this key, else 404. */
-    private Card eventCard(Integer userId, String key) {
+    /** The user's card with this key that Join… is open to (Card.joinable), else 404. */
+    private Card joinableCard(Integer userId, String key) {
         Card card = card(userId, key);
-        if (!card.eventLike()) {
+        if (!card.joinable()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         return card;
@@ -151,6 +151,7 @@ public class MailboxController {
                 runs.findTop10ByUserIdOrderByStartedAtDescIdDesc(user.id()).stream().map(RunInfo::of).toList()));
         model.addAttribute("labels", Mailbox.LABELS);
         model.addAttribute("autoDone", settings.autoDone(user.id()));
+        model.addAttribute("gone", mailSessions.gone(user.id(), view.keys(), nowInVietnam()));
         return "school/mailbox";
     }
 
@@ -229,7 +230,7 @@ public class MailboxController {
 
     @GetMapping("/{key}/join")
     String join(@AuthenticationPrincipal AppUser user, @PathVariable String key, Model model) {
-        Card card = eventCard(user.id(), key);
+        Card card = joinableCard(user.id(), key);
         List<Line> lines = mailSessions.lines(user.id(), card, nowInVietnam());
         String place = mailSessions.joinedOf(user.id(), card.keys()).stream().map(SchoolMailJoined::getPlace)
                 .filter(Objects::nonNull).findFirst().orElse("");
@@ -253,7 +254,7 @@ public class MailboxController {
     @PostMapping("/{key}/join")
     String saveJoin(@AuthenticationPrincipal AppUser user, @PathVariable String key,
             @ModelAttribute("form") JoinForm form, Model model, RedirectAttributes redirect) {
-        Card card = eventCard(user.id(), key);
+        Card card = joinableCard(user.id(), key);
         LocalDateTime now = nowInVietnam();
         List<Line> lines = mailSessions.lines(user.id(), card, now);
         List<SchoolMailJoined> rows = new ArrayList<>();
@@ -322,13 +323,21 @@ public class MailboxController {
         return null;
     }
 
-    /** Removes the card's joined sessions that haven't ended; those already over stay in the Timetable. */
+    /**
+     * Removes the card's joined sessions that haven't ended; those already over stay in the Timetable. A joined
+     * event whose email is no longer in the Mailbox can be left too, while it has sessions ahead.
+     */
     @PostMapping("/{key}/leave")
     String leave(@AuthenticationPrincipal AppUser user, @PathVariable String key, RedirectAttributes redirect) {
-        Card card = eventCard(user.id(), key);
-        joined.deleteAll(mailSessions.upcomingJoined(user.id(), card.keys(), nowInVietnam()));
+        Card card = view(user.id()).card(key);
+        List<SchoolMailJoined> ahead = mailSessions.upcomingJoined(user.id(),
+                card != null ? card.keys() : List.of(key), nowInVietnam());
+        if (card != null ? !card.joinable() : ahead.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        joined.deleteAll(ahead);
         Flash.success(redirect, "You left this event. It is no longer in your Timetable.");
-        return "redirect:/school/mailbox#mail-" + card.key();
+        return "redirect:/school/mailbox" + (card != null ? "#mail-" + card.key() : "");
     }
 
     @PostMapping("/{key}/automatic")

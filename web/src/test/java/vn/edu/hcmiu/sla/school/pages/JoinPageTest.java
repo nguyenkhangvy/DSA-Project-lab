@@ -209,6 +209,48 @@ class JoinPageTest {
     }
 
     @Test
+    void anEventMovedAwayAfterJoiningCanStillBeLeft() throws Exception {
+        mvc.perform(save(TALK).param("sessions", "2026-10-01T13:30"));
+        mvc.perform(post("/school/mailbox/" + TALK + "/edit").with(user(an)).with(csrf())
+                .param("category1", "money").param("category2", ""));
+
+        assertThat(MailboxPageTest.box(html(get("/school/mailbox")), "money"))
+                .contains("href=\"/school/mailbox/" + TALK + "/join\">Join…</a>")
+                .contains("<span class=\"mark mark-joined\">Joined</span>");
+        assertThat(html(get("/school/mailbox/" + TALK + "/join"))).contains("Thu 01/10 from 13:30")
+                .contains("Leave event");
+
+        mvc.perform(post("/school/mailbox/" + TALK + "/leave").with(user(an)).with(csrf()))
+                .andExpect(redirectedUrl("/school/mailbox#mail-" + TALK));
+        assertThat(saved()).isEmpty();
+    }
+
+    @Test
+    void aJoinedEventWhoseEmailIsGoneCanStillBeLeft() throws Exception {
+        String gone = "f".repeat(64);
+        db.persist(new SchoolMailJoined(an.id(), gone, LocalDate.of(2026, 9, 27), LocalTime.of(18, 0), null,
+                "Hội thao IU", null, true, false, NOW));
+        db.persist(new SchoolMailJoined(an.id(), gone, TUE.plusDays(3), LocalTime.of(18, 0), null, "Hội thao IU",
+                "Sân A", true, false, NOW));
+        db.flush();
+
+        String html = html(get("/school/mailbox"));
+        assertThat(html).contains("id=\"box-gone\"");
+        assertThat(MailboxPageTest.box(html, "gone")).contains("id=\"mail-" + gone + "\"").contains("Hội thao IU")
+                .contains("Fri 02/10 from 18:00").doesNotContain("Sun 27/09")
+                .contains("action=\"/school/mailbox/" + gone + "/leave\"");
+        AppUser binh = data.user("binh@example.com");
+        mvc.perform(post("/school/mailbox/" + gone + "/leave").with(user(binh)).with(csrf()))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(post("/school/mailbox/" + gone + "/leave").with(user(an)).with(csrf()))
+                .andExpect(redirectedUrl("/school/mailbox"));
+
+        assertThat(saved()).containsExactly("2026-09-27 18:00-null null true false");
+        assertThat(html(get("/school/mailbox"))).doesNotContain("Hội thao IU");
+    }
+
+    @Test
     void anEmailMovedToEventSuggestsTheTimesFoundInIt() throws Exception {
         mvc.perform(post("/school/mailbox/" + NOTICE + "/edit").with(user(an)).with(csrf())
                 .param("category1", "event").param("category2", ""));

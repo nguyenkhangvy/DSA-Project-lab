@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,14 +73,39 @@ public class MailSessions {
         return joinedOf(userId, keys).stream().filter(row -> session(row).endAt().isAfter(now)).toList();
     }
 
-    /** Each event-like card's sessions that haven't ended at `now` (Vietnam time), by card key. */
+    /**
+     * A joined event whose email is no longer in the Mailbox: its title, and its joined sessions that haven't
+     * ended, so the student can still leave it.
+     */
+    public record Gone(String key, String title, boolean trainingPoints, List<Line> lines) {
+    }
+
+    /**
+     * The student's joined events whose emails are none of `mailKeys` (the Mailbox's) and that have a session that
+     * hasn't ended at `now` (Vietnam time), soonest first.
+     */
+    public List<Gone> gone(Integer userId, Set<String> mailKeys, LocalDateTime now) {
+        Map<String, List<SchoolMailJoined>> byKey = new LinkedHashMap<>();
+        // From yesterday: a session without an end that starts late in the evening ends after midnight.
+        for (SchoolMailJoined row : joined.findByUserIdAndDayGreaterThanEqualOrderByDayAscStartAsc(userId,
+                now.toLocalDate().minusDays(1))) {
+            if (!mailKeys.contains(row.getMailKey()) && session(row).endAt().isAfter(now)) {
+                byKey.computeIfAbsent(row.getMailKey(), key -> new ArrayList<>()).add(row);
+            }
+        }
+        return byKey.entrySet().stream().map(e -> new Gone(e.getKey(), e.getValue().get(0).getTitle(),
+                e.getValue().get(0).isTrainingPoints(),
+                e.getValue().stream().map(row -> new Line(session(row), false, true, null)).toList())).toList();
+    }
+
+    /** Each joinable card's sessions (Card.joinable) that haven't ended at `now` (Vietnam time), by card key. */
     @Transactional(readOnly = true)
     public Map<String, List<Line>> lines(Integer userId, List<Card> cards, LocalDateTime now) {
         Map<String, Map<List<Object>, Line>> byCard = new LinkedHashMap<>();
         LocalDate first = null;
         LocalDate last = null;
         for (Card card : cards) {
-            if (!card.eventLike()) {
+            if (!card.joinable()) {
                 continue;
             }
             Map<List<Object>, Line> lines = new LinkedHashMap<>();

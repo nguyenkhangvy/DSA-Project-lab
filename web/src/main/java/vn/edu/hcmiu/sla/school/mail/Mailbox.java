@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import vn.edu.hcmiu.sla.school.model.SchoolMail;
@@ -75,12 +76,13 @@ public final class Mailbox {
      * registration closed and the student joined none of its sessions. suggested: the student
      * moved it to Event or School task and the rules gave it neither, so its sessions are only suggestions.
      * registerBy: the latest registration deadline of its emails, or null; closed: that day is before today.
+     * joined: the student joined a session of one of its emails.
      */
     public record Card(String key, List<String> keys, String entryId, String senderName, String subject,
             LocalDateTime receivedAt, List<String> categories, boolean fromLecturer, boolean moved,
             List<LocalDate> dates, List<Session> sessions, LocalDate nextDate, boolean past, boolean sorted,
             boolean opened, boolean done, int messages, int copies, boolean suggested, LocalDate registerBy,
-            boolean closed) {
+            boolean closed, boolean joined) {
 
         public boolean trainingPoints() {
             return categories.contains("training_points");
@@ -89,6 +91,11 @@ public final class Mailbox {
         /** An event or school task: it has sessions and Join…, and stays in its box when opened while ahead. */
         public boolean eventLike() {
             return Mailbox.eventLike(categories);
+        }
+
+        /** Join… and Leave are open to it: an event or school task, or a card moved away after joining. */
+        public boolean joinable() {
+            return eventLike() || joined;
         }
 
         /** With auto-Done on, opening it marks it Done: anything but an event or school task still ahead. */
@@ -117,6 +124,12 @@ public final class Mailbox {
                     .flatMap(List::stream).filter(c -> c.key().equals(key))
                     .findFirst()
                     .orElseGet(() -> done.stream().filter(c -> c.key().equals(key)).findFirst().orElse(null));
+        }
+
+        /** Every email's key, of every card. */
+        public Set<String> keys() {
+            return Stream.concat(boxes.stream().flatMap(b -> Stream.of(b.cards(), b.past())), Stream.of(done))
+                    .flatMap(List::stream).flatMap(c -> c.keys().stream()).collect(Collectors.toSet());
         }
     }
 
@@ -214,7 +227,7 @@ public final class Mailbox {
                 moved != null, List.copyOf(dates), ahead, next, past, newest.isSorted(),
                 newestChoice != null && newestChoice.isOpened(), newestChoice != null && newestChoice.isDone(),
                 mails.size(), group.copies(), eventLike(categories) && !eventLike(newest.getCategories()), registerBy,
-                closed);
+                closed, joined);
     }
 
     private static final Comparator<Card> NEWEST_FIRST = Comparator.comparing(Card::receivedAt).reversed();

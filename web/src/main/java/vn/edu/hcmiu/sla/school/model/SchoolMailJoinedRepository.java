@@ -13,6 +13,9 @@ public interface SchoolMailJoinedRepository extends JpaRepository<SchoolMailJoin
     /** A user's joined sessions on the days [from, to], in time order. */
     List<SchoolMailJoined> findByUserIdAndDayBetweenOrderByDayAscStartAsc(Integer userId, LocalDate from, LocalDate to);
 
+    /** A user's joined sessions from this day on, in time order. */
+    List<SchoolMailJoined> findByUserIdAndDayGreaterThanEqualOrderByDayAscStartAsc(Integer userId, LocalDate from);
+
     /** The emails a user joined a session of. */
     @Query("select distinct j.mailKey from SchoolMailJoined j where j.userId = :userId")
     Set<String> mailKeysOf(Integer userId);
