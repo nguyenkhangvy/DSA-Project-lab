@@ -45,6 +45,17 @@ def test_dates_in_a_whole_text_from_the_day_it_arrived():
         date(2026, 9, 28), date(2026, 9, 29), date(2026, 10, 5), date(2026, 10, 18)]
 
 
+def test_an_emails_dotted_dates_are_dates():
+    assert dates_in("Hạn cuối: 05.10.2026. Giải thưởng 15.000.000 VNĐ, hotline 028.3724.4270", date(2026, 9, 24)) == [
+        date(2026, 10, 5)]
+
+
+def test_announcements_keep_the_date_formats_the_java_twin_reads():
+    # Blackboard announcements are read by ClassChanges.java too (sentences.json keeps the two in step), so a
+    # dotted date stays unread there.
+    assert read_announcement("Make-up class on 03.10.2026 at 8:00", "", POSTED) == []
+
+
 def test_dates_in_nothing():
     assert dates_in("", date(2026, 9, 24)) == []
     assert dates_in(None, date(2026, 9, 24)) == []

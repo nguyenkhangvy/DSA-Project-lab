@@ -87,9 +87,17 @@ def test_an_end_that_is_not_after_the_start_is_dropped():
     assert found("22h00 - 01h00 ngày 30/9") == [("30/09", "22:00", None)]
 
 
-def test_a_dotted_date_is_not_a_time():
-    assert found("Ngày 30/9/2026 lúc 14h00 (cập nhật 01.10.2026)") == [("30/09", "14:00", None)]
-    assert found("Ngày 30/9: hội thảo, thông báo số 01.10.2026") == []
+def test_a_dotted_date_is_a_date_not_a_time():
+    assert found("Hội thảo ngày 01.10.2026, 14h00 - 16h00") == [("01/10", "14:00", "16:00")]
+    assert found("Thông báo ngày 01.10.2026") == []
+
+
+def test_the_edges_of_a_day_are_not_event_times():
+    # STAR AWARD: a contest round open from the start of one day to the end of another.
+    assert found("Tuần 3: Từ 00g00 ngày 21/9 đến 23g59 ngày 27/9/2026;\n"
+                 "Tuần 4: Từ 00g00 ngày 28/9 đến 23g59 ngày 05/10/2026.") == []
+    assert found("Ngày 30/9: cổng mở lúc 0:00, đóng lúc 23:59") == []
+    assert found("Đêm nhạc ngày 30/9, 19h00 - 23h59") == [("30/09", "19:00", "23:59")]
 
 
 @pytest.mark.parametrize("text", [
@@ -212,6 +220,7 @@ def test_the_closing_ceremony_closes_registration_on_22_9_and_takes_place_on_30_
     ("REGISTRATION DEADLINE: September 25, 2026", date(2026, 9, 25)),
     ("Hạn chót đăng ký: 24/9. Gia hạn: hạn đăng ký đến 27/9", date(2026, 9, 27)),
     ("Hạn đăng ký: 20/9", date(2026, 9, 20)),
+    ("Hạn đăng ký: 25.09.2026", date(2026, 9, 25)),
 ])
 def test_each_way_of_writing_a_registration_deadline(text, deadline):
     assert register_by_in(text, ARRIVED) == deadline

@@ -72,9 +72,9 @@ Only the email's **text** is read, line by line; the subject is not (decided wit
 - a time of day after the hour works like AM/PM: `2h chiều` = 14:00, `7h tối` = 19:00, `8h sáng` = 08:00, `1h trưa` = 13:00 (`11h trưa` stays 11:00); once after the end too: `1h - 3h chiều` = 13:00–15:00
 - a start alone after `lúc`, `vào lúc`, `at`, `from`, `từ`
 
-A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, minutes 0–59. Not times either: a dotted date (`01.10.2026` is not 01:10); a length, that is a time right after `thời lượng`, `kéo dài`, `trong vòng`, `duration`, `lasting` or `lasts` ("kéo dài 1h30"); and a bare hour under 6 without minutes or AM/PM ("(2h)"), since events don't start in the small hours.
+A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, minutes 0–59. Not times either: a dotted date (`01.10.2026` is not 01:10); a length, that is a time right after `thời lượng`, `kéo dài`, `trong vòng`, `duration`, `lasting` or `lasts` ("kéo dài 1h30"); and a bare hour under 6 without minutes or AM/PM ("(2h)"), since events don't start in the small hours. `00:00` and `23:59` never start a session: they are the edges of a day ("Từ 00g00 ngày 21/9 đến 23g59 ngày 27/9" is when a contest round opens and closes); `23:59` can still end one.
 
-**Days:** the date formats the class-change reader already knows (Outlook §5.4: `29/09/2026`, `27/9`, `18-9-2026`, `ngày 18 tháng 9`, `September 24`, `24th September` …), with the same year guess. Dates inside links are ignored.
+**Days:** the date formats the class-change reader already knows (Outlook §5.4: `29/09/2026`, `27/9`, `18-9-2026`, `ngày 18 tháng 9`, `September 24`, `24th September` …), with the same year guess, plus a dotted date with its year (`01.10.2026`; emails only: Blackboard announcements keep the formats the Java reader shares). Dates inside links are ignored.
 
 **Pairing a time with its day:**
 

@@ -47,6 +47,11 @@ DATE_FORMATS = [
     re.compile(r"(?<![\w/.:-])(?P<day>\d{1,2})-(?P<month>\d{1,2})-(?P<year>\d{4})(?![\d-])"),
     re.compile(r"ngày\s+(?P<day>\d{1,2})\s+tháng\s+(?P<month>\d{1,2})(?:\s+năm\s+(?P<year>\d{4}))?", re.IGNORECASE),
 ]
+# Emails also write "01.10.2026" (always with the year, so "13.00" stays a time and "15.000.000" money). Only the
+# email readers use it: announcements keep DATE_FORMATS, which the Java twin reads too.
+MAIL_DATE_FORMATS = DATE_FORMATS + [
+    re.compile(r"(?<![\w/.:,])(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{4})(?!\d|\.\d)"),
+]
 TIME = re.compile(
     r"(?<![\w/.:])(?P<hour>\d{1,2})(?:[:hg](?P<minute>\d{2})?|(?=\s*[ap]\.?m\b))(?:\s*(?P<ampm>[ap])\.?m\.?)?(?!\w)",
     re.IGNORECASE,
@@ -78,6 +83,9 @@ DEADLINE_WORDS = ("hạn chót", "hạn đăng ký", "hạn nộp", "thời hạ
 # EARLIEST_BARE_HOUR without minutes or AM/PM, like "(2h)": events don't start in the small hours.
 LENGTH_WORDS = ("thời lượng", "kéo dài", "trong vòng", "duration", "lasting", "lasts")
 EARLIEST_BARE_HOUR = 6
+# The edges of a day: "từ 00g00 ngày 21/9 đến 23g59 ngày 27/9" is when a contest round opens and closes, not when
+# anything takes place. Never a start (an end at 23:59 is kept: "19h00 - 23h59").
+DAY_EDGES = (time(0, 0), time(23, 59))
 MAX_SESSIONS = 10
 
 
@@ -129,11 +137,11 @@ def _date(match, posted_day):
     return min(candidates, key=lambda d: abs(d - posted_day))
 
 
-def _dates(sentence, posted_day, keep_past=False):
+def _dates(sentence, posted_day, keep_past=False, formats=DATE_FORMATS):
     """[(start, end, date)] in `sentence`, from the posting day on (or all of them with keep_past), in the order
     they appear; start and end are the date's character positions."""
     found, taken = [], []
-    for pattern in DATE_FORMATS:
+    for pattern in formats:
         for match in pattern.finditer(sentence):
             if any(match.start() < end and start < match.end() for start, end in taken):
                 continue
@@ -204,7 +212,7 @@ def dates_in(text, from_day):
     """Every date in `text` from `from_day` on, sorted, each once. Dates inside links are ignored; a date
     without a year takes the year that puts it closest to `from_day`."""
     text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
-    return sorted({day for _, _, day in _dates(text, from_day)})
+    return sorted({day for _, _, day in _dates(text, from_day, formats=MAIL_DATE_FORMATS)})
 
 
 def _ampm(sentence, match):
@@ -228,10 +236,10 @@ def _is_length(sentence, match, ampm):
 
 
 def _session_times(sentence, taken):
-    """[(start, end, position)] of every time in `sentence` outside the spans in `taken` (its dates), lengths left
-    out, in order; position is where the time starts in `sentence`. A start and an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after
-    the start. In a range, a start without AM/PM (or a time of day) takes the end's when that keeps it before the
-    end: "1:00 – 2:30 PM", "1h - 3h chiều"."""
+    """[(start, end, position)] of every time in `sentence` outside the spans in `taken` (its dates), lengths and
+    DAY_EDGES left out, in order; position is where the time starts in `sentence`. A start and an end joined by
+    "-", "đến", "to" … make one range; the end is dropped when it isn't after the start. In a range, a start without
+    AM/PM (or a time of day) takes the end's when that keeps it before the end: "1:00 – 2:30 PM", "1h - 3h chiều"."""
     matches = [m for m in SESSION_TIME.finditer(sentence)
                if not any(m.start() < end and start < m.end() for start, end in taken)]
     found, i = [], 0
@@ -249,7 +257,7 @@ def _session_times(sentence, taken):
                 shifted = _time(first, ampm=second_ampm)
                 if shifted and shifted < end:
                     start, first_ampm = shifted, second_ampm
-        if start is not None and not _is_length(sentence, first, first_ampm):
+        if start is not None and start not in DAY_EDGES and not _is_length(sentence, first, first_ampm):
             found.append((start, end if end is not None and end > start else None, first.start()))
     return found
 
@@ -276,7 +284,7 @@ def sessions_in(text, from_day):
         folded = fold(sentence)
         if DEADLINE.search(folded):
             continue
-        dates = _dates(sentence, from_day, keep_past=True)
+        dates = _dates(sentence, from_day, keep_past=True, formats=MAIL_DATE_FORMATS)
         days = [day for _, _, day in dates]
         times = _session_times(sentence, [(start, end) for start, end, _ in dates])
         if days:
@@ -310,5 +318,5 @@ def register_by_in(text, from_day):
     text = URL.sub(" ", unicodedata.normalize("NFC", text or ""))
     days = [day for sentence in SENTENCE_END.split(text)
             if DEADLINE.search(fold(sentence)) and REGISTER.search(fold(sentence))
-            for _, _, day in _dates(sentence, from_day, keep_past=True)]
+            for _, _, day in _dates(sentence, from_day, keep_past=True, formats=MAIL_DATE_FORMATS)]
     return max(days, default=None)
