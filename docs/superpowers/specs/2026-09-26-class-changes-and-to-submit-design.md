@@ -77,7 +77,7 @@ New file `app/school/services/class_changes.py`. `schedule.py`'s `Item` gains tw
 - **online / cancelled on a date without a class of that course:** nothing (the date was about something else).
 - **make-up:** an extra class of that course on that date.
   - With a start time: it starts then. It ends at the end time if one is given, otherwise after the course's usual class length (its most common meeting length, or 90 minutes if it has none). No make-up is added on a day the course has a normal class (such a date names the original class, as in "the make-up for the class on 24/9").
-  - Without a time: a note in the calendar's all-day row, "Make-up class: <course> (see announcement)".
+  - Without a time: a note in the calendar's all-day row, "Make-up class: <course> (time not given, see announcement)", or "… see email" when a lecturer's email announced it; the note links to it.
   - The room is "Online" if the sentence also has an online word; otherwise the room is taken from the sentence if it looks like an IU room (`A2.401`, `LA1.605`, `R109`), else empty.
 - **Two announcements about the same course and date:** the newest one wins, separately for class changes (online, cancelled) and make-ups, so a later make-up notice doesn't erase a cancellation.
 - One announcement that can't be read is skipped (logged); it never breaks a page.

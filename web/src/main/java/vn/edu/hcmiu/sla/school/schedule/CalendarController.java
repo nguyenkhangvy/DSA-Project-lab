@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -88,7 +89,7 @@ public class CalendarController {
         props.put("room", item.room());
 
         Map<String, Object> event = new LinkedHashMap<>();
-        event.put("title", item.allDay() ? "Make-up class: " + item.title() + " (see announcement)" : title);
+        event.put("title", item.allDay() ? "Make-up class: " + item.title() + " (" + noTime(item) + ")" : title);
         event.put("start", VietnamTime.wallClock(item.startAt()));
         event.put("classNames", List.of(css));
         event.put("extendedProps", props);
@@ -105,6 +106,12 @@ public class CalendarController {
             event.put("url", item.source().link());
         }
         return event;
+    }
+
+    /** Why a make-up class is all day, and where to look: "time not given, see email" (or "see announcement"). */
+    private static String noTime(Item item) {
+        return item.source() == null ? "time not given"
+                : "time not given, " + item.source().text().toLowerCase(Locale.ROOT);
     }
 
     static Map<String, Object> deadline(SchoolBbAssignment deadline) {

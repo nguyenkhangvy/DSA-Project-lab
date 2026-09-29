@@ -326,7 +326,8 @@ class CalendarFeedTest {
 
         assertThat(classes().stream().filter(e -> Boolean.TRUE.equals(e.get("allDay"))).toList()).singleElement()
                 .satisfies(note -> assertThat(List.of(note.get("title"), note.get("start"), note.get("classNames")))
-                        .containsExactly("Make-up class: " + PROBABILITY + " (see announcement)", "2026-09-26",
+                        .containsExactly("Make-up class: " + PROBABILITY + " (time not given, see announcement)",
+                                "2026-09-26",
                                 List.of("event-changed")));
     }
 
@@ -439,6 +440,17 @@ class CalendarFeedTest {
                 SEPT_24, null, null, null));
 
         assertThat(classes()).extracting(e -> props(e).get("change")).containsExactly("cancelled");
+    }
+
+    @Test
+    void anEmailedMakeUpClassWithoutATimeSaysToSeeTheEmail() throws Exception {
+        data.course(an, "MA026IU", PROBABILITY, THU_24);
+        data.save(data.emailChange(data.lecturerEmail(an, KEY, POSTED, null), "MA026IU", "makeup",
+                LocalDate.of(2026, 9, 26), null, null, null));
+
+        assertThat(makeups()).singleElement().satisfies(note -> assertThat(List.of(note.get("title"), note.get("url")))
+                .containsExactly("Make-up class: " + PROBABILITY + " (time not given, see email)",
+                        "/school/mailbox#mail-" + KEY));
     }
 
     @Test
