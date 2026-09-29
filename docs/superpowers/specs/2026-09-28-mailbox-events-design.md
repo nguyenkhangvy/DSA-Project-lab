@@ -136,13 +136,13 @@ Layout as in the mockup `mailbox-rows.html` (kept in `.superpowers/brainstorm/`,
   5. **When**: "Next: Thu 01/10" for cards in the Events and School tasks boxes with an upcoming date or session (as Outlook §6.3), otherwise the time received.
   6. **Actions**: **Web ↗** (Outlook on the web, new tab, `rel="noopener noreferrer"`), **Move…**, **Join…** (event-like cards only), and **✓ Done** (Undo in the Done list) as a real button at the end, at least 32 px tall with a visible border.
 - **Sessions line:** a card with upcoming sessions gets one small extra line under its row listing them, e.g. `Tue 29/09 13:00–14:00 ⚠ Conflict: Web Application · Thu 01/10 13:00–14:00 ✓ No conflict`. A joined session shows **Joined** (green) instead of its mark. A session without an end shows "from 14:00".
-- **Phone (under 700 px):** each row takes three short lines: labels and extra tags, then when; sender · subject; the actions. (Two lines left the subject no room next to Web ↗, Move…, Join… and ✓ Done.) The sessions line wraps below.
+- **Phone (under 700 px):** each row takes three short lines: labels and extra tags, then when; sender · subject; the actions. (Two lines left the subject no room next to Web ↗, Move…, Join… and ✓ Done.) When the labels and tags leave no room for the date, the date drops to a line of its own instead of sitting under them. The sessions line wraps below.
 - **Removed:** the "Open in Outlook" button (the subject is the link), the "⚠ lose points if absent" tag, and the "Couldn't sort…" sentence on the card (now the label's hover text).
 
 ### 4.3 Opening, auto-Done and the setting
 
 - **The setting:** a tick box at the top of Mailbox, "Mark emails as done when I open them", on by default. Changing it saves it at once (the script submits its form); without the script a **Save** button shows. `POST /school/mailbox/settings`.
-- **Opening:** a click on a card's subject or **Web ↗** runs `static/js/mailbox.js`, which sends `POST /school/mailbox/{key}/opened` with the CSRF token. The link opens as usual without waiting; the answer (`{"done": true|false}`) only updates the row. Without the script, nothing is recorded.
+- **Opening:** a click on **Web ↗**, or on a card's subject in a browser on Windows (the `sla-mail:` link opens the email only on the laptop, so on a phone the subject records nothing), runs `static/js/mailbox.js`, which sends `POST /school/mailbox/{key}/opened` with the CSRF token. The link opens as usual without waiting; the answer (`{"done": true|false}`) only updates the row. Without the script, nothing is recorded.
 - **The site records the card as opened** (`opened` on the choice of the card's newest email, like Done in Outlook §6.3, so a new reply makes the card unread again). Then, when auto-Done is on, it also marks the card **Done**, **except** an event-like card that has a date or session today or later (not Past). Those stay in their box, grey, and fold into Past by themselves.
 - **On the page:** the script greys the row's subject at once; a card that became Done shows "Done ✓" and **Undo** in place. It moves to the Done list the next time the page loads.
 - Opening never changes anything in Outlook.
@@ -178,7 +178,9 @@ For each upcoming session of an event-like card:
 
 Saving replaces this email's joined sessions that haven't ended with the ticked ones plus the added one (sessions already over stay in the Timetable), copying the card's subject as `title` and whether its categories (the student's choice from Move to… wins) include Training points. Refused with a message: a day before today, an end not after its start, more than 10 joined sessions for one email. Joining does not mark the card Done.
 
-**Addresses** (login, CSRF on POSTs, a key that isn't one of the user's cards gives 404): `GET`/`POST /school/mailbox/{key}/join`, `POST /school/mailbox/{key}/leave`, `POST /school/mailbox/{key}/opened`, `POST /school/mailbox/settings`.
+**Joined sessions can always be left.** A card the student moved away from Event and School task after joining keeps **Join…**, its joined sessions on its row, and **Leave event**. A joined event whose email is no longer in Outlook (the sync removed it) is listed with its sessions ahead under **"Joined events whose email is gone"**, above Done, with a **Leave** button; its Timetable entry's "See email" link lands on that row.
+
+**Addresses** (login, CSRF on POSTs, a key that isn't one of the user's cards gives 404, except that `…/leave` also takes the key of a joined event whose email is gone): `GET`/`POST /school/mailbox/{key}/join`, `POST /school/mailbox/{key}/leave`, `POST /school/mailbox/{key}/opened`, `POST /school/mailbox/settings`.
 
 ### 4.7 Timetable, Overview and the calendar feed
 
@@ -281,7 +283,7 @@ Decided with the student at the real-sync check of 2026-09-29, after two real em
 
 - One migration adds `register_by` DATE NULL to `school_mail`; saving an `outlook` part stores it.
 - A card's registration deadline is the **latest** `register_by` of its emails (a reminder can extend it).
-- **Past** (§4.4): an event-like card is also Past when its registration deadline is before today (Vietnam) **and the student has joined none of its emails' sessions**. A joined card stays in its box until its last session ends. Its Timetable entries never change.
+- **Past** (§4.4): a card in the **Event** category is also Past when its registration deadline is before today (Vietnam) **and the student has joined none of its emails' sessions**. A School task is not: it is often required whatever its registration says, so it stays until its date. A joined card stays in its box until its last session ends. Its Timetable entries never change.
 - **On the row:** while an event-like card's registration is open (deadline today or later) it shows a small tag "Register by Tue 22/09"; a card that is Past because its registration closed shows "Registration closed".
 - **Join…** stays available on a card whose registration has closed (the student may have registered elsewhere in time).
 
