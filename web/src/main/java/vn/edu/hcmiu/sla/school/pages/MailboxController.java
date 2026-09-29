@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -281,9 +282,13 @@ public class MailboxController {
         if (error != null) {
             return joinPage(model, card, lines, form, error);
         }
-        joined.deleteAll(upcoming);
-        joined.flush();
-        joined.saveAll(rows);
+        try {
+            mailSessions.replaceUpcoming(user.id(), card.keys(), now, rows);
+        } catch (DataIntegrityViolationException doubleClick) {
+            // Another Save of this form (the other click of a double click) wrote the same sessions first; this
+            // Save was undone whole, so save it again over that one.
+            mailSessions.replaceUpcoming(user.id(), card.keys(), now, rows.stream().map(SchoolMailJoined::copy).toList());
+        }
         Flash.success(redirect, rows.isEmpty() ? "You left this event. It is no longer in your Timetable."
                 : "Joined. It is in your Timetable now.");
         return "redirect:/school/mailbox#mail-" + card.key();
@@ -331,12 +336,12 @@ public class MailboxController {
     @PostMapping("/{key}/leave")
     String leave(@AuthenticationPrincipal AppUser user, @PathVariable String key, RedirectAttributes redirect) {
         Card card = view(user.id()).card(key);
-        List<SchoolMailJoined> ahead = mailSessions.upcomingJoined(user.id(),
-                card != null ? card.keys() : List.of(key), nowInVietnam());
-        if (card != null ? !card.joinable() : ahead.isEmpty()) {
+        List<String> keys = card != null ? card.keys() : List.of(key);
+        LocalDateTime now = nowInVietnam();
+        if (card != null ? !card.joinable() : mailSessions.upcomingJoined(user.id(), keys, now).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        joined.deleteAll(ahead);
+        mailSessions.leave(user.id(), keys, now);
         Flash.success(redirect, "You left this event. It is no longer in your Timetable.");
         return "redirect:/school/mailbox" + (card != null ? "#mail-" + card.key() : "");
     }

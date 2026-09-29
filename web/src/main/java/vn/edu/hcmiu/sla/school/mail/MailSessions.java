@@ -74,6 +74,24 @@ public class MailSessions {
     }
 
     /**
+     * Puts `rows` in place of the student's joined sessions of one card's emails that haven't ended at `now`, in one
+     * transaction: a Save happens whole or not at all. The old rows go in one statement by id, so rows another Save
+     * already removed are no error.
+     */
+    @Transactional
+    public void replaceUpcoming(Integer userId, Collection<String> keys, LocalDateTime now,
+            List<SchoolMailJoined> rows) {
+        joined.deleteAllByIdInBatch(upcomingJoined(userId, keys, now).stream().map(SchoolMailJoined::getId).toList());
+        joined.saveAll(rows);
+    }
+
+    /** Removes the student's joined sessions of one card's emails that haven't ended at `now`, in one transaction. */
+    @Transactional
+    public void leave(Integer userId, Collection<String> keys, LocalDateTime now) {
+        joined.deleteAllByIdInBatch(upcomingJoined(userId, keys, now).stream().map(SchoolMailJoined::getId).toList());
+    }
+
+    /**
      * A joined event whose email is no longer in the Mailbox: its title, and its joined sessions that haven't
      * ended, so the student can still leave it.
      */

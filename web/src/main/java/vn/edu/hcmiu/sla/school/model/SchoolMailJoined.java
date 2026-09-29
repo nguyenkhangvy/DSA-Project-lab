@@ -70,6 +70,11 @@ public class SchoolMailJoined {
         this.createdAt = createdAt;
     }
 
+    /** A new, unsaved row with the same values, to save again after a try that failed. */
+    public SchoolMailJoined copy() {
+        return new SchoolMailJoined(userId, mailKey, day, start, end, title, place, trainingPoints, byHand, createdAt);
+    }
+
     public Integer getId() {
         return id;
     }
