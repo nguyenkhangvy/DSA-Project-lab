@@ -371,6 +371,18 @@ class MailboxTest {
     }
 
     @Test
+    void openingACardPastOnlyBecauseItsRegistrationClosedDoesNotMarkItDone() {
+        View view = build(Map.of(), Map.of("closing", List.of(session(2, "09:45", null))),
+                new Mail("closing", 1, "event").on(2).registerBy(-6), new Mail("undated", 2, "event").registerBy(-3),
+                new Mail("over", 3, "event").on(-2).registerBy(-6));
+
+        assertThat(List.of("closing", "undated", "over")).map(k -> view.card(k).past())
+                .containsExactly(true, true, true);
+        assertThat(List.of("closing", "undated", "over")).map(k -> view.card(k).doneWhenOpened())
+                .containsExactly(false, false, true);
+    }
+
+    @Test
     void registrationIsOpenThroughItsDeadline() {
         Card card = build(new Mail("talk", 1, "event").on(3).registerBy(0)).card("talk");
 
