@@ -195,6 +195,27 @@ class JoinPageTest {
     }
 
     @Test
+    void theTenSessionLimitCountsSessionsAlreadyOver() throws Exception {
+        // 3 over + 2 found + 6 added by hand = 11
+        MockHttpServletRequestBuilder request = save(TALK).param("sessions", "2026-09-29T14:00", "2026-10-01T13:30");
+        for (int day = 20; day < 23; day++) {
+            db.persist(new SchoolMailJoined(an.id(), TALK, LocalDate.of(2026, 9, day), LocalTime.of(18, 0), null,
+                    "Workshop", null, true, true, NOW));
+        }
+        for (int day = 5; day < 11; day++) {
+            db.persist(new SchoolMailJoined(an.id(), TALK, LocalDate.of(2026, 10, day), LocalTime.of(18, 0), null,
+                    "Workshop", null, true, true, NOW));
+            request.param("sessions", "2026-10-" + String.format("%02d", day) + "T18:00");
+        }
+        db.flush();
+
+        String html = mvc.perform(request).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        assertThat(html).contains(MailboxController.TOO_MANY);
+        assertThat(joined.count()).isEqualTo(9);
+    }
+
+    @Test
     void leavingRemovesTheSessionsAheadButKeepsThoseOver() throws Exception {
         db.persist(new SchoolMailJoined(an.id(), TALK, LocalDate.of(2026, 9, 27), LocalTime.of(18, 0), null,
                 "Workshop", null, true, true, NOW));

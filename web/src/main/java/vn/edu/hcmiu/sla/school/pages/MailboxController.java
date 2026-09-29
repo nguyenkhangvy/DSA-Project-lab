@@ -274,7 +274,8 @@ public class MailboxController {
         if (error == null && !form.getDay().isEmpty()) {
             error = addByHand(form, now.toLocalDate(), over, rows, user.id(), card, title, place);
         }
-        if (error == null && rows.size() > MAX_JOINED) {
+        // The limit is on all of the email's joined sessions: those already over stay, so they count too.
+        if (error == null && rows.size() + over.size() > MAX_JOINED) {
             error = TOO_MANY;
         }
         if (error != null) {
