@@ -71,7 +71,7 @@ The subject and the text are read together, line by line. A **session** is a day
 - `1:00 PM`, `1 PM`, `1:30 pm`, `9 AM` (AM/PM written after the time, or once after the end: `1:00 – 2:30 PM`)
 - a start alone after `lúc`, `vào lúc`, `at`, `from`, `từ`
 
-A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, minutes 0–59.
+A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, minutes 0–59. Not times either: a dotted date (`01.10.2026` is not 01:10); a length, that is a time right after `thời lượng`, `kéo dài`, `trong vòng`, `duration`, `lasting` or `lasts` ("kéo dài 1h30"); and a bare hour under 6 without minutes or AM/PM ("(2h)"), since events don't start in the small hours.
 
 **Days:** the date formats the class-change reader already knows (Outlook §5.4: `29/09/2026`, `27/9`, `18-9-2026`, `ngày 18 tháng 9`, `September 24`, `24th September` …), with the same year guess. Dates inside links are ignored.
 
@@ -81,7 +81,7 @@ A number without `:`, `.`, `h`, `g` or AM/PM is not a time. Hours run 0–23, mi
 2. **Several dates, one time** on a line: one session per date ("ngày 29/09 và 01/10, 13:00–14:00" → 2 sessions).
 3. **Several times, one date** on a line: one session per time ("Ca 1: 8:00–10:00; Ca 2: 13:00–15:00 ngày 30/9" → 2 sessions on 30/9).
 4. A line with several dates and several times pairs them in order when the counts are equal; otherwise every date gets every time.
-5. **Deadlines are not sessions:** a time or date on a line with `hạn chót`, `hạn đăng ký`, `hạn nộp`, `thời hạn`, `trước ngày`, `đăng ký trước`, `deadline`, `due` is skipped for sessions (the date still counts in `dates`). Bare `hạn` and `trước` don't count: "Số lượng có hạn" and "có mặt trước 15 phút" sit next to real event times.
+5. **Deadlines are not sessions:** a time or date on a line with `hạn chót`, `hạn đăng ký`, `hạn nộp`, `thời hạn`, `trước ngày`, `đăng ký trước`, `deadline`, `due` (but not `due to`: "due to the rain") is skipped for sessions (the date still counts in `dates`). Bare `hạn` and `trước` don't count: "Số lượng có hạn" and "có mặt trước 15 phút" sit next to real event times.
 6. A time with no date anywhere above it is dropped.
 
 **Then:** sessions on days before the day the email arrived are dropped; repeats (same day and start) are kept once, with the end from the first; the sessions are sorted by day and start; at most **10** are kept.
@@ -143,8 +143,9 @@ Layout as in the mockup `mailbox-rows.html` (kept in `.superpowers/brainstorm/`,
 
 - **The setting:** a tick box at the top of Mailbox, "Mark emails as done when I open them", on by default. Changing it saves it at once (the script submits its form); without the script a **Save** button shows. `POST /school/mailbox/settings`.
 - **Opening:** a click on **Web ↗**, or on a card's subject in a browser on Windows (the `sla-mail:` link opens the email only on the laptop, so on a phone the subject records nothing), runs `static/js/mailbox.js`, which sends `POST /school/mailbox/{key}/opened` with the CSRF token. The link opens as usual without waiting; the answer (`{"done": true|false}`) only updates the row. Without the script, nothing is recorded.
-- **The site records the card as opened** (`opened` on the choice of the card's newest email, like Done in Outlook §6.3, so a new reply makes the card unread again). Then, when auto-Done is on, it also marks the card **Done**, **except** an event-like card that has a date or session today or later (not Past). Those stay in their box, grey, and fold into Past by themselves.
-- **On the page:** the script greys the row's subject at once; a card that became Done shows "Done ✓" and **Undo** in place. It moves to the Done list the next time the page loads.
+- **The site records the card as opened** (`opened` on the choice of the card's newest email, like Done in Outlook §6.3, so a new reply makes the card unread again). Then, when auto-Done is on, it also marks the card **Done**, **except** an event-like card that has a date or session today or later (not Past), or one in Past only because its registration closed (A.3): Past and Done stay apart. Those stay in their box, grey, and fold into Past by themselves.
+- **On the page:** the script greys the row's subject at once, before the site answers; a card that became Done shows "Done ✓" and **Undo** in place. It moves to the Done list the next time the page loads.
+- **Which clicks count:** a click (also with Ctrl, Shift or ⌘, or Enter on the keyboard) and a middle-click. "Open in new tab" from the right-click menu can't be seen by a page, so it records nothing; ✓ Done still works.
 - Opening never changes anything in Outlook.
 
 ### 4.4 Past and next date
@@ -176,7 +177,7 @@ For each upcoming session of an event-like card:
 - **Place** (optional, up to 100 characters), shown for every joined session of this email.
 - **Save** (`POST …/join`), **Leave event** (`POST …/leave`: removes this email's joined sessions that haven't ended), **Cancel**.
 
-Saving replaces this email's joined sessions that haven't ended with the ticked ones plus the added one (sessions already over stay in the Timetable), copying the card's subject as `title` and whether its categories (the student's choice from Move to… wins) include Training points. Refused with a message: a day before today, an end not after its start, more than 10 joined sessions for one email. Joining does not mark the card Done.
+Saving replaces this email's joined sessions that haven't ended with the ticked ones plus the added one (sessions already over stay in the Timetable), copying the card's subject as `title` and whether its categories (the student's choice from Move to… wins) include Training points. Refused with a message: a day before today, an end not after its start, more than 10 joined sessions for one email (those already over count too). Joining does not mark the card Done. Save and Leave each happen whole, in one transaction; when the second click of a double click finds the first one's sessions already written, it saves over them instead of showing an error.
 
 **Joined sessions can always be left.** A card the student moved away from Event and School task after joining keeps **Join…**, its joined sessions on its row, and **Leave event**. A joined event whose email is no longer in Outlook (the sync removed it) is listed with its sessions ahead under **"Joined events whose email is gone"**, above Done, with a **Leave** button; its Timetable entry's "See email" link lands on that row.
 
