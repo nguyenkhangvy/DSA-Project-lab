@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -132,9 +134,15 @@ public class MailboxController {
         return choices.findByUserIdAndMailKey(userId, key).orElseGet(() -> new SchoolMailChoice(userId, key, now()));
     }
 
+    /**
+     * The tab. Only a browser on Windows can be on the laptop whose sla-mail: link opens the email, so only there
+     * does a click on the subject count as opening it; elsewhere "Web ↗" does.
+     */
     @GetMapping
-    String mailbox(@AuthenticationPrincipal AppUser user, Model model) {
+    String mailbox(@AuthenticationPrincipal AppUser user,
+            @RequestHeader(value = HttpHeaders.USER_AGENT, defaultValue = "") String browser, Model model) {
         Mailbox.View view = view(user.id());
+        model.addAttribute("onWindows", browser.contains("Windows"));
         model.addAttribute("view", view);
         model.addAttribute("lines", mailSessions.lines(user.id(),
                 view.boxes().stream().flatMap(b -> b.cards().stream()).toList(), nowInVietnam()));

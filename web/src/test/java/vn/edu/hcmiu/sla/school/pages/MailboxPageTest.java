@@ -135,16 +135,38 @@ class MailboxPageTest {
                 .doesNotContain("Open in Outlook");
     }
 
+    static final String EDGE_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like "
+            + "Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0";
+    static final String CHROME_ON_ANDROID = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) "
+            + "Chrome/140.0.0.0 Mobile Safari/537.36";
+
+    String pageIn(String browser) throws Exception {
+        return mvc.perform(get("/school/mailbox").with(user(an)).header("User-Agent", browser))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
     @Test
     void eachCardOpensTheExactEmailOnTheLaptopOrOutlookOnTheWeb() throws Exception {
         inbox(an);
 
-        String card = box(page(), "events");
+        String card = box(pageIn(EDGE_ON_WINDOWS), "events");
 
         assertThat(card).containsPattern("class=\"mail-subject\" href=\"sla-mail:00A1AAAA\"[^>]*"
                 + "data-opened=\"/school/mailbox/" + TCL + "/opened\"");
         assertThat(card).contains("href=\"https://outlook.office.com/mail/\" target=\"_blank\" rel=\"noopener noreferrer\"");
         assertThat(card).contains("class=\"done-button\">✓ Done</button>");
+    }
+
+    @Test
+    void onAPhoneTheSubjectCanNotOpenTheEmailSoItRecordsNothing() throws Exception {
+        inbox(an);
+
+        String card = box(pageIn(CHROME_ON_ANDROID), "events");
+
+        assertThat(card).containsPattern("class=\"mail-subject\" href=\"sla-mail:00A1AAAA\"[^>]*>")
+                .doesNotContainPattern("class=\"mail-subject\"[^>]*data-opened");
+        assertThat(card).containsPattern("href=\"https://outlook.office.com/mail/\"[^>]*"
+                + "data-opened=\"/school/mailbox/" + TCL + "/opened\"");
     }
 
     @Test

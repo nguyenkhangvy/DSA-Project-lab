@@ -64,7 +64,8 @@
 </main>
 
 <!--/* One row (Mailbox.Card). showNext: Events and School tasks show the next date instead of the time received.
-     Clicking the subject or "Web ↗" opens the email; mailbox.js then tells the site (data-opened). */-->
+     Clicking the subject or "Web ↗" opens the email; mailbox.js then tells the site (data-opened). The subject's
+     sla-mail: link only works on the laptop, so outside Windows only "Web ↗" tells the site. */-->
 <li th:fragment="row(card, showNext)" th:id="|mail-${card.key}|"
     th:class="|mail-row${card.opened ? ' is-opened' : ''}${card.done ? ' is-done' : ''}|">
   <span class="mail-labels">
@@ -77,7 +78,7 @@
     <span class="mail-sender" th:text="${card.senderName.isEmpty() ? '—' : card.senderName}"
           th:title="${card.senderName}">P.CTSV [OSS]</span>
     <a class="mail-subject" th:href="|sla-mail:${card.entryId}|" th:title="${card.subject}"
-       th:attr="data-opened=@{/school/mailbox/{key}/opened(key=${card.key})}"
+       th:attr="data-opened=${onWindows} ? @{/school/mailbox/{key}/opened(key=${card.key})}"
        th:text="${card.subject.isEmpty() ? '(no subject)' : card.subject}">[THƯ MỜI] Workshop</a>
   </span>
   <span class="mail-extra">
