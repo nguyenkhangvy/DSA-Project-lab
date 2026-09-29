@@ -62,16 +62,22 @@ SENTENCE_END = re.compile(
 )
 
 
-# Sessions (mailbox-events 3.2): a time is a start alone, or a start and an end joined by one of these.
+# Sessions (mailbox-events 3.2): a time is a start alone, or a start and an end joined by one of these. "01.10"
+# followed by ".2026" is a date, not a time.
 SESSION_TIME = re.compile(
     r"(?<![\w/.:,])(?P<hour>\d{1,2})(?:(?:[:.](?=\d{2})|[hg])(?P<minute>\d{2})?|(?=\s*[ap]\.?m\b))"
-    r"(?:\s*(?P<ampm>[ap])\.?m\.?)?(?!\w)",
+    r"(?:\s*(?P<ampm>[ap])\.?m\.?)?(?!\w|\.\d)",
     re.IGNORECASE,
 )
 SESSION_JOIN = re.compile(r"\s*(?:-|–|—|to|until|đến)\s*", re.IGNORECASE)
 # Words of a deadline, compared without accents or letter case. Bare "hạn" and "trước" don't count: "Số lượng
-# có hạn" and "có mặt trước 15 phút" sit next to real event times.
-DEADLINE_WORDS = ("hạn chót", "hạn đăng ký", "hạn nộp", "thời hạn", "trước ngày", "đăng ký trước", "deadline", "due")
+# có hạn" and "có mặt trước 15 phút" sit next to real event times. "due" counts unless "to" follows: "due to the
+# rain" is not a deadline.
+DEADLINE_WORDS = ("hạn chót", "hạn đăng ký", "hạn nộp", "thời hạn", "trước ngày", "đăng ký trước", "deadline")
+# A length, not a time: right after one of these words (compared the same way), or a bare hour under
+# EARLIEST_BARE_HOUR without minutes or AM/PM, like "(2h)": events don't start in the small hours.
+LENGTH_WORDS = ("thời lượng", "kéo dài", "trong vòng", "duration", "lasting", "lasts")
+EARLIEST_BARE_HOUR = 6
 MAX_SESSIONS = 10
 
 
@@ -81,7 +87,13 @@ def fold(text):
     return "".join(c for c in text if not unicodedata.combining(c)).lower()
 
 
-DEADLINE = re.compile(r"\b(?:" + "|".join(r"\s+".join(fold(w).split()) for w in DEADLINE_WORDS) + r")\b")
+def _words(words):
+    """A pattern for any of `words`, on folded text."""
+    return "|".join(r"\s+".join(fold(w).split()) for w in words)
+
+
+DEADLINE = re.compile(r"\b(?:" + _words(DEADLINE_WORDS) + r"|due(?!\s+to\b))\b")
+LENGTH_BEFORE = re.compile(r"\b(?:" + _words(LENGTH_WORDS) + r")\s*:?\s*(?:khoang|about|around)?\s*$")
 # On folded text: "check in", "check-in", "checkin", "điểm danh" mark a check-in time; "đăng ký", "register",
 # "registration", "sign up" make a deadline sentence a registration deadline (addendum A.1 and A.2).
 CHECK_IN = re.compile(r"\b(?:check\s*-?\s*in|diem\s+danh)\b")
@@ -193,12 +205,22 @@ def dates_in(text, from_day):
     return sorted({day for _, _, day in _dates(text, from_day)})
 
 
+def _is_length(sentence, match):
+    """Whether this time in `sentence` is a length ("kéo dài 2h", "(2h)") rather than when something starts."""
+    if LENGTH_BEFORE.search(fold(sentence[:match.start()])):
+        return True
+    return (match.group("minute") is None and match.group("ampm") is None
+            and int(match.group("hour")) < EARLIEST_BARE_HOUR)
+
+
 def _session_times(sentence, taken):
-    """[(start, end)] of every time in `sentence` outside the spans in `taken` (its dates), in order. A start and
-    an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after the start. In a
-    range, a start without AM/PM takes the end's when that keeps it before the end: "1:00 – 2:30 PM"."""
+    """[(start, end)] of every time in `sentence` outside the spans in `taken` (its dates), lengths left out, in
+    order. A start and an end joined by "-", "đến", "to" … make one range; the end is dropped when it isn't after
+    the start. In a range, a start without AM/PM takes the end's when that keeps it before the end: "1:00 – 2:30
+    PM"."""
     matches = [m for m in SESSION_TIME.finditer(sentence)
-               if not any(m.start() < end and start < m.end() for start, end in taken)]
+               if not any(m.start() < end and start < m.end() for start, end in taken)
+               and not _is_length(sentence, m)]
     found, i = [], 0
     while i < len(matches):
         first, start, end = matches[i], _time(matches[i]), None

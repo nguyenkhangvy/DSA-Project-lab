@@ -87,6 +87,32 @@ def test_an_end_that_is_not_after_the_start_is_dropped():
     assert found("22h00 - 01h00 ngày 30/9") == [("30/09", "22:00", None)]
 
 
+def test_a_dotted_date_is_not_a_time():
+    assert found("Ngày 30/9/2026 lúc 14h00 (cập nhật 01.10.2026)") == [("30/09", "14:00", None)]
+    assert found("Ngày 30/9: hội thảo, thông báo số 01.10.2026") == []
+
+
+@pytest.mark.parametrize("text", [
+    "Thời gian: 14h00 ngày 30/9, kéo dài 2h",
+    "Workshop 14h ngày 30/9 (2h)",
+    "Ngày 30/9 lúc 14h. Thời lượng: 1h30",
+    "Ngày 30/9 lúc 14h, mỗi buổi trong vòng 2h",
+    "Talk on 30/9 at 14h, lasting 2h",
+])
+def test_a_length_is_not_a_time(text):
+    assert found(text) == [("30/09", "14:00", None)]
+
+
+def test_small_hours_are_still_times_with_am_or_minutes():
+    assert found("Chạy bộ ngày 30/9 lúc 5 AM") == [("30/09", "05:00", None)]
+    assert found("Chạy bộ ngày 30/9 lúc 5h30") == [("30/09", "05:30", None)]
+
+
+def test_due_to_is_not_a_deadline():
+    assert found("Due to the rain, the talk moves to 14h ngày 30/9") == [("30/09", "14:00", None)]
+    assert found("Report due 30/9 at 5 PM") == []
+
+
 def test_times_and_dates_in_links_are_ignored():
     assert found("Đăng ký: https://example.com/event-30-9-14h00") == []
 
