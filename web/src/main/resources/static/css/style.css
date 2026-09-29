@@ -355,19 +355,17 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 }
 .mailbox-box details { margin-top: 6px; }
 .mailbox-box summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; }
+/* Phone: labels, tags and the date on the first line (the date drops below them when they don't fit, never under
+   them), then sender · subject, then the actions. */
 @media (max-width: 700px) {
-  .mail-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "labels extra when" "text text text" "actions actions actions";
-    row-gap: 2px; padding: 6px 0;
-  }
-  .mail-labels { grid-area: labels; }
-  .mail-extra { grid-area: extra; }
-  .mail-when { grid-area: when; }
-  .mail-text { display: block; grid-area: text; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 6px 0; }
+  .mail-labels, .mail-extra { flex-wrap: wrap; }
+  .mail-when { margin-left: auto; }
+  .mail-text { display: block; order: 1; flex: 1 0 100%; min-width: 0; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; }
   .mail-text .mail-sender::after { content: " · "; font-weight: 400; color: var(--muted); }
-  .mail-actions { grid-area: actions; gap: 12px; }
-  .mail-sessions { grid-column: 1 / -1; }
+  .mail-actions { order: 2; flex: 1 0 100%; gap: 12px; }
+  .mail-sessions { order: 3; flex: 1 0 100%; }
 }
 .field select {
   width: 100%;
