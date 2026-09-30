@@ -28,10 +28,10 @@
     "error_code": "edusoft_changed",
     "error_message": "Exam table not found"
   },
-  "tuition": {
+  "iupay": {
     "status": "failed",
     "error_code": "network",
-    "error_message": "EduSoft timed out"
+    "error_message": "IUPay couldn't be reached."
   },
   "blackboard": {
     "status": "failed",

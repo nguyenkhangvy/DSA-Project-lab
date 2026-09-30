@@ -2,7 +2,6 @@ package vn.edu.hcmiu.sla.school.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -16,7 +15,6 @@ import vn.edu.hcmiu.sla.school.sync.Changes.BbState;
 import vn.edu.hcmiu.sla.school.sync.Changes.Change;
 import vn.edu.hcmiu.sla.school.sync.Changes.ExamInfo;
 import vn.edu.hcmiu.sla.school.sync.Changes.Meeting;
-import vn.edu.hcmiu.sla.school.sync.Changes.TuitionInfo;
 
 /** Java twin of tests/test_school_changes.py: the same feed lines, word for word. */
 class ChangesTest {
@@ -144,38 +142,6 @@ class ChangesTest {
     @Test
     void anEmptyTimetableIsNotAnnouncedAgainAndAgain() {
         assertThat(Changes.timetable(null, List.of(), NOW)).isEmpty();
-    }
-
-    // ---- Tuition --------------------------------------------------------------
-
-    static final TuitionInfo UNPAID = new TuitionInfo("20261", 12_500_000, LocalDate.of(2026, 10, 15), "Chưa đóng");
-
-    @Test
-    void firstTuitionSync() {
-        assertThat(Changes.tuition(null, UNPAID)).containsExactly(
-                line("added", "Tuition 20261: balance 12,500,000 VND, due 15/10/2026"));
-    }
-
-    @Test
-    void tuitionPaid() {
-        TuitionInfo paid = new TuitionInfo("20261", 0, UNPAID.dueDate(), "Đã đóng");
-
-        assertThat(Changes.tuition(UNPAID, paid)).containsExactly(
-                line("changed", "Tuition 20261: balance 12,500,000 → 0 VND"),
-                line("changed", "Tuition 20261: status Chưa đóng → Đã đóng"));
-    }
-
-    @Test
-    void tuitionDueDateMoved() {
-        TuitionInfo moved = new TuitionInfo("20261", UNPAID.balance(), LocalDate.of(2026, 10, 20), UNPAID.statusText());
-
-        assertThat(Changes.tuition(UNPAID, moved)).containsExactly(
-                line("changed", "Tuition 20261: due date 15/10/2026 → 20/10/2026"));
-    }
-
-    @Test
-    void unchangedTuitionGivesNoLines() {
-        assertThat(Changes.tuition(UNPAID, UNPAID)).isEmpty();
     }
 
     // ---- Blackboard -----------------------------------------------------------

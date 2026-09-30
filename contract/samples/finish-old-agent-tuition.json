@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "timetable": {
+    "status": "ok",
+    "data": {
+      "term_code": "20261",
+      "courses": []
+    }
+  },
+  "tuition": {
+    "status": "failed",
+    "error_code": "edusoft_changed",
+    "error_message": "The tuition report's column headers have changed."
+  }
+}

@@ -1,13 +1,12 @@
 {
   "schema_version": 1,
-  "tuition": {
+  "iupay": {
     "status": "ok",
     "data": {
-      "term_code": "20261",
-      "amount_due": 12500000,
-      "amount_paid": 0,
-      "balance": 12500000,
-      "bank_account": "0123456789"
+      "bills": [
+        {"bill_no": "E0000014104", "term_code": "20261", "description": "Thu Học Phí HK 1 (2026-2027)",
+         "amount": 65250000, "status": "paid", "paid_on": "2026-09-30", "student_email": "an@student.hcmiu.edu.vn"}
+      ]
     }
   }
 }

@@ -38,16 +38,5 @@
         }
       ]
     }
-  },
-  "tuition": {
-    "status": "ok",
-    "data": {
-      "term_code": "20261",
-      "amount_due": 12500000,
-      "amount_paid": 0,
-      "balance": 12500000,
-      "due_date": "2026-10-15",
-      "status_text": "Chưa đóng"
-    }
   }
 }

@@ -3,7 +3,6 @@ package vn.edu.hcmiu.sla.school.sync;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,9 +45,6 @@ public final class Changes {
 
     public record ExamInfo(String courseCode, String courseName, String examType, LocalDateTime startAt,
             String room) {
-    }
-
-    public record TuitionInfo(String termCode, long balance, LocalDate dueDate, String statusText) {
     }
 
     /** An announcement, assignment or material, reduced to what the feed compares. */
@@ -94,14 +90,6 @@ public final class Changes {
 
     private static String count(long n, String singular, String plural) {
         return n + " " + (n == 1 ? singular : plural);
-    }
-
-    private static String day(LocalDate value) {
-        return VietnamTime.fullDate(value);
-    }
-
-    private static String money(long vnd) {
-        return String.format(Locale.ROOT, "%,d", vnd);
     }
 
     private static String orElse(String text, String fallback) {
@@ -269,39 +257,6 @@ public final class Changes {
                             + orElse(oldExam.room(), "?") + " → " + orElse(newExam.room(), "?")));
                 }
             }
-        }
-        return changes;
-    }
-
-    // ---- Tuition ----------------------------------------------------------------
-
-    /** old is null on the first sync of a term. */
-    public static List<Change> tuition(TuitionInfo old, TuitionInfo fresh) {
-        String title = "Tuition " + fresh.termCode();
-        if (old == null) {
-            String due = fresh.dueDate() == null ? "" : ", due " + day(fresh.dueDate());
-            return List.of(new Change("added", title + ": balance " + money(fresh.balance()) + " VND" + due));
-        }
-
-        List<Change> changes = new ArrayList<>();
-        if (old.balance() != fresh.balance()) {
-            changes.add(new Change("changed", title + ": balance " + money(old.balance()) + " → "
-                    + money(fresh.balance()) + " VND"));
-        }
-        if (!Objects.equals(old.dueDate(), fresh.dueDate())) {
-            String text;
-            if (old.dueDate() == null) {
-                text = "due date " + day(fresh.dueDate());
-            } else if (fresh.dueDate() == null) {
-                text = "due date removed";
-            } else {
-                text = "due date " + day(old.dueDate()) + " → " + day(fresh.dueDate());
-            }
-            changes.add(new Change("changed", title + ": " + text));
-        }
-        if (!Objects.equals(old.statusText(), fresh.statusText())) {
-            changes.add(new Change("changed", title + ": status " + orElse(old.statusText(), "-") + " → "
-                    + orElse(fresh.statusText(), "-")));
         }
         return changes;
     }

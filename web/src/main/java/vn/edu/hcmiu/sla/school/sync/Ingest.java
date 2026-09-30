@@ -41,14 +41,11 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
-import vn.edu.hcmiu.sla.school.model.SchoolTuition;
-import vn.edu.hcmiu.sla.school.model.SchoolTuitionRepository;
 import vn.edu.hcmiu.sla.school.sync.Changes.BbItem;
 import vn.edu.hcmiu.sla.school.sync.Changes.BbState;
 import vn.edu.hcmiu.sla.school.sync.Changes.Change;
 import vn.edu.hcmiu.sla.school.sync.Changes.ExamInfo;
 import vn.edu.hcmiu.sla.school.sync.Changes.Meeting;
-import vn.edu.hcmiu.sla.school.sync.Changes.TuitionInfo;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.BbCourse;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Blackboard;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.ClassMeeting;
@@ -62,13 +59,12 @@ import vn.edu.hcmiu.sla.school.sync.SyncContract.MailSession;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Outlook;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Section;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Timetable;
-import vn.edu.hcmiu.sla.school.sync.SyncContract.Tuition;
 
 /**
  * Saves the result of a sync run, in one transaction. Each part that arrived correctly replaces that
  * user's rows for that term (Blackboard and Outlook: all of them), after comparing old and new rows for the
- * "What changed" feed (mail never adds to it). A part that failed keeps its old rows. The Java twin of
- * ingest.py.
+ * "What changed" feed (mail never adds to it). A part that failed keeps its old rows. An old agent's tuition
+ * part is ignored. The Java twin of ingest.py.
  */
 @Service
 public class Ingest {
@@ -78,7 +74,6 @@ public class Ingest {
     private final SchoolCourseRepository courses;
     private final SchoolClassMeetingRepository meetings;
     private final SchoolExamRepository exams;
-    private final SchoolTuitionRepository tuition;
     private final SchoolBbCourseRepository bbCourses;
     private final SchoolBbAnnouncementRepository bbAnnouncements;
     private final SchoolBbAssignmentRepository bbAssignments;
@@ -90,7 +85,7 @@ public class Ingest {
     private final SchoolMailStatusRepository mailStatus;
 
     public Ingest(SchoolSyncRunRepository runs, SchoolChangeRepository changes, SchoolCourseRepository courses,
-            SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolTuitionRepository tuition,
+            SchoolClassMeetingRepository meetings, SchoolExamRepository exams,
             SchoolBbCourseRepository bbCourses, SchoolBbAnnouncementRepository bbAnnouncements,
             SchoolBbAssignmentRepository bbAssignments, SchoolBbMaterialRepository bbMaterials,
             SchoolMailRepository mails, SchoolMailChangeRepository mailChanges,
@@ -101,7 +96,6 @@ public class Ingest {
         this.courses = courses;
         this.meetings = meetings;
         this.exams = exams;
-        this.tuition = tuition;
         this.bbCourses = bbCourses;
         this.bbAnnouncements = bbAnnouncements;
         this.bbAssignments = bbAssignments;
@@ -131,7 +125,6 @@ public class Ingest {
         Map<String, Map<String, String>> summary = new LinkedHashMap<>();
         part(run, summary, "timetable", payload.timetable(), data -> saveTimetable(userId, data, now), now);
         part(run, summary, "exams", payload.exams(), data -> saveExams(userId, data, now), now);
-        part(run, summary, "tuition", payload.tuition(), data -> saveTuition(userId, data), now);
         part(run, summary, "blackboard", payload.blackboard(), data -> saveBlackboard(userId, data), now);
         part(run, summary, "outlook", payload.outlook(), data -> saveOutlook(userId, data, now), now);
         run.setSections(summary);
@@ -203,20 +196,6 @@ public class Ingest {
                     e.durationMin(), e.room(), e.notes()));
         }
         return Changes.exams(old, fresh, now);
-    }
-
-    private List<Change> saveTuition(Integer userId, Tuition data) {
-        String term = data.termCode();
-        TuitionInfo old = tuition.findByUserIdAndTermCode(userId, term)
-                .map(t -> new TuitionInfo(t.getTermCode(), t.getBalance(), t.getDueDate(), t.getStatusText()))
-                .orElse(null);
-        TuitionInfo fresh = new TuitionInfo(term, data.balance(), data.dueDate(), data.statusText());
-
-        tuition.deleteTerm(userId, term);
-        tuition.save(new SchoolTuition(userId, term, data.amountDue(), data.amountPaid(), data.balance(),
-                data.dueDate(), data.statusText(),
-                data.items().stream().map(item -> new SchoolTuition.Item(item.description(), item.amount())).toList()));
-        return Changes.tuition(old, fresh);
     }
 
     private List<Change> saveBlackboard(Integer userId, Blackboard data) {

@@ -259,7 +259,7 @@ BlackboardResult = Annotated[SectionOk[Blackboard] | SectionFailed, Field(discri
 OutlookResult = Annotated[SectionOk[Outlook] | SectionFailed, Field(discriminator="status")]
 
 EDUSOFT_SECTIONS = ("timetable", "exams")
-SECTION_NAMES = ("timetable", "exams", "tuition", "iupay", "blackboard", "outlook")
+SECTION_NAMES = ("timetable", "exams", "iupay", "blackboard", "outlook")
 
 
 class FinishRun(_Strict):
@@ -270,7 +270,7 @@ class FinishRun(_Strict):
     error_message: Message | None = None
     timetable: TimetableResult | None = None
     exams: ExamsResult | None = None
-    tuition: TuitionResult | None = None
+    tuition: TuitionResult | None = None  # sent by agents from before IUPay: accepted, never counted or saved
     iupay: IupayResult | None = None
     blackboard: BlackboardResult | None = None
     outlook: OutlookResult | None = None
@@ -280,7 +280,7 @@ class FinishRun(_Strict):
         if self.error_code is not None:
             if self.error_message is None:
                 raise ValueError("error_message is required with error_code")
-            if self.sections():
+            if self.sections() or self.tuition is not None:
                 raise ValueError("a whole-run error cannot carry section results")
         elif not self.sections():
             raise ValueError("send either error_code or at least one section")

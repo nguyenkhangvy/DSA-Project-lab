@@ -292,7 +292,7 @@ public final class SyncContract {
             @Chars(min = 1, max = 500) String errorMessage,
             @Valid Section<Timetable> timetable,
             @Valid Section<Exams> exams,
-            @Valid Section<Tuition> tuition,
+            @Valid Section<Tuition> tuition, // agents from before IUPay: accepted, never counted or saved
             @Valid Section<Iupay> iupay,
             @Valid Section<Blackboard> blackboard,
             @Valid Section<Outlook> outlook) {
@@ -309,7 +309,7 @@ public final class SyncContract {
 
         @AssertTrue(message = "a whole-run error cannot carry section results")
         boolean isErrorWithoutSections() {
-            return errorCode == null || sections().isEmpty();
+            return errorCode == null || (sections().isEmpty() && tuition == null);
         }
 
         @AssertTrue(message = "send either error_code or at least one section")
@@ -317,7 +317,7 @@ public final class SyncContract {
             return errorCode != null || !sections().isEmpty();
         }
 
-        /** The parts that were sent, by name, in the order timetable, exams, tuition, iupay, blackboard, outlook. */
+        /** The parts that were sent, by name, in the order timetable, exams, iupay, blackboard, outlook. */
         public Map<String, Section<?>> sections() {
             Map<String, Section<?>> sent = new LinkedHashMap<>();
             if (timetable != null) {
@@ -325,9 +325,6 @@ public final class SyncContract {
             }
             if (exams != null) {
                 sent.put("exams", exams);
-            }
-            if (tuition != null) {
-                sent.put("tuition", tuition);
             }
             if (iupay != null) {
                 sent.put("iupay", iupay);

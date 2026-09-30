@@ -264,7 +264,7 @@ class SyncApiTest {
     void anOversizedUploadGets413() throws Exception {
         int runId = startedRun(key);
         Map<String, Object> payload = fullPayload();
-        at(payload, "tuition", "data").put("status_text", "x".repeat(5_100_000));
+        at(payload, "timetable", "data").put("term_name", "x".repeat(5_100_000));
 
         finish(key, runId, payload)
                 .andExpect(status().isContentTooLarge())
