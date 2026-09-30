@@ -119,6 +119,22 @@ public class MyEvents {
         return event.isPresent();
     }
 
+    /** Skips a day of the user's event; false when the event is someone else's or unknown. */
+    @Transactional
+    public boolean skip(Integer userId, Integer id, LocalDate day) {
+        Optional<SchoolMyEvent> event = events.findOfUser(id, userId);
+        event.ifPresent(e -> e.skip(day));
+        return event.isPresent();
+    }
+
+    /** Brings a skipped day back; false when the event is someone else's or unknown. */
+    @Transactional
+    public boolean unskip(Integer userId, Integer id, LocalDate day) {
+        Optional<SchoolMyEvent> event = events.findOfUser(id, userId);
+        event.ifPresent(e -> e.unskip(day));
+        return event.isPresent();
+    }
+
     /** 'Saved "Tự học". 3 of 33 sessions clash: Mon 05/10, Tue 06/10, Wed 07/10.' or 'Saved "Tự học". No conflict.' */
     public static String savedFlash(String title, Checked checked) {
         String saved = "Saved \"" + title + "\". ";

@@ -244,4 +244,57 @@ class MyEventsPageTest {
     void theEventPagesNeedLogin() throws Exception {
         mvc.perform(get("/school/events/new")).andExpect(redirectedUrl("/auth/login"));
     }
+
+    @Test
+    void theEditPageForOneDayOffersToSkipIt() throws Exception {
+        SchoolMyEvent event = selfStudyEvent();
+
+        String html = html(get("/school/events/" + event.getId() + "/edit").param("day", "2026-10-06"));
+
+        assertThat(html).contains("Skip Tue 06/10 only").doesNotContain("is skipped");
+    }
+
+    @Test
+    void skippingADayAndBringingItBack() throws Exception {
+        SchoolMyEvent event = selfStudyEvent();
+        String base = "/school/events/" + event.getId();
+
+        MvcResult skipped = mvc.perform(post(base + "/skip").param("day", "2026-10-06").with(csrf()).with(user(an)))
+                .andExpect(redirectedUrl(base + "/edit?day=2026-10-06")).andReturn();
+
+        assertThat(flashes(skipped)).containsExactly("Tue 06/10 is skipped.");
+        assertThat(html(get(base + "/edit").param("day", "2026-10-06")))
+                .contains("Tue 06/10 is skipped", "Skipped days", "Undo").doesNotContain("Skip Tue 06/10 only");
+
+        MvcResult back = mvc.perform(post(base + "/unskip").param("day", "2026-10-06").with(csrf()).with(user(an)))
+                .andExpect(redirectedUrl(base + "/edit?day=2026-10-06")).andReturn();
+
+        assertThat(flashes(back)).containsExactly("Tue 06/10 is back.");
+        db.flush();
+        db.clear();
+        assertThat(events.findOfUser(event.getId(), an.id()).orElseThrow().rule().skipped()).isEmpty();
+    }
+
+    @Test
+    void aDayThatIsNotOneOfTheEventsDaysCantBeSkipped() throws Exception {
+        SchoolMyEvent event = selfStudyEvent();
+        String base = "/school/events/" + event.getId();
+
+        mvc.perform(post(base + "/skip").param("day", "2026-10-08").with(csrf()).with(user(an)))
+                .andExpect(status().isBadRequest()); // a Thursday
+        mvc.perform(post(base + "/skip").param("day", "8/10").with(csrf()).with(user(an)))
+                .andExpect(status().isBadRequest());
+        assertThat(html(get(base + "/edit").param("day", "2026-10-08"))).doesNotContain("Skip Thu");
+    }
+
+    @Test
+    void someoneElsesEventCantBeSkipped() throws Exception {
+        SchoolMyEvent binhs = data.myEvent(data.user("binh@example.com"), "Binh's plan", LocalDate.of(2026, 10, 8), null,
+                LocalTime.of(6, 0), LocalTime.of(7, 0));
+
+        mvc.perform(post("/school/events/" + binhs.getId() + "/skip").param("day", "2026-10-08").with(csrf())
+                .with(user(an))).andExpect(status().isNotFound());
+        mvc.perform(post("/school/events/" + binhs.getId() + "/unskip").param("day", "2026-10-08").with(csrf())
+                .with(user(an))).andExpect(status().isNotFound());
+    }
 }

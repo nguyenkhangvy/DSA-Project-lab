@@ -58,8 +58,31 @@
   </span>
 </li>
 
-<!--/* The edit page's day block: skip or bring back the day it was opened for, and the skipped days (Task 7). */-->
-<th:block th:fragment="event-day(event, focus, skippedDays)"></th:block>
+<!--/* The edit page's day block: skip or bring back the day it was opened for, and the skipped days. */-->
+<th:block th:fragment="event-day(event, focus, skippedDays)">
+  <div class="event-day" th:if="${focus != null}">
+    <form method="post" th:unless="${focus.skipped}" th:action="@{/school/events/{id}/skip(id=${event.id})}">
+      <input type="hidden" name="day" th:value="${focus.day}">
+      <button type="submit" class="button" th:text="|Skip ${focus.label} only|">Skip Tue 06/10 only</button>
+    </form>
+    <form method="post" th:if="${focus.skipped}" th:action="@{/school/events/{id}/unskip(id=${event.id})}">
+      <input type="hidden" name="day" th:value="${focus.day}">
+      <span th:text="|${focus.label} is skipped|">Tue 06/10 is skipped</span>
+      · <button type="submit" class="link-button">Undo</button>
+    </form>
+  </div>
+  <div class="event-skipped" th:unless="${skippedDays.isEmpty()}">
+    <h2>Skipped days</h2>
+    <ul>
+      <li th:each="skipped : ${skippedDays}">
+        <form method="post" th:action="@{/school/events/{id}/unskip(id=${event.id})}">
+          <input type="hidden" name="day" th:value="${skipped.day}">
+          <span th:text="${skipped.label}">Tue 06/10</span> · <button type="submit" class="link-button">Undo</button>
+        </form>
+      </li>
+    </ul>
+  </div>
+</th:block>
 
 <!--/* IU's official payment site, in a new tab. */-->
 <a th:fragment="pay-button" class="button" href="https://iupay.hcmiu.edu.vn/search/dhqt" target="_blank"
