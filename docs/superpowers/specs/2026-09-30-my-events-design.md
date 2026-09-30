@@ -101,7 +101,6 @@ Then every skipped day is removed. Each day becomes an occurrence from `start_ti
 - `last_day` is on or after `first_day`, and at most 366 days after it. A series has at most 367 occurrences (every day for a year).
 - `every_n` is 1–99. For "weeks", at least one weekday.
 - `end_time` is after `start_time`.
-- `start_time` is 07:00 or later and `end_time` 23:00 or earlier, the window the Timetable's week and day views show, so no saved event is missing from them (decided at the final review, 2026-09-30).
 - Settings that give no days at all can't be saved: "These settings give no days." Only a weekly rule can give none (the other rules always include the first day), e.g. weekly on Mon with first day Tue 06/10 and last day Sat 10/10.
 
 ---
@@ -150,7 +149,7 @@ The edit page always lists the skipped days, each with **Undo** (POST `/school/e
 
 - `Schedule.itemsBetween` also returns the student's own events' occurrences in the range, as `Item`s of kind **`mine`**, label "My event", title the event's title, room its place, source the edit page for that day (`/school/events/{id}/edit?day=…`).
 - `/school/api/calendar` gives them the class name `item-mine` (purple) and, when that occurrence clashes, a "⚠ " before the title and the class `item-conflict` (red border).
-- The calendar shows 07:00–23:00 (was 07:00–19:00); "All day" and the other settings stay as they are.
+- The week and day views show the whole day, 00:00–24:00, in a scrolling box that opens at 07:00, so an event at any time is visible (the student's choice, 2026-10-01; first 07:00–23:00); "All day" and the other settings stay as they are.
 - Overview Today and Tomorrow list them like joined events. The legend under the Timetable gets "My event".
 - Mailbox's Join conflict marks (Mailbox events §4.5) now also count the student's own events, since they are part of the timetable.
 

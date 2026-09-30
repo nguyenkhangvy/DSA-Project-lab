@@ -78,10 +78,6 @@ class EventFormTest {
                 Arguments.of("start", "Enter a time.", (Consumer<EventForm>) f -> f.setStart("")),
                 Arguments.of("end", "Enter a time.", (Consumer<EventForm>) f -> f.setEnd("7pm")),
                 Arguments.of("end", "The end must be after the start.", (Consumer<EventForm>) f -> f.setEnd("17:00")),
-                Arguments.of("start", "The Timetable shows 07:00–23:00: start at 07:00 or later.",
-                        (Consumer<EventForm>) f -> f.setStart("06:30")),
-                Arguments.of("end", "The Timetable shows 07:00–23:00: end by 23:00.",
-                        (Consumer<EventForm>) f -> f.setEnd("23:30")),
                 Arguments.of("repeat", "Choose how it repeats.", (Consumer<EventForm>) f -> f.setRepeat("yearly")),
                 Arguments.of("every", "Enter a number from 1 to 99.", (Consumer<EventForm>) f -> f.setEvery("0")),
                 Arguments.of("every", "Enter a number from 1 to 99.", (Consumer<EventForm>) f -> f.setEvery("100")),
@@ -109,6 +105,19 @@ class EventFormTest {
         Map<String, String> errors = form.check();
 
         assertThat(errors).containsEntry(field, message);
+    }
+
+    @Test
+    void anyTimeOfDayIsAllowed() {
+        EventForm early = selfStudy();
+        early.setStart("05:30");
+        early.setEnd("06:30");
+        EventForm late = selfStudy();
+        late.setStart("22:30");
+        late.setEnd("23:59");
+
+        assertThat(early.check()).isEmpty();
+        assertThat(late.check()).isEmpty();
     }
 
     @Test

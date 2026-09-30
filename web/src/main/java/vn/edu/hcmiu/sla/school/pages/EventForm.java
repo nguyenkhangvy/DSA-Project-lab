@@ -26,8 +26,6 @@ public class EventForm {
     static final int MAX_PLACE = 100;
     static final int MAX_NOTES = 500;
     static final int MAX_EVERY = 99;
-    static final LocalTime EARLIEST = LocalTime.of(7, 0); // the Timetable's week and day views show 07:00-23:00
-    static final LocalTime LATEST = LocalTime.of(23, 0);
 
     private String title = "";
     private String place = "";
@@ -87,15 +85,11 @@ public class EventForm {
         LocalTime endTime = time(end);
         if (startTime == null) {
             errors.put("start", "Enter a time.");
-        } else if (startTime.isBefore(EARLIEST)) {
-            errors.put("start", "The Timetable shows 07:00–23:00: start at 07:00 or later.");
         }
         if (endTime == null) {
             errors.put("end", "Enter a time.");
         } else if (startTime != null && !endTime.isAfter(startTime)) {
             errors.put("end", "The end must be after the start.");
-        } else if (endTime.isAfter(LATEST)) {
-            errors.put("end", "The Timetable shows 07:00–23:00: end by 23:00.");
         }
         boolean once = Occurrences.ONCE.equals(repeat);
         if (!Occurrences.KINDS.contains(repeat)) {

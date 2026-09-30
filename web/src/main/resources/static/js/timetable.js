@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
   var VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+  var TIME_GRID_HEIGHT = 760; // pixels: about 07:00-19:00 at once; scroll for the rest of the day
   var narrow = window.matchMedia("(max-width: 700px)").matches;
   var clock = { hour: "2-digit", minute: "2-digit", hour12: false };
 
@@ -54,8 +55,10 @@ document.addEventListener("DOMContentLoaded", function () {
       : { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek" },
     footerToolbar: narrow ? { center: "title" } : false,
     buttonText: { today: "Today", month: "Month", week: "Week", day: "Day", list: "List" },
-    slotMinTime: "07:00:00",
-    slotMaxTime: "23:00:00", // evening plans, e.g. self-study 19:00-22:00
+    // The whole day, so an own event at any time shows; week and day views scroll and open at 07:00.
+    slotMinTime: "00:00:00",
+    slotMaxTime: "24:00:00",
+    scrollTime: "07:00:00",
     allDaySlot: true,
     allDayText: "All day",
     nowIndicator: true,
@@ -64,9 +67,9 @@ document.addEventListener("DOMContentLoaded", function () {
     eventTimeFormat: clock,
     noEventsText: "No classes, exams or events in this period.",
     views: {
-      timeGridWeek: { titleFormat: weekTitle },
+      timeGridWeek: { titleFormat: weekTitle, height: TIME_GRID_HEIGHT },
       listWeek: { titleFormat: weekTitle },
-      timeGridDay: { titleFormat: dayTitle },
+      timeGridDay: { titleFormat: dayTitle, height: TIME_GRID_HEIGHT },
     },
     dayHeaderContent: function (arg) {
       var name = WEEKDAYS[arg.date.getUTCDay()];
