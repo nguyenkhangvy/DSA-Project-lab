@@ -53,7 +53,7 @@ In PowerShell, from the `web` folder unless it says otherwise:
 | Start the site | `.\mvnw.cmd spring-boot:run` |
 | Run the tests | `.\mvnw.cmd test` (an in-memory database, never yours) |
 | After pulling new code | nothing: new tables and changes are applied when the site starts |
-| After renaming or deleting a migration | `.\mvnw.cmd clean`, or the old copy stays in `target/` |
+| After renaming or deleting a migration or a Java class (yours or pulled) | `.\mvnw.cmd clean`, or the old copy stays in `target/`; a deleted entity left there stops the site from starting |
 | Run the laptop agent's tests (project folder, agent installed) | `pytest` |
 
 Git Bash works too: `cd web && ./mvnw spring-boot:run`. GitHub runs the website's tests on an in-memory database and on MySQL, and the agent's tests, for every pull request.

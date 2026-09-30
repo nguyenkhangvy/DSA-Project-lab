@@ -96,7 +96,7 @@ Any other number is a `source_changed` failure (§5), so an unknown state is nev
 | `paid_on` | `ngay_thu` | only when `paid`; epoch ms → date in Asia/Ho_Chi_Minh |
 | `channel` | `kenh_thu` | only when `paid`; e.g. "Đóng qua kênh EduBill", "Đóng offline" |
 
-The reply's `student` block (name, email, class, faculty) and every other bill field are dropped in memory. The amount still owed on a bill is `amount − discount`; IUPay does not say how much of a `partly_paid` bill is left.
+The reply's `student` block (name, email, class, faculty) and every other bill field are dropped in memory. The amount still owed on a bill is `amount − discount`, the way IUPay's own page works out "Còn nợ" (`phai_thu - mien_giam`, checked in its bundle on 2026-09-30); IUPay does not say how much of a `partly_paid` bill is left.
 
 ### 3.4 The sync
 
