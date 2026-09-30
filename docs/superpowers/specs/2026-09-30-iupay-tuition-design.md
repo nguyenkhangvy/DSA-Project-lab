@@ -3,7 +3,7 @@
 **Date:** 2026-09-30
 **Scope:** read the student's tuition bills from IUPay instead of EduSoft, show them on the Tuition page, and tell the student about bills on the Overview page (a notice while something is unpaid, and a Bills list of new bills and payments)
 **Owner:** Nguyen Khang Vy
-**Status:** Approved 2026-09-30; plan: docs/superpowers/plans/2026-09-30-iupay-tuition.md
+**Status:** Built (see docs/superpowers/plans/2026-09-30-iupay-tuition.md); checked by the student on 2026-10-01
 **Builds on:** [Java website](2026-09-26-java-website-design.md) and [EduSoft first phase](2026-09-25-edusoft-first-phase1-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
