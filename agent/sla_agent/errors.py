@@ -32,7 +32,7 @@ class ParseError(AgentError):
 
 
 class SourceChanged(AgentError):
-    """Blackboard's answers don't look the way the reader expects: its format probably changed."""
+    """Blackboard's or IUPay's answers don't look the way the reader expects: their format probably changed."""
 
     code = "source_changed"
 
