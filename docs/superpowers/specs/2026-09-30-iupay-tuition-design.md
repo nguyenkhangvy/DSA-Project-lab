@@ -3,7 +3,7 @@
 **Date:** 2026-09-30
 **Scope:** read the student's tuition bills from IUPay instead of EduSoft, show them on the Tuition page, and tell the student about bills on the Overview page (a notice while something is unpaid, and a Bills list of new bills and payments)
 **Owner:** Nguyen Khang Vy
-**Status:** Design approved in chat; spec awaiting review
+**Status:** Approved 2026-09-30; plan: docs/superpowers/plans/2026-09-30-iupay-tuition.md
 **Builds on:** [Java website](2026-09-26-java-website-design.md) and [EduSoft first phase](2026-09-25-edusoft-first-phase1-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
@@ -147,7 +147,7 @@ IupayResult = Annotated[SectionOk[Iupay] | SectionFailed, Field(discriminator="s
 
 ### 4.1 Tables
 
-Migration `V20260930_1_1__tuition_bills.sql`:
+Migration `V20260930_1_1__tuition_bills.sql` adds two tables:
 
 ```sql
 CREATE TABLE school_tuition_bills (
@@ -166,19 +166,26 @@ CREATE TABLE school_tuition_bills (
     paid_on DATE NULL,
     channel VARCHAR(100) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uq_school_tuition_bills UNIQUE (user_id, bill_no),
+    UNIQUE (user_id, bill_no),
     CONSTRAINT fk_school_tuition_bills_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
-DROP TABLE school_tuition;
+
+-- When IUPay was last read successfully; no row means never (like school_mail_status for Outlook).
+CREATE TABLE school_tuition_status (
+    user_id INT NOT NULL,
+    checked_at DATETIME NOT NULL,
+    PRIMARY KEY (user_id),
+    CONSTRAINT fk_school_tuition_status_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
 ```
 
-Dropping `school_tuition` loses nothing the student needs: IUPay holds every bill, and the next sync fills the new table. `SchoolTuition` and `SchoolTuitionRepository` are replaced by `SchoolTuitionBill` and `SchoolTuitionBillRepository`.
+A second migration, `V20260930_1_2__drop_school_tuition.sql`, drops `school_tuition` when the new Tuition page replaces the old one (the site checks its tables against its classes at start-up, so the table and `SchoolTuition` go together). Dropping it loses nothing the student needs: IUPay holds every bill, and the next sync fills the new table. `SchoolTuition` and `SchoolTuitionRepository` are replaced by `SchoolTuitionBill`, `SchoolTuitionStatus` and their repositories.
 
 ### 4.2 Saving a sync
 
 In `Ingest.finishRun`:
 
-- `iupay` arrived `ok`: delete the student's bills and save the new list, in the run's transaction. An empty list is valid and means "no bills".
+- `iupay` arrived `ok`: delete the student's bills and save the new list, and set `school_tuition_status.checked_at` to now, in the run's transaction. An empty list is valid and means "no bills".
 - `iupay` failed or missing: the bills stay as they were.
 - `tuition` (old agents): ignored; nothing is saved from it.
 - Nothing is added to `school_changes`: bills never enter "What changed". `Changes.tuition` and `TuitionInfo` are deleted.
@@ -188,9 +195,9 @@ In `Ingest.finishRun`:
 `/school/tuition`, top to bottom:
 
 1. **To pay** (only when some bill isn't `paid`): one card per bill, earliest due date first. It shows the description, term name, `amount − discount` in VND, the due date ("overdue since …" in red when past), the status label (Unpaid / Payment in progress / Partly paid, check IUPay for the rest) and the bill number, with "Pay on IUPay ↗".
-2. **No tuition to pay** (when every bill is `paid`, including no bills): "No tuition to pay. Last checked on IUPay at 10:14, 30/09", with "Pay on IUPay ↗". The time is the finish time of the latest run whose `iupay` part was `ok`.
+2. **No tuition to pay** (when every bill is `paid`, including no bills): "No tuition to pay", "Last checked on IUPay: Wed 30/09 11:14" (`school_tuition_status.checked_at` in Vietnam time), with "Pay on IUPay ↗".
 3. **Paid**: a table of paid bills, newest `paid_on` first: term, description, amount, paid date, channel.
-4. **Never read**: when no run has an `ok` IUPay part yet, "No tuition information yet. It appears after the next sync." replaces 1–3.
+4. **Never read**: when there is no `school_tuition_status` row yet, "No tuition information yet. It appears after the next sync." replaces 1–3.
 
 ### 4.4 The Overview page
 
@@ -256,7 +263,7 @@ These are existing error codes; the contract's `ErrorCode` list doesn't change. 
 - The Java `SyncContractTest` reads the same samples.
 
 **Website**
-- Migration: `school_tuition_bills` exists, `school_tuition` is gone (`MigrationTest`).
+- Migrations: `school_tuition_bills` and `school_tuition_status` exist, `school_tuition` is gone (`MigrationTest`).
 - `Ingest`: an `ok` part replaces the bills; a failed part keeps them; an empty list clears them; a `tuition` part is ignored and adds no change.
 - Tuition page: To pay cards (overdue, partly paid, paying), No tuition to pay with the last-checked time, Paid table order, Never read.
 - Overview: notice shown / total and earliest date / overdue / hidden when all paid; Bills list (unpaid + paid in 30 days, 31-day-old payment left out, empty text, See all link).
