@@ -3,7 +3,7 @@
 **Date:** 2026-09-30
 **Scope:** the student creates, edits, skips days of and deletes their own events on the Timetable. An event happens once or repeats every N days, every N weeks on chosen weekdays, or every N months, between a first and a last day, at a fixed time. The app shows whether each occurrence clashes with the timetable.
 **Owner:** Nguyen Khang Vy
-**Status:** Design approved in chat; spec awaiting review
+**Status:** Approved 2026-09-30; plan: docs/superpowers/plans/2026-09-30-my-events.md
 **Builds on:** [Java website](2026-09-26-java-website-design.md) and [Mailbox events](2026-09-28-mailbox-events-design.md) (its `Conflicts` and the joined events in `Schedule`). Everything there stays the same unless this document says otherwise.
 
 ---
@@ -74,9 +74,9 @@ CREATE TABLE school_my_events (
 CREATE TABLE school_my_event_skips (
     id INT NOT NULL AUTO_INCREMENT,
     event_id INT NOT NULL,
-    day DATE NOT NULL,
+    skip_day DATE NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE (event_id, day),
+    UNIQUE (event_id, skip_day),
     CONSTRAINT fk_school_my_event_skips_event FOREIGN KEY (event_id) REFERENCES school_my_events (id) ON DELETE CASCADE
 );
 ```
@@ -101,7 +101,7 @@ Then every skipped day is removed. Each day becomes an occurrence from `start_ti
 - `last_day` is on or after `first_day`, and at most 366 days after it. A series has at most 367 occurrences (every day for a year).
 - `every_n` is 1–99. For "weeks", at least one weekday.
 - `end_time` is after `start_time`.
-- Settings that give no days at all (e.g. every 2 months on the 31st, first day 31/10, last day 15/12) can't be saved: "These settings give no days."
+- Settings that give no days at all can't be saved: "These settings give no days." Only a weekly rule can give none (the other rules always include the first day), e.g. weekly on Mon with first day Tue 06/10 and last day Sat 10/10.
 
 ---
 
