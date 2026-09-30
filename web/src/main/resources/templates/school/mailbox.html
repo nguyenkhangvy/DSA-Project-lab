@@ -117,10 +117,10 @@
   <span class="mail-when" th:text="${showNext and card.nextDate != null
       ? 'Next: ' + @schoolFormat.dayLabel(card.nextDate) : @schoolFormat.when(card.receivedAt)}">Next: Tue 29/09</span>
   <span class="mail-actions">
-    <a href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer"
+    <a class="done-button" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer"
        th:attr="data-opened=@{/school/mailbox/{key}/opened(key=${card.key})}">Web ↗</a>
-    <a th:href="@{/school/mailbox/{key}/edit(key=${card.key})}">Move…</a>
-    <a th:if="${card.joinable}" th:href="@{/school/mailbox/{key}/join(key=${card.key})}">Join…</a>
+    <a class="done-button" th:href="@{/school/mailbox/{key}/edit(key=${card.key})}">Move…</a>
+    <a class="done-button" th:if="${card.joinable}" th:href="@{/school/mailbox/{key}/join(key=${card.key})}">Join…</a>
     <form class="inline mail-done" method="post" th:action="@{/school/mailbox/{key}/done(key=${card.key})}"><button
         type="submit" class="done-button">✓ Done</button></form>
     <form class="inline mail-undo" method="post" th:action="@{/school/mailbox/{key}/undone(key=${card.key})}"><span

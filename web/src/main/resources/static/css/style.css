@@ -331,8 +331,9 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .mail-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; white-space: nowrap;
   font-size: 0.9rem; }
 .mail-actions a { text-decoration: none; }
-.mail-actions a:hover { text-decoration: underline; }
+.mail-actions a:hover { text-decoration: none; }
 .done-button {
+  display: inline-flex; align-items: center; box-sizing: border-box;
   min-height: 32px; padding: 4px 12px; font: inherit; font-weight: 600; color: var(--accent);
   background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer;
 }
