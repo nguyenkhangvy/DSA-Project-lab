@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.MailProblem;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.RunInfo;
@@ -61,7 +63,7 @@ class SyncStatusTest {
     }
 
     static Map<String, Map<String, String>> edu() {
-        return parts(Map.entry("timetable", OK), Map.entry("exams", OK), Map.entry("tuition", OK));
+        return parts(Map.entry("timetable", OK), Map.entry("exams", OK));
     }
 
     @Test
@@ -281,5 +283,53 @@ class SyncStatusTest {
         RunInfo crashed = run("partial", "07:00", "07:05", null, parts(Map.entry("outlook", bad("unknown"))));
 
         assertThat(SyncStatus.mailProblem(List.of(crashed)).headline()).isEqualTo("Sync failed");
+    }
+
+    // ---- IUPay --------------------------------------------------------------------
+
+    @Test
+    void iupayHasItsOwnLineAfterEduSoft() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("iupay", OK);
+
+        assertThat(SyncStatus.systemLines(List.of(run("success", "07:00", "07:05", null, sections)), NOW))
+                .extracting(SystemLine::name, SystemLine::state)
+                .containsExactly(tuple("EduSoft", "ok"), tuple("IUPay", "ok"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({  // no apostrophes: CsvSource quotes with '
+        "network, be reached",
+        "extra_verification, asks for a captcha",
+        "bad_credentials, recognise your student ID",
+        "source_changed, data format changed",
+    })
+    void anIupayProblemIsNamedOnItsOwnLineAndNeverPauses(String code, String words) {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("iupay", bad(code));
+
+        List<SystemLine> lines = SyncStatus.systemLines(List.of(run("partial", "07:00", "07:05", null, sections)), NOW);
+
+        assertThat(lines.get(0)).isEqualTo(new SystemLine("EduSoft", "ok", "synced at 14:05"));
+        assertThat(lines.get(1).name()).isEqualTo("IUPay");
+        assertThat(lines.get(1).state()).isEqualTo("failed");
+        assertThat(lines.get(1).text()).contains(words);
+    }
+
+    @Test
+    void aRunWhereOnlyIupayFailedSaysIupayInTheHeadline() {
+        Status result = status(run("failed", "07:00", "07:05", null, parts(Map.entry("iupay", bad("extra_verification")))));
+
+        assertThat(List.of(result.state(), result.headline()))
+                .containsExactly("failed", "Sync failed: IUPay now asks for a captcha");
+    }
+
+    @Test
+    void aPartlySyncedRunNamesIupayAsTuition() {
+        Map<String, Map<String, String>> sections = edu();
+        sections.put("iupay", bad("network"));
+
+        assertThat(status(run("partial", "07:00", "07:05", null, sections)).detail())
+                .startsWith("Couldn't read: tuition (IUPay).");
     }
 }

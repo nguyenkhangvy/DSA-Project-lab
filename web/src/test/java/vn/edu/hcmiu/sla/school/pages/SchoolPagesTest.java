@@ -150,14 +150,14 @@ class SchoolPagesTest {
         SchoolSyncRun run = new SchoolSyncRun(an.id(), null, "scheduled", LocalDateTime.of(2026, 9, 28, 1, 0));
         run.finish(SchoolSyncRun.PARTIAL, LocalDateTime.of(2026, 9, 28, 1, 5), null, null);
         run.setSections(Map.of("timetable", Map.of("status", "ok"), "exams", Map.of("status", "ok"),
-                "tuition", Map.of("status", "ok"),
+                "tuition", Map.of("status", "ok"), "iupay", Map.of("status", "ok"),
                 "blackboard", Map.of("status", "failed", "error_code", "bad_credentials", "error_message", "rejected")));
         db.persist(run);
         db.flush();
 
         String html = page("/school");
 
-        assertThat(html).contains("EduSoft:", "Blackboard:", "sla-agent setup --blackboard");
+        assertThat(html).contains("EduSoft:", "IUPay:", "Blackboard:", "sla-agent setup --blackboard");
     }
 
     @Test

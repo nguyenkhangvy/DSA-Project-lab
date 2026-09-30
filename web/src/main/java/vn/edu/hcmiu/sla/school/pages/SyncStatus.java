@@ -15,7 +15,7 @@ import vn.edu.hcmiu.sla.school.sync.Scheduling;
  * Turns the sync history into the status the user sees. Pure functions; the Java twin of
  * app/school/services/sync_status.py, with the same wording. Times are UTC, shown in Vietnam time.
  *
- * <p>A run's parts are always read in the order timetable, exams, tuition, blackboard, outlook: MySQL keeps the
+ * <p>A run's parts are always read in the order timetable, exams, tuition, iupay, blackboard, outlook: MySQL keeps the
  * keys of the JSON column in its own order, so the order they come back in means nothing.
  */
 public final class SyncStatus {
@@ -24,7 +24,7 @@ public final class SyncStatus {
     }
 
     static final String RETRY = "It will be tried again automatically.";
-    static final List<String> PART_ORDER = List.of("timetable", "exams", "tuition", "blackboard", "outlook");
+    static final List<String> PART_ORDER = List.of("timetable", "exams", "tuition", "iupay", "blackboard", "outlook");
 
     /** What a status says: state, headline, and what to do. */
     record Problem(String state, String headline, String detail) {
@@ -62,16 +62,31 @@ public final class SyncStatus {
             "outlook_blocked", new Problem("failed", "Sync failed: Outlook didn't let the agent read your mail",
                     CHECK_OUTLOOK));
 
+    static final Map<String, Problem> IUPAY_PROBLEMS = Map.of(
+            "network", new Problem("failed", "Sync failed: IUPay couldn't be reached", RETRY),
+            "extra_verification", new Problem("failed", "Sync failed: IUPay now asks for a captcha",
+                    "Tuition shows the last bills known. Check IUPay in your browser; the agent never passes a captcha."),
+            "bad_credentials", new Problem("failed", "Sync failed: IUPay didn't recognise your student ID",
+                    "Check the student ID with `sla-agent status`; run `sla-agent setup` if it is wrong."),
+            "source_changed", new Problem("failed", "Sync failed: IUPay's data format has changed",
+                    "sla-agent needs an update to read it."));
+
+    /** IUPay's own words on its line; other codes use FAILURE_HINTS. IUPay never pauses. */
+    static final Map<String, String> IUPAY_HINTS = Map.of(
+            "extra_verification", "now asks for a captcha; tuition shows the last bills known.",
+            "bad_credentials", "didn't recognise your student ID; check it with `sla-agent status`.");
+
     static final Map<String, String> PART_NAMES = Map.of(
-            "timetable", "timetable", "exams", "exam schedule", "tuition", "tuition", "blackboard", "Blackboard",
-            "outlook", "Outlook");
+            "timetable", "timetable", "exams", "exam schedule", "tuition", "tuition", "iupay", "tuition (IUPay)",
+            "blackboard", "Blackboard", "outlook", "Outlook");
 
     /** A system and the parts of a sync that come from it. */
     record SystemParts(String name, List<String> parts) {
     }
 
     static final List<SystemParts> SYSTEMS = List.of(
-            new SystemParts("EduSoft", List.of("timetable", "exams", "tuition")),
+            new SystemParts("EduSoft", List.of("timetable", "exams", "tuition")), // tuition: runs from before IUPay
+            new SystemParts("IUPay", List.of("iupay")),
             new SystemParts("Blackboard", List.of("blackboard")),
             new SystemParts("Outlook", List.of("outlook")));
 
@@ -163,8 +178,9 @@ public final class SyncStatus {
                 lines.add(new SystemLine(system.name(), "partial",
                         "synced " + at(run.finishedAt(), now) + ", but couldn't read: " + partNames(failed)));
             } else {
-                lines.add(new SystemLine(system.name(), "failed",
-                        FAILURE_HINTS.getOrDefault(code, "sync failed; it will be tried again automatically.")));
+                String hint = system.name().equals("IUPay") ? IUPAY_HINTS.get(code) : null;
+                lines.add(new SystemLine(system.name(), "failed", hint != null ? hint
+                        : FAILURE_HINTS.getOrDefault(code, "sync failed; it will be tried again automatically.")));
             }
         }
         return lines;
@@ -214,6 +230,8 @@ public final class SyncStatus {
                     problems = BLACKBOARD_PROBLEMS;
                 } else if (!failed.isEmpty() && failed.get(0).equals("outlook")) {
                     problems = OUTLOOK_PROBLEMS;
+                } else if (!failed.isEmpty() && failed.get(0).equals("iupay")) {
+                    problems = IUPAY_PROBLEMS;
                 }
             }
             problem = code == null ? UNKNOWN : problems.getOrDefault(code, UNKNOWN);
