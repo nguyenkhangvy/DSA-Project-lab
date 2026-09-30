@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.hcmiu.sla.auth.AppUser;
 import vn.edu.hcmiu.sla.core.Flash;
 import vn.edu.hcmiu.sla.school.VietnamTime;
+import vn.edu.hcmiu.sla.school.events.MyEvents;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAnnouncement;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAnnouncementRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAssignment;
@@ -65,13 +66,14 @@ public class SchoolController {
     private final SchoolBbAnnouncementRepository announcements;
     private final SchoolBbAssignmentRepository assignments;
     private final SchoolBbMaterialRepository materials;
+    private final MyEvents myEvents;
 
     public SchoolController(Clock clock, SyncRuns syncRuns, Schedule schedule, SchoolSyncDeviceRepository devices,
             SchoolSyncRunRepository runs, SchoolExamRepository exams, SchoolChangeRepository changes,
             SchoolTuitionBillRepository tuitionBills, SchoolTuitionStatusRepository tuitionStatus,
             SchoolBbCourseRepository bbCourses,
             SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments,
-            SchoolBbMaterialRepository materials) {
+            SchoolBbMaterialRepository materials, MyEvents myEvents) {
         this.clock = clock;
         this.syncRuns = syncRuns;
         this.schedule = schedule;
@@ -85,6 +87,7 @@ public class SchoolController {
         this.announcements = announcements;
         this.assignments = assignments;
         this.materials = materials;
+        this.myEvents = myEvents;
     }
 
     private LocalDateTime now() {
@@ -130,7 +133,8 @@ public class SchoolController {
     }
 
     @GetMapping("/timetable")
-    String timetable() {
+    String timetable(@AuthenticationPrincipal AppUser user, Model model) {
+        model.addAttribute("myEvents", myEvents.lines(user.id()));
         return "school/timetable";
     }
 

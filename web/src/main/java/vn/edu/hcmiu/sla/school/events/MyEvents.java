@@ -2,9 +2,12 @@ package vn.edu.hcmiu.sla.school.events;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -133,6 +136,41 @@ public class MyEvents {
         Optional<SchoolMyEvent> event = events.findOfUser(id, userId);
         event.ifPresent(e -> e.unskip(day));
         return event.isPresent();
+    }
+
+    private static final DateTimeFormatter DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM");
+
+    /** A line of the Timetable's "My events" list. */
+    public record Line(SchoolMyEvent event, String repeat, String days, String time, Checked checked) {
+
+        /** "⚠ 3 clashes", "⚠ 1 clash", "✓ No conflict" or "No days left". */
+        public String mark() {
+            if (checked.total() == 0) {
+                return "No days left";
+            }
+            int n = checked.clashes().size();
+            return n == 0 ? "✓ No conflict" : "⚠ " + n + (n == 1 ? " clash" : " clashes");
+        }
+    }
+
+    /** The user's events, soonest first day first, each with its clashing days over the whole series. */
+    @Transactional(readOnly = true)
+    public List<Line> lines(Integer userId) {
+        List<SchoolMyEvent> all = events.findAllOfUser(userId);
+        if (all.isEmpty()) {
+            return List.of();
+        }
+        LocalDate from = all.stream().map(SchoolMyEvent::getFirstDay).min(LocalDate::compareTo).orElseThrow();
+        LocalDate to = all.stream().map(SchoolMyEvent::getLastDay).max(LocalDate::compareTo).orElseThrow();
+        Map<Integer, List<Clash>> clashes = MyEventConflicts.clashes(schedule.itemsBetween(userId,
+                VietnamTime.dayStart(from), VietnamTime.dayStart(to.plusDays(1)))).stream()
+                .collect(Collectors.groupingBy(clash -> clash.occurrence().eventId()));
+        return all.stream().map(event -> new Line(event, Occurrences.describe(event.rule()),
+                event.getFirstDay().equals(event.getLastDay()) ? DAY_MONTH.format(event.getFirstDay())
+                        : DAY_MONTH.format(event.getFirstDay()) + "–" + DAY_MONTH.format(event.getLastDay()),
+                event.getStartTime() + "–" + event.getEndTime(),
+                new Checked(Occurrences.all(event.rule()).size(), clashes.getOrDefault(event.getId(), List.of()))))
+                .toList();
     }
 
     /** 'Saved "Tự học". 3 of 33 sessions clash: Mon 05/10, Tue 06/10, Wed 07/10.' or 'Saved "Tự học". No conflict.' */

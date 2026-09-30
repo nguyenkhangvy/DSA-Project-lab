@@ -8,6 +8,8 @@
   <h1>Timetable</h1>
   <nav th:replace="~{school/fragments :: subnav('timetable')}"></nav>
 
+  <p class="timetable-actions"><a class="button" th:href="@{/school/events/new}">+ New event</a></p>
+
   <p class="legend">
     <span class="legend-item legend-class">Class</span>
     <span class="legend-item legend-exam">Exam</span>
@@ -23,6 +25,23 @@
     <div id="calendar" th:attr="data-feed=@{/school/api/calendar}"></div>
     <noscript>The calendar needs JavaScript. Your classes for today and tomorrow are on the Overview page.</noscript>
   </div>
+
+  <!--/* docs/superpowers/specs/2026-09-30-my-events-design.md, 4.3 */-->
+  <section class="card my-events">
+    <h2>My events</h2>
+    <p class="muted" th:if="${myEvents.isEmpty()}">No events of your own yet.</p>
+    <ul class="my-event-lines" th:unless="${myEvents.isEmpty()}">
+      <li th:each="line : ${myEvents}">
+        <strong th:text="${line.event.title}">Tự học buổi tối</strong>
+        · <span th:text="${line.repeat}">Every week on Mon, Tue, Wed</span>
+        · <span th:text="${line.days}">05/10–20/12</span>
+        · <span th:text="${line.time}">17:00–19:00</span>
+        · <span th:class="${line.checked.conflict} ? 'mark mark-conflict' : (${line.checked.total == 0} ? 'muted' : 'mark mark-free')"
+              th:text="${line.mark}">⚠ 3 clashes</span>
+        · <a th:href="@{/school/events/{id}/edit(id=${line.event.id})}">Edit</a>
+      </li>
+    </ul>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js"
           integrity="sha384-WDvnzcla8X1CQM97EnYyl4OoTCvmMFp5lBiVNO3IjVdvLMOUjwt+iuYb/Mru5A9v"

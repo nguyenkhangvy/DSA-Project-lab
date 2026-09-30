@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -446,6 +447,43 @@ class SchoolPagesTest {
     @Test
     void theTuitionPageSaysWhenNothingIsSynced() throws Exception {
         assertThat(page("/school/tuition")).contains("No tuition information yet");
+    }
+
+    @Test
+    void theTimetableListsMyEventsWithTheirClashes() throws Exception {
+        data.course(an, "IT093IU", "Web Application Development",
+                new Meeting(LocalDateTime.of(2026, 10, 5, 10, 15), LocalDateTime.of(2026, 10, 5, 12, 45), "A2.401"));
+        SchoolMyEvent event = data.myEvent(an, "<b>Tự học buổi tối</b>", LocalDate.of(2026, 10, 5),
+                LocalDate.of(2026, 12, 20), LocalTime.of(17, 0), LocalTime.of(19, 0), DayOfWeek.MONDAY,
+                DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY);
+        data.myEvent(an, "Gym", LocalDate.of(2026, 10, 8), null, LocalTime.of(6, 0), LocalTime.of(7, 0));
+        data.myEvent(data.user("binh@example.com"), "Binh's plan", LocalDate.of(2026, 10, 8), null,
+                LocalTime.of(6, 0), LocalTime.of(7, 0));
+
+        String mine = section(page("/school/timetable"), "My events");
+
+        assertThat(mine).contains("&lt;b&gt;Tự học buổi tối&lt;/b&gt;", "Every week on Mon, Tue, Wed", "05/10–20/12",
+                "17:00–19:00", "⚠ 1 clash", "href=\"/school/events/" + event.getId() + "/edit\"")
+                .contains("Gym", "Once", "08/10", "06:00–07:00", "✓ No conflict").doesNotContain("Binh");
+        assertThat(mine.indexOf("Tự học")).isLessThan(mine.indexOf("Gym")); // soonest first day first
+    }
+
+    @Test
+    void anEventWithEveryDaySkippedSaysNoDaysLeft() throws Exception {
+        SchoolMyEvent event = data.myEvent(an, "Gym", LocalDate.of(2026, 10, 8), null, LocalTime.of(6, 0),
+                LocalTime.of(7, 0));
+        event.skip(LocalDate.of(2026, 10, 8));
+        db.flush();
+
+        assertThat(section(page("/school/timetable"), "My events")).contains("No days left");
+    }
+
+    @Test
+    void theTimetableOffersANewEventAndSaysWhenThereAreNone() throws Exception {
+        String html = page("/school/timetable");
+
+        assertThat(linkTo(html, "/school/events/new")).contains("class=\"button\"");
+        assertThat(section(html, "My events")).contains("No events of your own yet.");
     }
 
     // ---- Courses ---------------------------------------------------------------------------
