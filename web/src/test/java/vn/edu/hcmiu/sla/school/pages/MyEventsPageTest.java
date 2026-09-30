@@ -143,7 +143,7 @@ class MyEventsPageTest {
     @Test
     void checkWithoutClashesSaysSo() throws Exception {
         String html = html(post("/school/events/new").with(csrf()).param("action", "check").param("title", "Gym")
-                .param("start", "06:00").param("end", "07:00").param("repeat", "once").param("firstDay", "2026-10-08"));
+                .param("start", "07:00").param("end", "08:00").param("repeat", "once").param("firstDay", "2026-10-08"));
 
         assertThat(html).contains("✓ No conflict in 1 session");
     }
@@ -238,6 +238,14 @@ class MyEventsPageTest {
     @Test
     void postingNeedsTheFormsSecurityCode() throws Exception {
         mvc.perform(post("/school/events/new").param("title", "x").with(user(an))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void fieldsTheFormHidesStayHiddenWhateverTheirLayout() throws Exception {
+        // event-form.js hides "Last day" and the weekdays with the hidden attribute; the site's own display rules
+        // (flex labels) would show them again without this rule.
+        assertThat(mvc.perform(get("/css/style.css")).andReturn().getResponse().getContentAsString())
+                .contains("[hidden] { display: none !important; }");
     }
 
     @Test

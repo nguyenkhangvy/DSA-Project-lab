@@ -68,6 +68,14 @@ class OccurrencesTest {
     }
 
     @Test
+    void everyTwoWeeksOnMonAndWedFromAThursdayCountsWeeksFromItsMonday() {
+        // Thu 01/10 is in the week of Mon 28/09 (week 0), whose Mon and Wed are before it; week 2 is 12/10-18/10.
+        // Seven-day blocks counted from Thu 01/10 would give 05/10, 07/10, 19/10 and 21/10 instead.
+        assertThat(Occurrences.all(rule(day(10, 1), day(10, 31), WEEKS, 2, MONDAY, WEDNESDAY)))
+                .containsExactly(day(10, 12), day(10, 14), day(10, 26), day(10, 28));
+    }
+
+    @Test
     void aWeeklyEventStartingMidWeekSkipsTheTickedDaysBeforeItsFirstDay() {
         // First day Wed 07/10, weekly on Mon and Wed: Mon 05/10 is before it.
         assertThat(Occurrences.all(rule(day(10, 7), day(10, 14), WEEKS, 1, MONDAY, WEDNESDAY)))

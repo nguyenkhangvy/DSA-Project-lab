@@ -101,6 +101,7 @@ Then every skipped day is removed. Each day becomes an occurrence from `start_ti
 - `last_day` is on or after `first_day`, and at most 366 days after it. A series has at most 367 occurrences (every day for a year).
 - `every_n` is 1–99. For "weeks", at least one weekday.
 - `end_time` is after `start_time`.
+- `start_time` is 07:00 or later and `end_time` 23:00 or earlier, the window the Timetable's week and day views show, so no saved event is missing from them (decided at the final review, 2026-09-30).
 - Settings that give no days at all can't be saved: "These settings give no days." Only a weekly rule can give none (the other rules always include the first day), e.g. weekly on Mon with first day Tue 06/10 and last day Sat 10/10.
 
 ---

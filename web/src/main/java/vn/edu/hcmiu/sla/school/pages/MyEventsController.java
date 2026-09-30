@@ -7,6 +7,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -155,7 +156,11 @@ public class MyEventsController {
     String skip(@AuthenticationPrincipal AppUser user, @PathVariable int id, @RequestParam String day,
             RedirectAttributes redirect) {
         LocalDate skipped = eventDay(owned(user, id), day);
-        myEvents.skip(user.id(), id, skipped);
+        try {
+            myEvents.skip(user.id(), id, skipped);
+        } catch (DataIntegrityViolationException doubleClick) {
+            // The other click of a double click skipped this day first: it is skipped, as asked.
+        }
         Flash.success(redirect, VietnamTime.dayLabel(skipped) + " is skipped.");
         return "redirect:/school/events/" + id + "/edit?day=" + skipped;
     }
