@@ -17,7 +17,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolMail;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
-import vn.edu.hcmiu.sla.school.model.SchoolTuition;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatus;
 
 /** Rows for School page tests, saved straight into the test database. All times are UTC. */
 public final class SchoolTestData {
@@ -55,8 +56,19 @@ public final class SchoolTestData {
         db.flush();
     }
 
-    public void tuition(AppUser user, long balance, LocalDate dueDate, String statusText) {
-        db.persist(new SchoolTuition(user.id(), "20261", balance, 0, balance, dueDate, statusText, List.of()));
+    /** An IUPay bill: description "Thu Học Phí " + its number; a paid bill was paid through EduBill. */
+    public void bill(AppUser user, String billNo, String status, long amount, long discount, LocalDate dueDate,
+            LocalDate paidOn) {
+        boolean paid = SchoolTuitionBill.PAID.equals(status);
+        db.persist(new SchoolTuitionBill(user.id(), billNo, "20261", "Academic year 2026-2027 - Semester 1",
+                "Thu Học Phí " + billNo, "Thu Học Phí", amount, discount, 0, status, dueDate, paidOn,
+                paid ? "Đóng qua kênh EduBill" : null));
+        db.flush();
+    }
+
+    /** IUPay was read at this UTC time. */
+    public void tuitionChecked(AppUser user, LocalDateTime utc) {
+        db.persist(new SchoolTuitionStatus(user.id(), utc));
         db.flush();
     }
 

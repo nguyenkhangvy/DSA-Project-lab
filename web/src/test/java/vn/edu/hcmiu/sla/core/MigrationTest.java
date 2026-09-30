@@ -43,11 +43,12 @@ class MigrationTest {
     void anEmptyDatabaseGetsEveryTable() throws Exception {
         assertThat(tables(dataSource)).contains(
                 "users", "school_sync_devices", "school_sync_settings", "school_sync_runs", "school_changes",
-                "school_courses", "school_class_meetings", "school_exams", "school_tuition", "school_events",
+                "school_courses", "school_class_meetings", "school_exams", "school_events",
                 "school_bb_courses", "school_bb_announcements", "school_bb_assignments", "school_bb_materials",
                 "school_mail", "school_mail_changes", "school_mail_choices", "school_mail_status", "school_mail_sessions",
                 "school_mail_settings", "school_mail_joined", "school_tuition_bills", "school_tuition_status",
                 "flyway_schema_history");
+        assertThat(tables(dataSource)).doesNotContain("school_tuition");
     }
 
     /** Like the student's database: every table the Python site made (V1's), and Alembic's alembic_version. */

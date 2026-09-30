@@ -20,6 +20,8 @@ public class SchoolFormat {
 
     static final int PREVIEW_CHARACTERS = 120;
     static final Map<String, String> CHANGE_LABELS = Map.of("online", "Online", "makeup", "Make-up", "cancelled", "Cancelled");
+    static final Map<String, String> BILL_STATUSES = Map.of("unpaid", "Unpaid", "paid", "Paid",
+            "paying", "Payment in progress", "partly_paid", "Partly paid, check IUPay for the rest");
 
     /** "Tue 29/09 08:00", or "never". */
     public String when(LocalDateTime utc) {
@@ -64,6 +66,11 @@ public class SchoolFormat {
     /** The badge for a class changed by an announcement. */
     public String changeLabel(String change) {
         return CHANGE_LABELS.get(change);
+    }
+
+    /** A bill's status as the pages say it: "Unpaid", "Payment in progress", … */
+    public String billStatus(String status) {
+        return BILL_STATUSES.getOrDefault(status, status);
     }
 
     /** The first 120 characters, with "…" when there is more. */

@@ -184,10 +184,17 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: 0.95em; }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; }
 
-/* School: tuition payment */
+/* School: tuition bills from IUPay */
 .pay-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .pay-card h2, .pay-card p { margin: 0 0 4px; }
 .button { text-decoration: none; }
+.bill-text { white-space: pre-line; }
+.bill-card.is-overdue { border-left: 4px solid var(--error); }
+.is-overdue .bill-due { color: var(--error); font-weight: 600; }
+.table-scroll { overflow-x: auto; }
+.bills { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.bills th, .bills td { padding: 6px 8px; text-align: left; vertical-align: top; border-top: 1px solid var(--border); }
+.bills .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* School: timetable calendar (FullCalendar) */
 :root {

@@ -37,7 +37,10 @@ import vn.edu.hcmiu.sla.school.model.SchoolSyncDeviceRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncSettings;
-import vn.edu.hcmiu.sla.school.model.SchoolTuitionRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBillRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatus;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatusRepository;
 import vn.edu.hcmiu.sla.school.pages.SyncStatus.RunInfo;
 import vn.edu.hcmiu.sla.school.schedule.Schedule;
 import vn.edu.hcmiu.sla.school.sync.SyncRuns;
@@ -56,7 +59,8 @@ public class SchoolController {
     private final SchoolSyncRunRepository runs;
     private final SchoolExamRepository exams;
     private final SchoolChangeRepository changes;
-    private final SchoolTuitionRepository tuition;
+    private final SchoolTuitionBillRepository tuitionBills;
+    private final SchoolTuitionStatusRepository tuitionStatus;
     private final SchoolBbCourseRepository bbCourses;
     private final SchoolBbAnnouncementRepository announcements;
     private final SchoolBbAssignmentRepository assignments;
@@ -64,7 +68,8 @@ public class SchoolController {
 
     public SchoolController(Clock clock, SyncRuns syncRuns, Schedule schedule, SchoolSyncDeviceRepository devices,
             SchoolSyncRunRepository runs, SchoolExamRepository exams, SchoolChangeRepository changes,
-            SchoolTuitionRepository tuition, SchoolBbCourseRepository bbCourses,
+            SchoolTuitionBillRepository tuitionBills, SchoolTuitionStatusRepository tuitionStatus,
+            SchoolBbCourseRepository bbCourses,
             SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments,
             SchoolBbMaterialRepository materials) {
         this.clock = clock;
@@ -74,7 +79,8 @@ public class SchoolController {
         this.runs = runs;
         this.exams = exams;
         this.changes = changes;
-        this.tuition = tuition;
+        this.tuitionBills = tuitionBills;
+        this.tuitionStatus = tuitionStatus;
         this.bbCourses = bbCourses;
         this.announcements = announcements;
         this.assignments = assignments;
@@ -163,7 +169,12 @@ public class SchoolController {
 
     @GetMapping("/tuition")
     String tuition(@AuthenticationPrincipal AppUser user, Model model) {
-        model.addAttribute("rows", tuition.findByUserIdOrderByTermCodeDesc(user.id()));
+        List<SchoolTuitionBill> bills = tuitionBills.findByUserIdOrderById(user.id());
+        model.addAttribute("checkedAt",
+                tuitionStatus.findById(user.id()).map(SchoolTuitionStatus::getCheckedAt).orElse(null));
+        model.addAttribute("toPay", TuitionBills.toPay(bills));
+        model.addAttribute("paid", TuitionBills.paid(bills));
+        model.addAttribute("today", VietnamTime.date(now()));
         return "school/tuition";
     }
 

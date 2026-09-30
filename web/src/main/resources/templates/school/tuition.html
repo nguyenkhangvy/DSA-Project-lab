@@ -8,31 +8,59 @@
   <h1>Tuition</h1>
   <nav th:replace="~{school/fragments :: subnav('tuition')}"></nav>
 
-  <section class="card pay-card">
+  <!--/* Bills come from IUPay (docs/superpowers/specs/2026-09-30-iupay-tuition-design.md, 4.3). */-->
+  <section class="card pay-card" th:if="${checkedAt == null}">
     <div>
-      <h2>Pay your tuition</h2>
-      <p class="muted">Opens IU's official payment site, IUPay, in a new tab.</p>
+      <h2>No tuition information yet</h2>
+      <p class="muted">It appears after the next sync, which reads your bills on IUPay.</p>
     </div>
-    <a class="button" href="https://iupay.hcmiu.edu.vn/search/dhqt" target="_blank" rel="noopener noreferrer">
-      Pay on IUPay ↗
-    </a>
+    <a th:replace="~{school/fragments :: pay-button}">Pay on IUPay ↗</a>
   </section>
 
-  <section class="card" th:each="row : ${rows}">
-    <h2 th:text="|Semester ${row.termCode}|">Semester 20261</h2>
-    <dl class="facts">
-      <dt>Amount due</dt><dd th:text="|${@schoolFormat.money(row.amountDue)} VND|">12,500,000 VND</dd>
-      <dt>Paid</dt><dd th:text="|${@schoolFormat.money(row.amountPaid)} VND|">0 VND</dd>
-      <dt>Balance</dt><dd><strong th:text="|${@schoolFormat.money(row.balance)} VND|">12,500,000 VND</strong></dd>
-      <dt>Due date</dt><dd th:text="${row.dueDate != null ? @schoolFormat.day(row.dueDate) : 'not shown by EduSoft'}">15/10/2026</dd>
-      <th:block th:if="${row.statusText != null and !row.statusText.isEmpty()}"><dt>Status</dt><dd
-          th:text="${row.statusText}">Chưa đóng</dd></th:block>
-    </dl>
-  </section>
-  <section class="card" th:if="${rows.isEmpty()}">
-    <p>No tuition information yet. The tuition part of the sync isn't finished: EduSoft's tuition
-       report still has to be located.</p>
-  </section>
+  <th:block th:if="${checkedAt != null}">
+    <section th:each="bill : ${toPay}" class="card pay-card bill-card"
+             th:classappend="${bill.dueDate != null and bill.dueDate.isBefore(today)} ? 'is-overdue'">
+      <div>
+        <h2 class="bill-text" th:text="${bill.description}">Thu Học Phí HK 1 (2026-2027)</h2>
+        <p class="muted"><th:block th:text="${bill.termName != null ? bill.termName : bill.termCode}">Academic year
+          2026-2027 - Semester 1</th:block> · <th:block th:text="|bill ${bill.billNo}|">bill E0000014104</th:block></p>
+        <p><strong th:text="|${@schoolFormat.money(bill.payable)} VND|">65,250,000 VND</strong><th:block
+            th:if="${bill.dueDate != null}"> · <span class="bill-due"
+            th:text="|${bill.dueDate.isBefore(today) ? 'overdue since' : 'due'} ${@schoolFormat.day(bill.dueDate)}|">due
+            15/10/2026</span></th:block> · <span th:text="${@schoolFormat.billStatus(bill.status)}">Unpaid</span></p>
+      </div>
+      <a th:replace="~{school/fragments :: pay-button}">Pay on IUPay ↗</a>
+    </section>
+
+    <section class="card pay-card" th:if="${toPay.isEmpty()}">
+      <div>
+        <h2>No tuition to pay</h2>
+        <p class="muted" th:text="|Last checked on IUPay: ${@schoolFormat.when(checkedAt)}|">Last checked on IUPay:
+          Wed 30/09 11:14</p>
+      </div>
+      <a th:replace="~{school/fragments :: pay-button}">Pay on IUPay ↗</a>
+    </section>
+
+    <section class="card" th:unless="${paid.isEmpty()}">
+      <h2>Paid</h2>
+      <div class="table-scroll">
+        <table class="bills">
+          <thead>
+            <tr><th>Paid on</th><th>Semester</th><th>What for</th><th class="num">Amount (VND)</th><th>How</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="bill : ${paid}">
+              <td th:text="${bill.paidOn != null ? @schoolFormat.day(bill.paidOn) : '-'}">30/09/2026</td>
+              <td th:text="${bill.termName != null ? bill.termName : bill.termCode}">Academic year 2026-2027 - Semester 1</td>
+              <td class="bill-text" th:text="${bill.description}">Thu Học Phí HK 1 (2026-2027)</td>
+              <td class="num" th:text="${@schoolFormat.money(bill.payable)}">65,250,000</td>
+              <td th:text="${bill.channel != null ? bill.channel : '-'}">Đóng qua kênh EduBill</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </th:block>
 </main>
 </body>
 </html>

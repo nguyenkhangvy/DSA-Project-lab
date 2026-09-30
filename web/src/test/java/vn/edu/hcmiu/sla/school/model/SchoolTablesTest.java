@@ -50,18 +50,6 @@ class SchoolTablesTest {
     }
 
     @Test
-    void tuitionItemsAreKeptAsJson() {
-        SchoolTuition tuition = new SchoolTuition(userId, "20261", 12_500_000, 0, 12_500_000,
-                LocalDate.of(2026, 10, 15), "Chưa đóng", List.of(new SchoolTuition.Item("Học phí", 12_500_000)));
-        db.persist(tuition);
-
-        SchoolTuition again = reloaded(tuition, tuition.getId());
-
-        assertThat(again.getItems()).containsExactly(new SchoolTuition.Item("Học phí", 12_500_000));
-        assertThat(again.getStatusText()).isEqualTo("Chưa đóng");
-    }
-
-    @Test
     void aTuitionBillIsKept() {
         SchoolTuitionBill bill = new SchoolTuitionBill(userId, "E0000020001", "20262",
                 "Academic year 2026-2027 - Semester 2", "Thu Học Phí HK 2\nIT093IU", "Thu Học Phí", 40_000_000,
