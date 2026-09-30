@@ -299,7 +299,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .mailbox-box h2 .count { color: var(--muted); font-weight: 400; }
 .mail-rows { list-style: none; margin: 0; padding: 0; }
 .mail-row {
-  display: grid; grid-template-columns: 170px minmax(0, 170px) minmax(0, 1fr) auto 130px 270px;
+  display: grid; grid-template-columns: 170px minmax(0, 170px) minmax(0, 1fr) auto 130px 300px;
   align-items: center; column-gap: 12px; padding: 4px 0; border-top: 1px solid var(--border);
 }
 .mail-row:first-child { border-top: 0; }
@@ -328,7 +328,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .tag-register { color: #7a5200; border-color: #e0b64a; }
 .mail-when { color: var(--muted); font-size: 0.9rem; white-space: nowrap; text-align: right;
   font-variant-numeric: tabular-nums; }
-.mail-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; white-space: nowrap;
+.mail-actions { display: flex; justify-content: flex-end; align-items: center; gap: 6px; white-space: nowrap;
   font-size: 0.9rem; }
 .mail-actions a { text-decoration: none; }
 .mail-actions a:hover { text-decoration: none; }
@@ -338,6 +338,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
   background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer;
 }
 .done-button:hover { color: var(--accent-text); background: var(--accent); }
+.mail-actions .done-button { min-height: 28px; padding: 2px 8px; font-weight: 500; }
 .mail-row.is-done .mail-done, .mail-row:not(.is-done) .mail-undo { display: none; }
 .mail-sessions { grid-column: 2 / -1; font-size: 0.85rem; color: var(--muted); }
 .mark { font-weight: 600; }
