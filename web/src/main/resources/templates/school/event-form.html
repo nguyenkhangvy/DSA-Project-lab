@@ -1,0 +1,93 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Event · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1 th:text="${event == null ? 'New event' : 'Edit event'}">New event</h1>
+  <nav th:replace="~{school/fragments :: subnav('timetable')}"></nav>
+
+  <!--/* docs/superpowers/specs/2026-09-30-my-events-design.md, 4.1 and 4.2 */-->
+  <section class="card join-card">
+    <th:block th:if="${event != null}" th:insert="~{school/fragments :: event-day(${event}, ${focus}, ${skippedDays})}"></th:block>
+
+    <form method="post" class="event-form" th:object="${form}"
+          th:action="${event == null} ? @{/school/events/new} : @{/school/events/{id}/edit(id=${event.id})}">
+      <p class="field-error" th:if="${errors.containsKey('days')}" th:text="${errors.get('days')}">These settings give no days.</p>
+
+      <div class="field">
+        <label for="title">Title</label>
+        <input id="title" type="text" maxlength="100" th:field="*{title}" placeholder="e.g. Tự học buổi tối">
+        <p class="field-error" th:if="${errors.containsKey('title')}" th:text="${errors.get('title')}">Enter a title.</p>
+      </div>
+      <div class="join-add-fields">
+        <label>Start <input type="time" th:field="*{start}"></label>
+        <label>End <input type="time" th:field="*{end}"></label>
+      </div>
+      <p class="field-error" th:if="${errors.containsKey('start')}" th:text="|Start: ${errors.get('start')}|">Start: Enter a time.</p>
+      <p class="field-error" th:if="${errors.containsKey('end')}" th:text="|End: ${errors.get('end')}|">End: Enter a time.</p>
+
+      <fieldset class="event-repeat">
+        <legend>Repeat</legend>
+        <label class="check"><input type="radio" th:field="*{repeat}" value="once"> Once</label>
+        <label class="check"><input type="radio" th:field="*{repeat}" value="days"> Every N days</label>
+        <label class="check"><input type="radio" th:field="*{repeat}" value="weeks"> Every N weeks, on the days ticked below</label>
+        <label class="check"><input type="radio" th:field="*{repeat}" value="months"> Every N months, on the first
+          day's date <span class="muted">(months without that date are skipped)</span></label>
+        <p class="field-error" th:if="${errors.containsKey('repeat')}" th:text="${errors.get('repeat')}">Choose how it repeats.</p>
+        <label data-show-for="days weeks months">N <input type="number" min="1" max="99" th:field="*{every}"></label>
+        <p class="field-error" th:if="${errors.containsKey('every')}" th:text="${errors.get('every')}">Enter a number from 1 to 99.</p>
+        <div class="event-weekdays" data-show-for="weeks">
+          <label class="check" th:each="d : ${#numbers.sequence(1, 7)}">
+            <input type="checkbox" name="weekdays" th:value="${d}" th:checked="${form.weekdays.contains(d.toString())}">
+            <span th:text="${ {'Mon','Tue','Wed','Thu','Fri','Sat','Sun'}[d - 1] }">Mon</span></label>
+        </div>
+        <p class="field-error" th:if="${errors.containsKey('weekdays')}" th:text="${errors.get('weekdays')}">Tick at least one day.</p>
+      </fieldset>
+
+      <div class="join-add-fields">
+        <label>First day <input type="date" th:field="*{firstDay}"></label>
+        <label data-show-for="days weeks months">Last day <input type="date" th:field="*{lastDay}"></label>
+      </div>
+      <p class="field-error" th:if="${errors.containsKey('firstDay')}" th:text="|First day: ${errors.get('firstDay')}|">First day: Enter a day.</p>
+      <p class="field-error" th:if="${errors.containsKey('lastDay')}" th:text="|Last day: ${errors.get('lastDay')}|">Last day: Enter a day.</p>
+
+      <div class="field">
+        <label for="place">Place (optional)</label>
+        <input id="place" type="text" maxlength="100" th:field="*{place}" placeholder="e.g. Library">
+        <p class="field-error" th:if="${errors.containsKey('place')}" th:text="${errors.get('place')}">At most 100 characters.</p>
+      </div>
+      <div class="field">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" maxlength="500" rows="3" th:field="*{notes}"></textarea>
+        <p class="field-error" th:if="${errors.containsKey('notes')}" th:text="${errors.get('notes')}">At most 500 characters.</p>
+      </div>
+
+      <section class="event-check" th:if="${checked != null}">
+        <p th:class="${checked.conflict ? 'mark mark-conflict' : 'mark mark-free'}" th:text="${checked.summary}">✓ No
+          conflict in 33 sessions</p>
+        <ul th:if="${checked.conflict}">
+          <li th:each="line : ${checked.lines}" th:text="${line}">Mon 05/10 17:00–19:00 ⚠ IT093IU Web Application
+            Development (17:15–19:45)</li>
+        </ul>
+      </section>
+
+      <div class="form-actions">
+        <button type="submit" name="action" value="check" class="link-button">Check for conflicts</button>
+        <button type="submit" name="action" value="save" class="button">Save</button>
+        <a th:href="@{/school/timetable}">Cancel</a>
+      </div>
+    </form>
+
+    <form method="post" class="event-delete" th:if="${event != null}"
+          th:action="@{/school/events/{id}/delete(id=${event.id})}">
+      <button type="submit" class="link-button danger">Delete</button>
+      <span class="muted">(this event and all its days)</span>
+    </form>
+  </section>
+
+  <script th:src="@{/js/event-form.js}"></script>
+</main>
+</body>
+</html>

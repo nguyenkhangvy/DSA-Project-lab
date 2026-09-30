@@ -58,6 +58,9 @@
   </span>
 </li>
 
+<!--/* The edit page's day block: skip or bring back the day it was opened for, and the skipped days (Task 7). */-->
+<th:block th:fragment="event-day(event, focus, skippedDays)"></th:block>
+
 <!--/* IU's official payment site, in a new tab. */-->
 <a th:fragment="pay-button" class="button" href="https://iupay.hcmiu.edu.vn/search/dhqt" target="_blank"
    rel="noopener noreferrer">Pay on IUPay ↗</a>
