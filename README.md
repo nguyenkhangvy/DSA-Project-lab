@@ -2,7 +2,7 @@
 
 One web app for IU students, built by a team of 3 for the Web Application Development course:
 
-- **School** (Vy): EduSoft timetable, exams and tuition, and Blackboard courses, synced automatically from a laptop, on one calendar.
+- **School** (Vy): EduSoft timetable and exams, IUPay tuition bills, and Blackboard courses, synced automatically from a laptop, on one calendar.
 - **Expense**: expense management.
 - **Health**: health management.
 
@@ -62,7 +62,7 @@ Git Bash works too: `cd web && ./mvnw spring-boot:run`. GitHub runs the website'
 
 ## The laptop agent (School sync)
 
-Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, tuition and Blackboard courses to the site, with a device key.
+Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
 
 1. **Install it** (Python 3.12), in the project folder:
 
