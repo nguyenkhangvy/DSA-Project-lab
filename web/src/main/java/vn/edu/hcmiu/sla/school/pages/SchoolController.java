@@ -121,6 +121,9 @@ public class SchoolController {
         model.addAttribute("latestAnnouncements", announcements.findLatest(user.id(), Limit.of(3)));
         model.addAttribute("nextExam",
                 exams.findFirstByUserIdAndStartAtGreaterThanEqualOrderByStartAtAscIdAsc(user.id(), now).orElse(null));
+        List<SchoolTuitionBill> bills = tuitionBills.findByUserIdOrderById(user.id());
+        model.addAttribute("tuitionNotice", TuitionBills.notice(bills, today));
+        model.addAttribute("recentBills", TuitionBills.recent(bills, today));
         model.addAttribute("changes", changes.findTop10ByUserIdOrderByIdDesc(user.id()));
         model.addAttribute("now", now);
         return "school/index";

@@ -278,6 +278,55 @@ class SchoolPagesTest {
                 .containsPattern("Hall A2 · <a\\s+href=\"/school/mailbox#mail-" + "a".repeat(64) + "\">See email</a>");
     }
 
+    @Test
+    void theOverviewShowsATuitionNoticeWhileSomethingIsUnpaid() throws Exception {
+        data.bill(an, "E0000020001", "unpaid", 40_000_000, 2_000_000, LocalDate.of(2026, 10, 15), null);
+        data.bill(an, "E0000020002", "paying", 1_105_650, 0, LocalDate.of(2026, 10, 10), null);
+        clock.set(LocalDateTime.of(2026, 10, 1, 1, 0));
+
+        String html = page("/school");
+
+        assertThat(html).contains("Tuition to pay: 39,105,650 VND", "due 10/10/2026", "See tuition →")
+                .doesNotContain("tuition-notice is-overdue");
+    }
+
+    @Test
+    void theTuitionNoticeTurnsRedOnceItIsOverdue() throws Exception {
+        data.bill(an, "E0000020002", "unpaid", 1_105_650, 0, LocalDate.of(2026, 10, 10), null);
+        clock.set(LocalDateTime.of(2026, 10, 12, 1, 0));
+
+        assertThat(page("/school")).contains("tuition-notice is-overdue", "overdue since 10/10/2026");
+    }
+
+    @Test
+    void noTuitionNoticeWhenEverythingIsPaid() throws Exception {
+        data.bill(an, "E0000014104", "paid", 65_250_000, 0, null, LocalDate.of(2026, 9, 30));
+        data.bill(data.user("binh@example.com"), "E0000099999", "unpaid", 5_000_000, 0, LocalDate.of(2026, 10, 15),
+                null);
+
+        assertThat(page("/school")).doesNotContain("Tuition to pay", "E0000099999");
+    }
+
+    @Test
+    void theBillsListHasBillsToPayAndPaymentsFromTheLast30Days() throws Exception {
+        data.bill(an, "E0000020001", "unpaid", 40_000_000, 0, LocalDate.of(2026, 10, 15), null);
+        data.bill(an, "E0000014104", "paid", 65_250_000, 0, null, LocalDate.of(2026, 9, 30));
+        data.bill(an, "E0000000208", "paid", 40_273_756, 0, null, LocalDate.of(2026, 8, 31)); // 31 days before 01/10
+        clock.set(LocalDateTime.of(2026, 10, 1, 1, 0));
+
+        String bills = section(page("/school"), "Bills");
+
+        assertThat(bills).contains("New:", "Thu Học Phí E0000020001: 40,000,000 VND", ", due 15/10/2026", "(Unpaid)",
+                "Paid Wed 30/09:", "Thu Học Phí E0000014104: 65,250,000 VND", "Đóng qua kênh EduBill", "See all →")
+                .doesNotContain("E0000000208");
+        assertThat(bills.indexOf("E0000020001")).isLessThan(bills.indexOf("E0000014104"));
+    }
+
+    @Test
+    void theBillsListSaysWhenThereIsNothingNew() throws Exception {
+        assertThat(section(page("/school"), "Bills")).contains("No new bills or payments in the last 30 days.");
+    }
+
     // ---- Timetable, exams, tuition --------------------------------------------------------
 
     @Test

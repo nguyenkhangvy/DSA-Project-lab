@@ -8,6 +8,15 @@
   <h1>School</h1>
   <nav th:replace="~{school/fragments :: subnav('overview')}"></nav>
   <section th:replace="~{school/fragments :: status-card}"></section>
+  <!--/* Only while some bill isn't paid (docs/superpowers/specs/2026-09-30-iupay-tuition-design.md, 4.4). */-->
+  <section class="card tuition-notice" th:if="${tuitionNotice != null}"
+           th:classappend="${tuitionNotice.overdue} ? 'is-overdue'">
+    <span>💰 <strong th:text="|Tuition to pay: ${@schoolFormat.money(tuitionNotice.total)} VND|">Tuition to pay:
+      65,250,000 VND</strong><th:block th:if="${tuitionNotice.due != null}">, <span class="bill-due"
+      th:text="|${tuitionNotice.overdue ? 'overdue since' : 'due'} ${@schoolFormat.day(tuitionNotice.due)}|">due
+      15/10/2026</span></th:block></span>
+    <a th:href="@{/school/tuition}">See tuition →</a>
+  </section>
 
   <div class="two-columns">
     <section class="card">
@@ -53,6 +62,23 @@
         <th:block th:text="|${@schoolFormat.date(nextExam.startAt)} at ${@schoolFormat.clock(nextExam.startAt)}|">12/12/2026
           at 08:00</th:block><th:block th:if="${nextExam.room != null}" th:text="| · ${nextExam.room}|"> · A1.101</th:block></p>
       <p class="muted" th:if="${nextExam == null}">No upcoming exams published yet.</p>
+
+      <h2>Bills</h2>
+      <ul class="changes" th:unless="${recentBills.isEmpty()}">
+        <li th:each="bill : ${recentBills}">
+          <th:block th:unless="${bill.paid}"><strong>New:</strong> <th:block
+              th:text="|${bill.description}: ${@schoolFormat.money(bill.payable)} VND|">Thu Học Phí HK 1 (2026-2027):
+              65,250,000 VND</th:block><th:block th:if="${bill.dueDate != null}"
+              th:text="|, due ${@schoolFormat.day(bill.dueDate)}|">, due 15/10/2026</th:block>
+            <span class="muted" th:text="|(${@schoolFormat.billStatus(bill.status)})|">(Unpaid)</span></th:block>
+          <th:block th:if="${bill.paid}"><strong th:text="|Paid ${@schoolFormat.dayLabel(bill.paidOn)}:|">Paid Wed
+              30/09:</strong> <th:block th:text="|${bill.description}: ${@schoolFormat.money(bill.payable)} VND|">Thu
+              Học Phí HK 1 (2026-2027): 65,250,000 VND</th:block><th:block th:if="${bill.channel != null}"
+              th:text="| · ${bill.channel}|"> · Đóng qua kênh EduBill</th:block></th:block>
+        </li>
+      </ul>
+      <p class="muted" th:if="${recentBills.isEmpty()}">No new bills or payments in the last 30 days.</p>
+      <p><a th:href="@{/school/tuition}">See all →</a></p>
 
       <h2>What changed</h2>
       <ul class="changes" th:unless="${changes.isEmpty()}">

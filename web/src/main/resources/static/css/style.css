@@ -195,6 +195,9 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: 0.95em; }
 .bills { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .bills th, .bills td { padding: 6px 8px; text-align: left; vertical-align: top; border-top: 1px solid var(--border); }
 .bills .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tuition-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px;
+  border-left: 4px solid var(--accent); }
+.tuition-notice.is-overdue { border-left-color: var(--error); }
 
 /* School: timetable calendar (FullCalendar) */
 :root {
