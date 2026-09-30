@@ -149,7 +149,7 @@ The edit page always lists the skipped days, each with **Undo** (POST `/school/e
 
 - `Schedule.itemsBetween` also returns the student's own events' occurrences in the range, as `Item`s of kind **`mine`**, label "My event", title the event's title, room its place, source the edit page for that day (`/school/events/{id}/edit?day=…`).
 - `/school/api/calendar` gives them the class name `item-mine` (purple) and, when that occurrence clashes, a "⚠ " before the title and the class `item-conflict` (red border).
-- The week and day views show the whole day, 00:00–24:00, in a scrolling box that opens at 07:00, so an event at any time is visible (the student's choice, 2026-10-01; first 07:00–23:00); "All day" and the other settings stay as they are.
+- The week and day views show 07:00–23:00. A "Show more" button in the toolbar adds 23:00–07:00 (the whole day, in a scrolling box that opens at 07:00) and becomes "Show less"; this browser remembers the choice. While the night is hidden, the button counts the events it hides: "Show more (1 hidden)". Events can be at any time (the student's choice, 2026-10-01). "All day" and the other settings stay as they are.
 - Overview Today and Tomorrow list them like joined events. The legend under the Timetable gets "My event".
 - Mailbox's Join conflict marks (Mailbox events §4.5) now also count the student's own events, since they are part of the timetable.
 

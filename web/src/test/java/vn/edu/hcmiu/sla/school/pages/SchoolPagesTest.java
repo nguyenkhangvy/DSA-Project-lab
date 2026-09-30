@@ -347,7 +347,8 @@ class SchoolPagesTest {
     void theTimetableShowsEveningsAndNamesOwnEventsInTheLegend() throws Exception {
         assertThat(page("/school/timetable")).contains("legend-mine", "My event");
         assertThat(mvc.perform(get("/js/timetable.js")).andReturn().getResponse().getContentAsString())
-                .contains("slotMinTime: \"00:00:00\"", "slotMaxTime: \"24:00:00\"", "scrollTime: \"07:00:00\"");
+                .contains("var DAY_START = \"07:00:00\"", "var DAY_END = \"23:00:00\"", "\"Show more\"",
+                        "\"Show less\"", "localStorage", "scrollTime: DAY_START");
     }
 
     // ---- Timetable, exams, tuition --------------------------------------------------------
