@@ -111,6 +111,11 @@ public final class ClassChanges {
         public static Source email(String mailKey) {
             return new Source("/school/mailbox#mail-" + mailKey, "See email");
         }
+
+        /** One day of the student's own event: its edit page, where that day can be skipped. */
+        public static Source myEvent(int eventId, LocalDate day) {
+            return new Source("/school/events/" + eventId + "/edit?day=" + day, "Edit");
+        }
     }
 
     /** A change for one course, code "MA026IU", and where it was announced. */

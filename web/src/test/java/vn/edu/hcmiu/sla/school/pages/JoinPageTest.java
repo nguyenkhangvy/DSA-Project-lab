@@ -314,4 +314,12 @@ class JoinPageTest {
         mvc.perform(post("/school/mailbox/" + TALK + "/leave").with(user(an))).andExpect(status().isForbidden());
         assertThat(saved()).isEmpty();
     }
+
+    @Test
+    void anOwnEventIsAConflictForAnEventsSession() throws Exception {
+        // Thu 01/10 from 13:30 (the email gives no end) against the student's own 13:00-14:00.
+        data.myEvent(an, "Tự học", TUE.plusDays(2), null, LocalTime.of(13, 0), LocalTime.of(14, 0));
+
+        assertThat(html(get("/school/mailbox/" + TALK + "/join"))).contains("⚠ Conflict: My event: Tự học");
+    }
 }

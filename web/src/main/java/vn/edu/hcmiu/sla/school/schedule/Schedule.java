@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.hcmiu.sla.school.VietnamTime;
+import vn.edu.hcmiu.sla.school.events.Occurrences;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAnnouncementRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAssignment;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAssignmentRepository;
@@ -29,6 +30,8 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChangeRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
 import vn.edu.hcmiu.sla.school.model.SchoolMailJoinedRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolMyEvent;
+import vn.edu.hcmiu.sla.school.model.SchoolMyEventRepository;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Announced;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.ClassChange;
 import vn.edu.hcmiu.sla.school.schedule.ClassChanges.Emailed;
@@ -48,19 +51,22 @@ public class Schedule {
             "final", "Final exam", "midterm", "Midterm exam", "other", "Exam");
     static final Duration DEFAULT_CLASS_LENGTH = Duration.ofMinutes(90); // a make-up of a course with no known classes
     static final Duration JOINED_WITHOUT_END = Duration.ofHours(1); // an event session whose email gave no end
+    public static final String MINE = "mine"; // one day of the student's own event
+    public static final String MY_EVENT = "My event";
 
     /**
-     * A class, an exam or a joined event on the timetable. Times are UTC; endAt may be empty. label: "Final exam"
-     * for exams, "Event" or "★ Training points" for events (whose code is empty and room the place typed on Join).
-     * change: online / cancelled / makeup, from a Blackboard announcement or a lecturer's email, with source the
-     * app's page where it was announced (for an event, its email in Mailbox). allDay: a make-up class announced
-     * without a time.
+     * A class, an exam, a joined event or one day of the student's own event on the timetable. Times are UTC;
+     * endAt may be empty. label: "Final exam" for exams, "Event" or "★ Training points" for joined events, "My event"
+     * for own events (whose code is empty and room the place typed). change: online / cancelled / makeup, from a
+     * Blackboard announcement or a lecturer's email, with source the app's page where it was announced (for an event,
+     * its email in Mailbox; for an own event, its edit page for that day). allDay: a make-up class announced without
+     * a time. eventId: the own event's id, for kind "mine" only.
      */
     public record Item(String kind, LocalDateTime startAt, LocalDateTime endAt, String code, String title, String room,
-            String label, String change, Source source, boolean allDay) {
+            String label, String change, Source source, boolean allDay, Integer eventId) {
 
         Item changed(String change, Source source, String room) {
-            return new Item(kind, startAt, endAt, code, title, room, label, change, source, allDay);
+            return new Item(kind, startAt, endAt, code, title, room, label, change, source, allDay, eventId);
         }
     }
 
@@ -78,10 +84,12 @@ public class Schedule {
     private final SchoolBbAssignmentRepository assignments;
     private final SchoolMailChangeRepository mailChanges;
     private final SchoolMailJoinedRepository joined;
+    private final SchoolMyEventRepository myEvents;
 
     public Schedule(SchoolClassMeetingRepository meetings, SchoolExamRepository exams, SchoolCourseRepository courses,
             SchoolBbAnnouncementRepository announcements, SchoolBbAssignmentRepository assignments,
-            SchoolMailChangeRepository mailChanges, SchoolMailJoinedRepository joined) {
+            SchoolMailChangeRepository mailChanges, SchoolMailJoinedRepository joined,
+            SchoolMyEventRepository myEvents) {
         this.meetings = meetings;
         this.exams = exams;
         this.courses = courses;
@@ -89,24 +97,26 @@ public class Schedule {
         this.assignments = assignments;
         this.mailChanges = mailChanges;
         this.joined = joined;
+        this.myEvents = myEvents;
     }
 
-    /** Classes, exams and joined events starting in [startUtc, endUtc), with announced changes, in time order. */
+    /** Classes, exams, joined events and own events starting in [startUtc, endUtc), with announced changes, in time order. */
     @Transactional(readOnly = true)
     public List<Item> itemsBetween(Integer userId, LocalDateTime startUtc, LocalDateTime endUtc) {
         List<Item> items = new ArrayList<>();
         for (SchoolClassMeeting m : meetings.findStarting(userId, startUtc, endUtc)) {
             items.add(new Item("class", m.getStartAt(), m.getEndAt(), m.getCourse().getCourseCode(),
-                    m.getCourse().getCourseName(), m.getRoom(), null, null, null, false));
+                    m.getCourse().getCourseName(), m.getRoom(), null, null, null, false, null));
         }
         for (SchoolExam e : exams.findStarting(userId, startUtc, endUtc)) {
             LocalDateTime end = e.getDurationMin() == null ? null : e.getStartAt().plusMinutes(e.getDurationMin());
             items.add(new Item("exam", e.getStartAt(), end, e.getCourseCode(), e.getCourseName(), e.getRoom(),
-                    EXAM_LABELS.getOrDefault(e.getExamType(), "Exam"), null, null, false));
+                    EXAM_LABELS.getOrDefault(e.getExamType(), "Exam"), null, null, false, null));
         }
         List<Item> result = new ArrayList<>(withChanges(items, announcedChanges(userId), timetableCourses(userId),
                 startUtc, endUtc));
         result.addAll(joinedEvents(userId, startUtc, endUtc));
+        result.addAll(ownEvents(userId, startUtc, endUtc));
         result.sort(Comparator.comparing(Item::startAt).thenComparing(Item::kind));
         return result;
     }
@@ -125,10 +135,27 @@ public class Schedule {
             if (!startAt.isBefore(startUtc) && startAt.isBefore(endUtc)) {
                 events.add(new Item("event", startAt, endAt, null, row.getTitle(), row.getPlace(),
                         row.isTrainingPoints() ? "★ Training points" : "Event", null, Source.email(row.getMailKey()),
-                        false));
+                        false, null));
             }
         }
         return events;
+    }
+
+    /** The days of the student's own events starting in [startUtc, endUtc) (docs/superpowers/specs/2026-09-30-my-events-design.md, 4.4). */
+    private List<Item> ownEvents(Integer userId, LocalDateTime startUtc, LocalDateTime endUtc) {
+        LocalDate from = VietnamTime.date(startUtc);
+        LocalDate to = VietnamTime.date(endUtc);
+        List<Item> items = new ArrayList<>();
+        for (SchoolMyEvent event : myEvents.findOverlapping(userId, from, to)) {
+            for (LocalDate day : Occurrences.days(event.rule(), from, to)) {
+                LocalDateTime startAt = VietnamTime.utc(day, event.getStartTime());
+                if (!startAt.isBefore(startUtc) && startAt.isBefore(endUtc)) {
+                    items.add(new Item(MINE, startAt, VietnamTime.utc(day, event.getEndTime()), null, event.getTitle(),
+                            event.getPlace(), MY_EVENT, null, Source.myEvent(event.getId(), day), false, event.getId()));
+                }
+            }
+        }
+        return items;
     }
 
     /** The items of one Vietnam day. */
@@ -233,7 +260,7 @@ public class Schedule {
                 LocalDateTime dayStart = VietnamTime.dayStart(change.day());
                 if (!dayStart.isBefore(startUtc) && dayStart.isBefore(endUtc)) {
                     result.add(new Item("class", dayStart, null, change.code(), course.name(), change.room(), null,
-                            "makeup", change.source(), true));
+                            "makeup", change.source(), true, null));
                 }
                 continue;
             }
@@ -243,7 +270,7 @@ public class Schedule {
                     : startAt.plus(course.usual());
             if (!startAt.isBefore(startUtc) && startAt.isBefore(endUtc)) {
                 result.add(new Item("class", startAt, endAt, change.code(), course.name(), change.room(), null,
-                        "makeup", change.source(), false));
+                        "makeup", change.source(), false, null));
             }
         }
         result.sort(Comparator.comparing(Item::startAt).thenComparing(Item::kind));

@@ -30,8 +30,8 @@
   </form>
 </section>
 
-<!--/* One class, exam or joined event (Schedule.Item). A class changed by an announcement or email gets a badge and
-     a link to it; an event links to its email in Mailbox. */-->
+<!--/* One class, exam, joined event or own event (Schedule.Item). A class changed by an announcement or email gets a
+     badge and a link to it; a joined event links to its email in Mailbox, an own event to its edit page. */-->
 <li th:fragment="item(item)" th:with="look=${item.change == 'cancelled' ? 'cancelled' : 'changed'}"
     th:class="|item item-${item.kind}${item.change != null ? ' item-' + look : ''}|">
   <span class="item-time" th:text="${item.allDay ? 'All day' : @schoolFormat.clock(item.startAt)
@@ -42,11 +42,11 @@
     <th:block th:if="${item.label != null}"><strong th:text="|${item.label}:|">Final exam:</strong> </th:block><th:block
         th:text="${item.title}">Web Application Development</th:block>
   </span>
-  <span class="item-meta" th:if="${item.kind == 'event'}">
+  <span class="item-meta" th:if="${item.kind == 'event' or item.kind == 'mine'}">
     <th:block th:if="${item.room != null}" th:text="|${item.room} · |">Hall A2 · </th:block><a
         th:href="@{${item.source.link}}" th:text="${item.source.text}">See email</a>
   </span>
-  <span class="item-meta" th:unless="${item.kind == 'event'}">
+  <span class="item-meta" th:unless="${item.kind == 'event' or item.kind == 'mine'}">
     <th:block th:text="${item.code}">IT093IU</th:block>
     <th:block th:if="${item.room != null and !item.room.isEmpty() and item.change != 'online'}">
       · <span th:if="${item.room.toUpperCase().startsWith('ONLINE')}" class="badge">Online</span><th:block

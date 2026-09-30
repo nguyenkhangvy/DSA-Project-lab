@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -35,6 +36,7 @@ import vn.edu.hcmiu.sla.school.SchoolTestData;
 import vn.edu.hcmiu.sla.school.SchoolTestData.Meeting;
 import vn.edu.hcmiu.sla.school.model.SchoolBbCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
+import vn.edu.hcmiu.sla.school.model.SchoolMyEvent;
 
 /**
  * The Timetable's calendar feed: Java twin of the feed tests in tests/test_school_schedule_pages.py,
@@ -475,5 +477,29 @@ class CalendarFeedTest {
                 null, null));
 
         assertThat(classes()).extracting(e -> props(e).get("change")).containsOnlyNulls();
+    }
+
+    @Test
+    void ownEventsAreInTheFeedWithALinkToEditThatDay() throws Exception {
+        SchoolMyEvent selfStudy = data.myEvent(an, "Tự học buổi tối", LocalDate.of(2026, 9, 28), LocalDate.of(2026, 12, 20),
+                LocalTime.of(17, 0), LocalTime.of(19, 0), DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY);
+        selfStudy.skip(LocalDate.of(2026, 9, 29));
+        db.flush();
+
+        List<Map<String, Object>> mine = nextWeek().stream().filter(e -> "mine".equals(props(e).get("kind"))).toList();
+
+        assertThat(mine).extracting(e -> e.get("start") + " " + e.get("end")).containsExactly(
+                "2026-09-28T17:00:00 2026-09-28T19:00:00", "2026-09-30T17:00:00 2026-09-30T19:00:00");
+        assertThat(mine.get(0)).containsEntry("title", "My event: Tự học buổi tối")
+                .containsEntry("classNames", List.of("event-mine"))
+                .containsEntry("url", "/school/events/" + selfStudy.getId() + "/edit?day=2026-09-28");
+    }
+
+    @Test
+    void anotherStudentsEventsAreNotInMyFeed() throws Exception {
+        data.myEvent(data.user("binh@example.com"), "Binh's plan", LocalDate.of(2026, 9, 29), null,
+                LocalTime.of(17, 0), LocalTime.of(19, 0));
+
+        assertThat(nextWeek()).noneMatch(e -> String.valueOf(e.get("title")).contains("Binh"));
     }
 }

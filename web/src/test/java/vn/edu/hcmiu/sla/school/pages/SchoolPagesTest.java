@@ -40,6 +40,7 @@ import vn.edu.hcmiu.sla.school.TestClock;
 import vn.edu.hcmiu.sla.school.model.SchoolBbCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolChange;
 import vn.edu.hcmiu.sla.school.model.SchoolMailJoined;
+import vn.edu.hcmiu.sla.school.model.SchoolMyEvent;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
 import vn.edu.hcmiu.sla.school.sync.DeviceKeys;
@@ -325,6 +326,27 @@ class SchoolPagesTest {
     @Test
     void theBillsListSaysWhenThereIsNothingNew() throws Exception {
         assertThat(section(page("/school"), "Bills")).contains("No new bills or payments in the last 30 days.");
+    }
+
+    @Test
+    void theOverviewShowsTodaysOwnEventWithAnEditLink() throws Exception {
+        SchoolMyEvent event = data.myEvent(an, "<b>Tự học</b>", LocalDate.of(2026, 9, 29), null, LocalTime.of(17, 0),
+                LocalTime.of(19, 0));
+        clock.set(LocalDateTime.of(2026, 9, 29, 0, 30)); // Tue 07:30 in Vietnam
+
+        String html = page("/school");
+
+        Matcher item = Pattern.compile("<li class=\"item item-mine\">(.*?)</li>", Pattern.DOTALL).matcher(html);
+        assertThat(item.find()).isTrue();
+        assertThat(item.group(1)).contains("17:00–19:00", "<strong>My event:</strong>", "&lt;b&gt;Tự học&lt;/b&gt;")
+                .contains("href=\"/school/events/" + event.getId() + "/edit?day=2026-09-29\">Edit</a>");
+    }
+
+    @Test
+    void theTimetableShowsEveningsAndNamesOwnEventsInTheLegend() throws Exception {
+        assertThat(page("/school/timetable")).contains("legend-mine", "My event");
+        assertThat(mvc.perform(get("/js/timetable.js")).andReturn().getResponse().getContentAsString())
+                .contains("slotMaxTime: \"23:00:00\"");
     }
 
     // ---- Timetable, exams, tuition --------------------------------------------------------

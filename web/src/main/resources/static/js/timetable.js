@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
     footerToolbar: narrow ? { center: "title" } : false,
     buttonText: { today: "Today", month: "Month", week: "Week", day: "Day", list: "List" },
     slotMinTime: "07:00:00",
-    slotMaxTime: "19:00:00",
+    slotMaxTime: "23:00:00", // evening plans, e.g. self-study 19:00-22:00
     allDaySlot: true,
     allDayText: "All day",
     nowIndicator: true,
