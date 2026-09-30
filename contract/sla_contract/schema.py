@@ -95,6 +95,39 @@ class Tuition(_Strict):
     items: Annotated[list[TuitionItem], Field(max_length=60)] = []
 
 
+BillStatus = Literal["unpaid", "paid", "paying", "partly_paid"]
+
+
+class TuitionBill(_Strict):
+    """One IUPay bill. Amounts are VND; due_date and paid_on are Vietnam dates."""
+
+    bill_no: Annotated[str, Field(min_length=1, max_length=40)]
+    term_code: Code
+    term_name: Name | None = None
+    description: Annotated[str, Field(min_length=1, max_length=1000)]
+    fee_type: Name | None = None
+    amount: Annotated[int, Field(ge=0)]
+    discount: Annotated[int, Field(ge=0)] = 0
+    fee: Annotated[int, Field(ge=0)] = 0  # IUPay's transaction fee
+    status: BillStatus
+    due_date: date | None = None  # bills not paid yet
+    paid_on: date | None = None  # paid bills
+    channel: Annotated[str, Field(max_length=100)] | None = None  # paid bills: how they were paid
+
+
+class Iupay(_Strict):
+    """Every bill IUPay lists for the student, paid or not."""
+
+    bills: Annotated[list[TuitionBill], Field(max_length=500)] = []
+
+    @model_validator(mode="after")
+    def _each_bill_once(self):
+        numbers = [bill.bill_no for bill in self.bills]
+        if len(set(numbers)) != len(numbers):
+            raise ValueError("bill_no must differ")
+        return self
+
+
 BbId = Annotated[str, Field(min_length=1, max_length=64)]
 BbUrl = Annotated[str, Field(max_length=500, pattern=r"^https://blackboard\.hcmiu\.edu\.vn/")]
 
@@ -221,11 +254,12 @@ class SectionFailed(_Strict):
 TimetableResult = Annotated[SectionOk[Timetable] | SectionFailed, Field(discriminator="status")]
 ExamsResult = Annotated[SectionOk[Exams] | SectionFailed, Field(discriminator="status")]
 TuitionResult = Annotated[SectionOk[Tuition] | SectionFailed, Field(discriminator="status")]
+IupayResult = Annotated[SectionOk[Iupay] | SectionFailed, Field(discriminator="status")]
 BlackboardResult = Annotated[SectionOk[Blackboard] | SectionFailed, Field(discriminator="status")]
 OutlookResult = Annotated[SectionOk[Outlook] | SectionFailed, Field(discriminator="status")]
 
 EDUSOFT_SECTIONS = ("timetable", "exams", "tuition")
-SECTION_NAMES = EDUSOFT_SECTIONS + ("blackboard", "outlook")
+SECTION_NAMES = EDUSOFT_SECTIONS + ("iupay", "blackboard", "outlook")
 
 
 class FinishRun(_Strict):
@@ -237,6 +271,7 @@ class FinishRun(_Strict):
     timetable: TimetableResult | None = None
     exams: ExamsResult | None = None
     tuition: TuitionResult | None = None
+    iupay: IupayResult | None = None
     blackboard: BlackboardResult | None = None
     outlook: OutlookResult | None = None
 

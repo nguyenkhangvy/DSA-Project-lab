@@ -104,6 +104,44 @@ public final class SyncContract {
         }
     }
 
+    // ---- IUPay ------------------------------------------------------------------
+
+    static final String BILL_STATUSES = "unpaid|paid|paying|partly_paid";
+
+    /** One IUPay bill. Amounts are VND; dueDate and paidOn are Vietnam dates. */
+    public record TuitionBill(
+            @NotNull @Chars(min = 1, max = 40) String billNo,
+            @NotNull @Chars(min = 1, max = 20) String termCode,
+            @Chars(min = 1, max = 255) String termName,
+            @NotNull @Chars(min = 1, max = 1000) String description,
+            @Chars(min = 1, max = 255) String feeType,
+            @NotNull @PositiveOrZero Long amount,
+            @PositiveOrZero Long discount,
+            @PositiveOrZero Long fee,
+            @NotNull @Pattern(regexp = BILL_STATUSES) String status,
+            LocalDate dueDate,
+            LocalDate paidOn,
+            @Chars(max = 100) String channel) {
+
+        public TuitionBill {
+            discount = discount == null ? 0L : discount;
+            fee = fee == null ? 0L : fee;
+        }
+    }
+
+    /** Every bill IUPay lists for the student, paid or not. */
+    public record Iupay(@Size(max = 500) List<@Valid TuitionBill> bills) {
+
+        public Iupay {
+            bills = bills == null ? List.of() : bills;
+        }
+
+        @AssertTrue(message = "bill_no must differ")
+        boolean isEachBillOnce() {
+            return bills.stream().map(TuitionBill::billNo).distinct().count() == bills.size();
+        }
+    }
+
     // ---- Blackboard -------------------------------------------------------------
 
     public record BbAnnouncement(
@@ -255,6 +293,7 @@ public final class SyncContract {
             @Valid Section<Timetable> timetable,
             @Valid Section<Exams> exams,
             @Valid Section<Tuition> tuition,
+            @Valid Section<Iupay> iupay,
             @Valid Section<Blackboard> blackboard,
             @Valid Section<Outlook> outlook) {
 
@@ -278,7 +317,7 @@ public final class SyncContract {
             return errorCode != null || !sections().isEmpty();
         }
 
-        /** The parts that were sent, by name, in the order timetable, exams, tuition, blackboard, outlook. */
+        /** The parts that were sent, by name, in the order timetable, exams, tuition, iupay, blackboard, outlook. */
         public Map<String, Section<?>> sections() {
             Map<String, Section<?>> sent = new LinkedHashMap<>();
             if (timetable != null) {
@@ -289,6 +328,9 @@ public final class SyncContract {
             }
             if (tuition != null) {
                 sent.put("tuition", tuition);
+            }
+            if (iupay != null) {
+                sent.put("iupay", iupay);
             }
             if (blackboard != null) {
                 sent.put("blackboard", blackboard);

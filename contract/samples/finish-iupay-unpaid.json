@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "iupay": {
+    "status": "ok",
+    "data": {
+      "bills": [
+        {"bill_no": "E0000020001", "term_code": "20262", "term_name": "Academic year 2026-2027 - Semester 2",
+         "description": "Thu Học Phí HK 2 (2026-2027)", "fee_type": "Thu Học Phí", "amount": 40000000,
+         "discount": 2000000, "fee": 0, "status": "unpaid", "due_date": "2027-02-15"},
+        {"bill_no": "E0000020002", "term_code": "20262", "term_name": "Academic year 2026-2027 - Semester 2",
+         "description": "Bảo hiểm y tế 2027", "fee_type": "Thu BHYT", "amount": 1105650,
+         "status": "paying", "due_date": "2027-01-31"},
+        {"bill_no": "E0000020003", "term_code": "20261", "term_name": "Academic year 2026-2027 - Semester 1",
+         "description": "Thu Học Phí học lại\nIT093IU", "amount": 3000000,
+         "status": "partly_paid", "due_date": "2026-12-31"}
+      ]
+    }
+  }
+}

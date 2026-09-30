@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "iupay": {
+    "status": "ok",
+    "data": {
+      "bills": [
+        {"bill_no": "E0000014104", "term_code": "20261", "term_name": "Academic year 2026-2027 - Semester 1",
+         "description": "Thu Học Phí HK 1 (2026-2027)", "fee_type": "Thu Học Phí", "amount": 65250000,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2026-09-30", "channel": "Đóng qua kênh EduBill"},
+        {"bill_no": "4073743", "term_code": "20251", "term_name": "Academic year 2025-2026 - Semester 1",
+         "description": "Thu học phí học kỳ 1/2025-2026", "fee_type": "Thu Học Phí", "amount": 36900000,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2025-10-01", "channel": "Đóng offline"},
+        {"bill_no": "E0000000208", "term_code": "20252", "term_name": "Academic year 2025-2026 - Semester 2",
+         "description": "Thu Học Phí HK 2 (2025-2026)", "fee_type": "Thu Học Phí", "amount": 40273756,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2026-01-16", "channel": "Đóng qua kênh EduBill"},
+        {"bill_no": "4073742", "term_code": "20242", "term_name": "Academic year 2024-2025 - Semester 2",
+         "description": "Chuyen tien du tu LPTTDN qua HP", "fee_type": "Thu Học Phí", "amount": 216350,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2025-05-10", "channel": "Đóng offline"},
+        {"bill_no": "4073739", "term_code": "20241", "term_name": "Academic year 2024-2025 - Semester 1",
+         "description": "Tạm thu học phi dau nam Khoa 2024", "fee_type": "Thu Học Phí", "amount": 32000000,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2024-09-24", "channel": "Đóng offline"},
+        {"bill_no": "4073741", "term_code": "20242", "term_name": "Academic year 2024-2025 - Semester 2",
+         "description": "Thu Học Phí HK 2 (2024-2025)", "fee_type": "Thu Học Phí", "amount": 10000,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2025-03-12", "channel": "Đóng offline"},
+        {"bill_no": "4073740", "term_code": "20242", "term_name": "Academic year 2024-2025 - Semester 2",
+         "description": "Thu Học Phí HK 2 (2024-2025)", "fee_type": "Thu Học Phí", "amount": 10275000,
+         "discount": 0, "fee": 0, "status": "paid", "paid_on": "2025-03-04", "channel": "Liên ngân hàng"}
+      ]
+    }
+  }
+}

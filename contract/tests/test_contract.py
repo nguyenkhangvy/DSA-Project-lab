@@ -242,6 +242,75 @@ def test_a_failed_outlook_part_says_why(code):
     assert finish.overall_status() == "partial"
 
 
+# ---- IUPay ---------------------------------------------------------------------
+
+
+# The student's bills as the agent uploads them: every bill IUPay lists, paid or not.
+def iupay_payload(name="finish-iupay.json"):
+    return _sample(name)["iupay"]["data"]
+
+
+def test_iupay_bills_are_accepted_next_to_the_others():
+    payload = full_payload()
+    payload["iupay"] = {"status": "ok", "data": iupay_payload()}
+
+    finish = FinishRun.model_validate(payload)
+
+    assert list(finish.sections()) == ["timetable", "exams", "tuition", "iupay"]
+    first = finish.iupay.data.bills[0]
+    assert (first.bill_no, first.status, first.paid_on.isoformat(), first.amount, first.discount) == (
+        "E0000014104", "paid", "2026-09-30", 65_250_000, 0)
+    assert (first.due_date, first.channel) == (None, "Đóng qua kênh EduBill")
+
+
+def test_bills_still_to_pay_carry_their_due_date():
+    finish = FinishRun.model_validate(_sample("finish-iupay-unpaid.json"))
+
+    assert [(b.status, b.due_date.isoformat(), b.paid_on) for b in finish.iupay.data.bills] == [
+        ("unpaid", "2027-02-15", None), ("paying", "2027-01-31", None), ("partly_paid", "2026-12-31", None)]
+    assert (finish.iupay.data.bills[1].discount, finish.iupay.data.bills[2].fee_type) == (0, None)
+
+
+def test_no_bills_is_a_valid_answer():
+    finish = FinishRun.model_validate({"iupay": {"status": "ok", "data": {"bills": []}}})
+
+    assert finish.overall_status() == "success"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda p: p["bills"][0].update(amount=-1),
+        lambda p: p["bills"][0].update(status="cancelled"),
+        lambda p: p["bills"].append(dict(p["bills"][0])),
+        lambda p: p["bills"][0].update(student_name="Nguyen Van An"),
+        lambda p: p["bills"][0].update(description="   "),
+        lambda p: p["bills"][0].update(bill_no="E" * 41),
+        lambda p: p["bills"][0].update(paid_on="30/09/2026"),
+        lambda p: p["bills"][0].update(amount=12.5),
+        lambda p: p.update(bills=p["bills"] * 72),
+    ],
+    ids=["negative-amount", "unknown-status", "same-bill-twice", "extra-field", "blank-description",
+         "bill-number-too-long", "bad-date", "fraction", "too-many-bills"],
+)
+def test_bad_iupay_data_is_rejected(change):
+    data = iupay_payload()
+    change(data)
+
+    with pytest.raises(ValidationError):
+        FinishRun.model_validate({"iupay": {"status": "ok", "data": data}})
+
+
+@pytest.mark.parametrize("code", ["network", "extra_verification", "bad_credentials", "source_changed"])
+def test_a_failed_iupay_part_says_why(code):
+    finish = FinishRun.model_validate({
+        "timetable": full_payload()["timetable"],
+        "iupay": {"status": "failed", "error_code": code, "error_message": "IUPay problem"},
+    })
+
+    assert finish.overall_status() == "partial"
+
+
 # ---- contract/samples/: the Java website's tests check the same files ----------
 
 

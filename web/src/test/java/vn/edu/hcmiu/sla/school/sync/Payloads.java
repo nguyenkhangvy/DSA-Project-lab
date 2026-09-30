@@ -40,6 +40,16 @@ final class Payloads {
         return at(read("finish-outlook.json"), "outlook", "data");
     }
 
+    /** A valid IUPay section's data: the student's 7 paid bills of 2026-09-30. */
+    static Map<String, Object> iupayPayload() {
+        return at(read("finish-iupay.json"), "iupay", "data");
+    }
+
+    /** A valid IUPay section's data with one unpaid, one paying and one partly paid bill (made up). */
+    static Map<String, Object> iupayUnpaidPayload() {
+        return at(read("finish-iupay-unpaid.json"), "iupay", "data");
+    }
+
     static Map<String, Object> ok(Object data) {
         return Map.of("status", "ok", "data", data);
     }
