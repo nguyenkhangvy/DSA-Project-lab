@@ -2,7 +2,7 @@
 
 One web app for IU students, built by a team of 3 for the Web Application Development course:
 
-- **School** (Vy): EduSoft timetable and exams, IUPay tuition bills, and Blackboard courses, synced automatically from a laptop, on one calendar.
+- **School** (Vy): EduSoft timetable and exams, IUPay tuition bills, Blackboard courses, and your own events (once or repeating, with conflict checks), synced automatically from a laptop, on one calendar.
 - **Expense**: expense management.
 - **Health**: health management.
 
