@@ -7,6 +7,8 @@ import static vn.edu.hcmiu.sla.school.sync.Payloads.blackboardPayload;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.bytes;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.failed;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.fullPayload;
+import static vn.edu.hcmiu.sla.school.sync.Payloads.iupayPayload;
+import static vn.edu.hcmiu.sla.school.sync.Payloads.iupayUnpaidPayload;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.list;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.ok;
 import static vn.edu.hcmiu.sla.school.sync.Payloads.outlookPayload;
@@ -57,6 +59,10 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBillRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatus;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatusRepository;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 
 /**
@@ -126,6 +132,12 @@ class IngestTest {
 
     @Autowired
     SchoolMailStatusRepository mailStatus;
+
+    @Autowired
+    SchoolTuitionBillRepository tuitionBills;
+
+    @Autowired
+    SchoolTuitionStatusRepository tuitionStatus;
 
     Integer userId;
 
@@ -284,6 +296,74 @@ class IngestTest {
 
         assertThat(lastRun().getSections()).containsOnlyKeys("timetable", "exams");
         assertThat(changes.findAll(BY_ID)).noneMatch(c -> c.getSection().equals("tuition"));
+    }
+
+    // ---- IUPay ------------------------------------------------------------------
+
+    String syncIupay(Integer who, Object part) {
+        Map<String, Object> payload = fullPayload();
+        payload.put("iupay", part);
+        return sync(who, payload);
+    }
+
+    @Test
+    void iupayBillsAreSavedAndTheCheckIsRemembered() {
+        assertThat(syncIupay(userId, ok(iupayPayload()))).isEqualTo("success");
+
+        List<SchoolTuitionBill> bills = tuitionBills.findByUserIdOrderById(userId);
+        assertThat(bills).extracting(SchoolTuitionBill::getBillNo).containsExactly(
+                "E0000014104", "4073743", "E0000000208", "4073742", "4073739", "4073741", "4073740");
+        SchoolTuitionBill first = bills.get(0);
+        assertThat(List.of(first.getStatus(), first.getChannel(), first.getTermName()))
+                .containsExactly("paid", "Đóng qua kênh EduBill", "Academic year 2026-2027 - Semester 1");
+        assertThat(first.getPaidOn()).isEqualTo(LocalDate.of(2026, 9, 30));
+        assertThat(first.getPayable()).isEqualTo(65_250_000L);
+        assertThat(tuitionStatus.findById(userId)).get().extracting(SchoolTuitionStatus::getCheckedAt).isNotNull();
+        assertThat(lastRun().getSections().get("iupay")).isEqualTo(Map.of("status", "ok"));
+        assertThat(changes.findAll(BY_ID)).noneMatch(c -> c.getSection().equals("iupay"));
+    }
+
+    @Test
+    void aNewIupayReadReplacesTheBills() {
+        syncIupay(userId, ok(iupayPayload()));
+
+        syncIupay(userId, ok(iupayUnpaidPayload()));
+
+        assertThat(tuitionBills.findByUserIdOrderById(userId))
+                .extracting(b -> b.getBillNo() + " " + b.getStatus() + " " + b.getPayable() + " " + b.getDueDate())
+                .containsExactly("E0000020001 unpaid 38000000 2027-02-15", "E0000020002 paying 1105650 2027-01-31",
+                        "E0000020003 partly_paid 3000000 2026-12-31");
+    }
+
+    @Test
+    void anEmptyListMeansNoBills() {
+        syncIupay(userId, ok(iupayPayload()));
+
+        syncIupay(userId, ok(Map.of("bills", List.of())));
+
+        assertThat(tuitionBills.findByUserIdOrderById(userId)).isEmpty();
+        assertThat(tuitionStatus.findById(userId)).isPresent();
+    }
+
+    @Test
+    void aFailedIupayPartKeepsTheBillsAndTheLastCheck() {
+        syncIupay(userId, ok(iupayPayload()));
+        LocalDateTime checked = tuitionStatus.findById(userId).orElseThrow().getCheckedAt();
+
+        assertThat(syncIupay(userId, failed("network", "IUPay couldn't be reached."))).isEqualTo("partial");
+
+        assertThat(tuitionBills.findByUserIdOrderById(userId)).hasSize(7);
+        assertThat(tuitionStatus.findById(userId).orElseThrow().getCheckedAt()).isEqualTo(checked);
+    }
+
+    @Test
+    void anotherStudentsBillsAreUntouched() {
+        Integer binh = makeUser("binh@example.com");
+        syncIupay(binh, ok(iupayPayload()));
+
+        syncIupay(userId, ok(Map.of("bills", List.of())));
+
+        assertThat(tuitionBills.findByUserIdOrderById(binh)).hasSize(7);
     }
 
     // ---- Blackboard -------------------------------------------------------------

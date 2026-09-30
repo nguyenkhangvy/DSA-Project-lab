@@ -62,6 +62,22 @@ class SchoolTablesTest {
     }
 
     @Test
+    void aTuitionBillIsKept() {
+        SchoolTuitionBill bill = new SchoolTuitionBill(userId, "E0000020001", "20262",
+                "Academic year 2026-2027 - Semester 2", "Thu Học Phí HK 2\nIT093IU", "Thu Học Phí", 40_000_000,
+                2_000_000, 0, "unpaid", LocalDate.of(2027, 2, 15), null, null);
+        db.persist(bill);
+
+        SchoolTuitionBill again = reloaded(bill, bill.getId());
+
+        assertThat(List.of(again.getBillNo(), again.getDescription(), again.getStatus()))
+                .containsExactly("E0000020001", "Thu Học Phí HK 2\nIT093IU", "unpaid");
+        assertThat(List.of(again.getPayable(), again.getFee())).containsExactly(38_000_000L, 0L);
+        assertThat(again.getDueDate()).isEqualTo(LocalDate.of(2027, 2, 15));
+        assertThat(again.isPaid()).isFalse();
+    }
+
+    @Test
     void aRunKeepsHowEachPartWent() {
         SchoolSyncRun run = new SchoolSyncRun(userId, null, "manual", SEPT_28);
         run.setSections(Map.of("timetable", Map.of("status", "ok"),

@@ -41,6 +41,10 @@ import vn.edu.hcmiu.sla.school.model.SchoolMailStatus;
 import vn.edu.hcmiu.sla.school.model.SchoolMailStatusRepository;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionBillRepository;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatus;
+import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatusRepository;
 import vn.edu.hcmiu.sla.school.sync.Changes.BbItem;
 import vn.edu.hcmiu.sla.school.sync.Changes.BbState;
 import vn.edu.hcmiu.sla.school.sync.Changes.Change;
@@ -53,12 +57,14 @@ import vn.edu.hcmiu.sla.school.sync.SyncContract.Course;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Exam;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Exams;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.Iupay;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.MailClassChange;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.MailItem;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.MailSession;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Outlook;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Section;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.Timetable;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.TuitionBill;
 
 /**
  * Saves the result of a sync run, in one transaction. Each part that arrived correctly replaces that
@@ -83,6 +89,8 @@ public class Ingest {
     private final SchoolMailSessionRepository mailSessions;
     private final SchoolMailChoiceRepository mailChoices;
     private final SchoolMailStatusRepository mailStatus;
+    private final SchoolTuitionBillRepository tuitionBills;
+    private final SchoolTuitionStatusRepository tuitionStatus;
 
     public Ingest(SchoolSyncRunRepository runs, SchoolChangeRepository changes, SchoolCourseRepository courses,
             SchoolClassMeetingRepository meetings, SchoolExamRepository exams,
@@ -90,7 +98,8 @@ public class Ingest {
             SchoolBbAssignmentRepository bbAssignments, SchoolBbMaterialRepository bbMaterials,
             SchoolMailRepository mails, SchoolMailChangeRepository mailChanges,
             SchoolMailSessionRepository mailSessions, SchoolMailChoiceRepository mailChoices,
-            SchoolMailStatusRepository mailStatus) {
+            SchoolMailStatusRepository mailStatus, SchoolTuitionBillRepository tuitionBills,
+            SchoolTuitionStatusRepository tuitionStatus) {
         this.runs = runs;
         this.changes = changes;
         this.courses = courses;
@@ -105,6 +114,8 @@ public class Ingest {
         this.mailSessions = mailSessions;
         this.mailChoices = mailChoices;
         this.mailStatus = mailStatus;
+        this.tuitionBills = tuitionBills;
+        this.tuitionStatus = tuitionStatus;
     }
 
     /** Aware time as sent -> UTC without an offset, as stored. */
@@ -125,6 +136,7 @@ public class Ingest {
         Map<String, Map<String, String>> summary = new LinkedHashMap<>();
         part(run, summary, "timetable", payload.timetable(), data -> saveTimetable(userId, data, now), now);
         part(run, summary, "exams", payload.exams(), data -> saveExams(userId, data, now), now);
+        part(run, summary, "iupay", payload.iupay(), data -> saveIupay(userId, data, now), now);
         part(run, summary, "blackboard", payload.blackboard(), data -> saveBlackboard(userId, data), now);
         part(run, summary, "outlook", payload.outlook(), data -> saveOutlook(userId, data, now), now);
         run.setSections(summary);
@@ -196,6 +208,17 @@ public class Ingest {
                     e.durationMin(), e.room(), e.notes()));
         }
         return Changes.exams(old, fresh, now);
+    }
+
+    /** Replaces the student's bills with this read and remembers when IUPay was read. Bills never enter "What changed". */
+    private List<Change> saveIupay(Integer userId, Iupay data, LocalDateTime now) {
+        tuitionBills.deleteAllOfUser(userId);
+        for (TuitionBill b : data.bills()) {
+            tuitionBills.save(new SchoolTuitionBill(userId, b.billNo(), b.termCode(), b.termName(), b.description(),
+                    b.feeType(), b.amount(), b.discount(), b.fee(), b.status(), b.dueDate(), b.paidOn(), b.channel()));
+        }
+        tuitionStatus.save(new SchoolTuitionStatus(userId, now));
+        return List.of();
     }
 
     private List<Change> saveBlackboard(Integer userId, Blackboard data) {
