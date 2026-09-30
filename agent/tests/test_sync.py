@@ -2,15 +2,16 @@ import logging
 from datetime import date, datetime, timezone
 
 import pytest
-from sla_contract.schema import Blackboard, Exams, Timetable, Tuition
+from sla_contract.schema import Blackboard, Exams, Timetable
 
-from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeServer
+from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
 from sla_agent.errors import (
     BadCredentials,
     ExtraVerification,
     NetworkError,
     ParseError,
     SessionExpired,
+    SourceChanged,
 )
 from sla_agent.log import setup_logging
 from sla_agent.state import State
@@ -28,15 +29,11 @@ def parse_exams(html):
     return Exams(term_code="20261", exams=[])
 
 
-def parse_tuition(html):
-    return Tuition(term_code="20261", amount_due=1, amount_paid=0, balance=1, due_date=date(2026, 10, 15))
-
-
-PARSERS = {"timetable": parse_timetable, "exams": parse_exams, "tuition": parse_tuition}
+PARSERS = {"timetable": parse_timetable, "exams": parse_exams}
 
 
 def broken_parser(html):
-    raise ParseError("Tuition table not found")
+    raise ParseError("Exam table not found")
 
 
 @pytest.fixture
@@ -52,12 +49,12 @@ def empty_blackboard(client, registered):
     return Blackboard(courses=[])
 
 
-def sync(state, edusoft, server=None, parsers=PARSERS, trigger="scheduled", blackboard=None, read=None):
+def sync(state, edusoft, server=None, parsers=PARSERS, trigger="scheduled", blackboard=None, read=None, iupay=None):
     server = server or FakeServer()
     outcome = run_sync(trigger, state=state, edusoft=edusoft, server=server, parsers=parsers,
                        password=PASSWORD, now=NOW, blackboard=blackboard,
                        blackboard_password=BB_PASSWORD if blackboard else None,
-                       read_blackboard=read or empty_blackboard)
+                       read_blackboard=read or empty_blackboard, iupay=iupay)
     return outcome, server
 
 
@@ -67,12 +64,12 @@ def only_finish(server):
     return result
 
 
-def test_a_good_sync_uploads_all_three_parts(state):
+def test_a_good_sync_uploads_both_edusoft_parts(state):
     outcome, server = sync(state, FakeEduSoft())
 
     result = only_finish(server)
     assert result.overall_status() == "success"
-    assert set(result.sections()) == {"timetable", "exams", "tuition"}
+    assert set(result.sections()) == {"timetable", "exams"}
     assert outcome.status == "success"
     assert state.last_attempt_at == NOW.isoformat()
     assert state.last_result["status"] == "success"
@@ -87,7 +84,7 @@ def test_a_wrong_password_pauses_after_exactly_one_login_attempt(state):
     assert edusoft.page_calls == []
     result = only_finish(server)
     assert {name: part.error_code for name, part in result.sections().items()} == {
-        "timetable": "bad_credentials", "exams": "bad_credentials", "tuition": "bad_credentials"}
+        "timetable": "bad_credentials", "exams": "bad_credentials"}
     assert state.paused == "bad_credentials"
     assert "sla-agent setup" in outcome.message
 
@@ -118,11 +115,11 @@ def test_edusoft_unreachable_is_reported_but_does_not_pause(state):
 
 
 def test_a_page_the_parser_cannot_read_fails_only_that_part(state):
-    outcome, server = sync(state, FakeEduSoft(), parsers={**PARSERS, "tuition": broken_parser})
+    outcome, server = sync(state, FakeEduSoft(), parsers={**PARSERS, "exams": broken_parser})
 
     result = only_finish(server)
     assert result.overall_status() == "partial"
-    assert (result.tuition.status, result.tuition.error_code) == ("failed", "edusoft_changed")
+    assert (result.exams.status, result.exams.error_code) == ("failed", "edusoft_changed")
     assert result.timetable.status == "ok"
 
 
@@ -206,7 +203,7 @@ def test_blackboard_syncs_after_edusoft_and_logs_out(bb_state):
 
     outcome, server = sync(bb_state, FakeEduSoft(), blackboard=blackboard, read=read)
 
-    assert list(only_finish(server).sections()) == ["timetable", "exams", "tuition", "blackboard"]
+    assert list(only_finish(server).sections()) == ["timetable", "exams", "blackboard"]
     assert blackboard.logins == [("bbuser", BB_PASSWORD)]
     assert blackboard.logouts == 1
     assert outcome.status == "success"
@@ -308,8 +305,8 @@ def test_a_paused_edusoft_is_reported_as_paused_in_every_run(bb_state):
 
     sections = only_finish(server).sections()
     assert edusoft.logins == []
-    assert [(sections[n].status, sections[n].error_code) for n in ("timetable", "exams", "tuition")] == \
-        [("failed", "bad_credentials")] * 3
+    assert [(sections[n].status, sections[n].error_code) for n in ("timetable", "exams")] == [
+        ("failed", "bad_credentials")] * 2
     assert sections["blackboard"].status == "ok"
     assert "EduSoft rejected" in outcome.message
 
@@ -382,7 +379,7 @@ def test_outlook_syncs_after_the_others_with_this_syncs_courses(mail_state):
         Course(course_code="IT093IU", course_name="Web Application Development", lecturer="P.Q.Hùng")])}
     outcome, server = sync_with_outlook(mail_state, FakeEduSoft(), read, parsers=parsers)
 
-    assert list(only_finish(server).sections()) == ["timetable", "exams", "tuition", "outlook"]
+    assert list(only_finish(server).sections()) == ["timetable", "exams", "outlook"]
     [(address, since, context)] = seen
     assert (address, since) == ("ititiu99001@student.hcmiu.edu.vn", date(2026, 8, 1))
     assert context.courses == (("IT093IU", "Web Application Development", "P.Q.Hùng"),)
@@ -456,3 +453,80 @@ def test_outlook_is_not_read_until_it_is_set_up(state):
 
     assert seen == []
     assert "outlook" not in only_finish(server).sections()
+
+
+# ---- IUPay ---------------------------------------------------------------------
+
+
+def test_iupay_is_read_with_the_student_id_after_edusoft(state):
+    iupay = FakeIupay()
+
+    outcome, server = sync(state, FakeEduSoft(), iupay=iupay)
+
+    assert iupay.calls == ["ITITIU20001"]
+    result = only_finish(server)
+    assert list(result.sections()) == ["timetable", "exams", "iupay"]
+    assert (result.iupay.status, result.iupay.data.bills) == ("ok", [])
+    assert outcome.status == "success"
+
+
+def test_iupay_still_syncs_while_edusoft_is_paused(state):
+    state.paused = "bad_credentials"
+    edusoft, iupay = FakeEduSoft(), FakeIupay()
+
+    outcome, server = sync(state, edusoft, iupay=iupay)
+
+    assert edusoft.logins == []
+    assert iupay.calls == ["ITITIU20001"]
+    result = only_finish(server)
+    assert (result.iupay.status, result.timetable.error_code) == ("ok", "bad_credentials")
+    assert "sla-agent setup" in outcome.message
+
+
+def test_iupay_still_syncs_when_edusoft_cannot_be_reached(state):
+    outcome, server = sync(state, FakeEduSoft(login_error=NetworkError("timed out")), iupay=FakeIupay())
+
+    result = only_finish(server)
+    assert (result.timetable.error_code, result.iupay.status) == ("network", "ok")
+
+
+@pytest.mark.parametrize(
+    "error, code",
+    [(NetworkError("IUPay couldn't be reached."), "network"),
+     (ExtraVerification("IUPay now asks for a captcha."), "extra_verification"),
+     (BadCredentials("IUPay didn't recognise the student ID."), "bad_credentials"),
+     (SourceChanged("IUPay's format changed."), "source_changed")],
+    ids=["network", "captcha", "unknown-id", "format"],
+)
+def test_an_iupay_problem_fails_only_iupay_and_pauses_nothing(state, error, code):
+    outcome, server = sync(state, FakeEduSoft(), iupay=FakeIupay(error))
+
+    result = only_finish(server)
+    assert (result.iupay.status, result.iupay.error_code) == ("failed", code)
+    assert result.timetable.status == "ok"
+    assert (state.paused, state.blackboard_paused) == (None, None)
+    assert outcome.status == "partial"
+
+
+def test_an_unexpected_iupay_crash_still_finishes_the_run(state):
+    outcome, server = sync(state, FakeEduSoft(), iupay=FakeIupay(RuntimeError("boom")))
+
+    assert only_finish(server).iupay.error_code == "unknown"
+
+
+def test_bills_from_iupay_reach_the_upload(state):
+    record = {"so_phieu_bao": "E0000020001", "hoc_ky": "20262", "noi_dung": "Thu Học Phí HK 2 (2026-2027)",
+              "trang_thai": 0, "phai_thu": 40_000_000, "date_line": 1802624400000}
+    outcome, server = sync(state, FakeEduSoft(), iupay=FakeIupay({"data": {"data": {"records": [record]}}}))
+
+    [bill] = only_finish(server).iupay.data.bills
+    assert (bill.bill_no, bill.status, bill.due_date) == ("E0000020001", "unpaid", date(2027, 2, 15))
+
+
+def test_nothing_is_paused_for_good_while_iupay_can_run(state):
+    from sla_agent.sync import everything_paused
+
+    state.paused = "bad_credentials"
+
+    assert not everything_paused(state)
+    assert everything_paused(State(paused="bad_credentials"))

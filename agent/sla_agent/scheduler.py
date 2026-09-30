@@ -43,7 +43,8 @@ def task_xml(python_exe, user):
     task = ET.Element(f"{{{NS}}}Task", version="1.2")
 
     info = _add(task, "RegistrationInfo")
-    _add(info, "Description", "School-Life-Assistant: sync EduSoft timetable, exams and tuition.")
+    _add(info, "Description", "School-Life-Assistant: sync EduSoft timetable and exams, IUPay tuition, "
+                              "Blackboard and Outlook.")
 
     triggers = _add(task, "Triggers")
     every_15 = _add(triggers, "TimeTrigger")

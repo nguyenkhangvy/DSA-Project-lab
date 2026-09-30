@@ -122,3 +122,90 @@ def test_no_bills_is_an_empty_list():
 def test_an_answer_that_does_not_look_right_is_source_changed(answer):
     with pytest.raises(SourceChanged):
         parse_iupay(answer)
+
+
+# ---- the client --------------------------------------------------------------------
+
+import requests  # noqa: E402
+import responses  # noqa: E402
+
+from sla_agent.edusoft_client import USER_AGENT  # noqa: E402
+from sla_agent.errors import BadCredentials, ExtraVerification, NetworkError  # noqa: E402
+from sla_agent.iupay_client import SCHOOL_URL, IupayClient  # noqa: E402
+from sla_agent.log import redact  # noqa: E402
+
+CAPTCHA = f"{SCHOOL_URL}/captcha-public"
+SEARCH = f"{SCHOOL_URL}/secret/ITITIU00000/0"
+CODE = "$2b$05$Made.Up.Lookup.Code.For.Tests.Only@k218l5eyWabcdefgh"  # made up, shaped like IUPay's
+BILLS = f"{SCHOOL_URL}/secretCode/{CODE}/bill?limit=99999&offset=0"
+
+
+def answer_search(captcha=False, found=None):
+    responses.get(CAPTCHA, json={"code": 200, "data": {"enabled": captcha}, "success": True})
+    responses.get(SEARCH, json=found or {"code": 200, "data": {"secretCode": CODE}, "success": True})
+
+
+@responses.activate
+def test_the_client_makes_the_three_requests_the_iupay_page_makes():
+    answer_search()
+    responses.get(BILLS, json=real_reply())
+
+    answer = IupayClient().read_bills("ITITIU00000")
+
+    assert answer == real_reply()
+    assert [c.request.method for c in responses.calls] == ["GET", "GET", "GET"]
+    assert all(c.request.headers["User-Agent"] == USER_AGENT for c in responses.calls)
+
+
+@responses.activate
+def test_the_lookup_code_is_hidden_in_the_log():
+    answer_search()
+    responses.get(BILLS, json=real_reply())
+
+    IupayClient().read_bills("ITITIU00000")
+
+    assert redact(f"GET {BILLS}") == f"GET {SCHOOL_URL}/secretCode/***/bill?limit=99999&offset=0"
+
+
+@responses.activate
+def test_a_captcha_stops_before_the_student_id_is_sent():
+    answer_search(captcha=True)
+
+    with pytest.raises(ExtraVerification):
+        IupayClient().read_bills("ITITIU00000")
+
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_an_unknown_student_id_says_what_iupay_said():
+    answer_search(found={"code": 200, "success": True, "data": {
+        "success": False, "statusCode": 400, "message": "Thông tin sinh viên không chính xác"}})
+
+    with pytest.raises(BadCredentials, match="Thông tin sinh viên không chính xác"):
+        IupayClient().read_bills("ITITIU00000")
+
+
+@responses.activate
+def test_iupay_not_answering_is_a_network_problem():
+    responses.get(CAPTCHA, body=requests.ConnectTimeout())
+
+    with pytest.raises(NetworkError):
+        IupayClient().read_bills("ITITIU00000")
+
+
+@pytest.mark.parametrize(
+    "search",
+    [{"code": 200, "data": {}}, {"code": 200}, "<html>Bảo trì hệ thống</html>"],
+    ids=["no-lookup-code", "no-data", "not-json"],
+)
+@responses.activate
+def test_a_search_answer_that_does_not_look_right_is_source_changed(search):
+    responses.get(CAPTCHA, json={"code": 200, "data": {"enabled": False}})
+    if isinstance(search, str):
+        responses.get(SEARCH, body=search)
+    else:
+        responses.get(SEARCH, json=search)
+
+    with pytest.raises(SourceChanged):
+        IupayClient().read_bills("ITITIU00000")

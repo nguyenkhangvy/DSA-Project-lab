@@ -1,9 +1,9 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
-from sla_contract.schema import Exams, Timetable, Tuition
+from sla_contract.schema import Exams, Timetable
 
-from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeServer
+from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
 from sla_agent import cli, credentials
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification
 from sla_agent.state import State, agent_home, load_state, save_state
@@ -16,8 +16,6 @@ PASSWORD = "s3cret-pass"
 PARSERS = {
     "timetable": lambda html: Timetable(term_code="20261", courses=[]),
     "exams": lambda html: Exams(term_code="20261", exams=[]),
-    "tuition": lambda html: Tuition(term_code="20261", amount_due=1, amount_paid=0, balance=1,
-                                    due_date=date(2026, 10, 15)),
 }
 
 
@@ -40,6 +38,8 @@ class World:
         monkeypatch.setattr(cli, "PARSERS", PARSERS)
         self.blackboard = FakeBlackboard()
         monkeypatch.setattr(cli, "make_blackboard", lambda: self.blackboard)
+        self.iupay = FakeIupay()
+        monkeypatch.setattr(cli, "make_iupay", lambda: self.iupay)
 
     def _make_server(self, url, key):
         self.servers_made.append((url, key))
@@ -160,13 +160,13 @@ def test_run_syncs_when_due(world, reason, trigger):
     assert load_state().last_result["status"] == "success"
 
 
-def test_run_while_paused_still_checks_in_but_never_logs_in(world):
+def test_run_while_edusoft_is_paused_never_logs_in_but_still_reads_iupay(world):
     configure(paused="bad_credentials")
 
     cli.main(["run"])
 
     assert world.server.checks == 1
-    assert (world.server.starts, world.edusoft.logins) == ([], [])
+    assert (world.server.starts, world.edusoft.logins, world.iupay.calls) == (["scheduled"], [], [STUDENT])
 
 
 # ---- sync-now ----------------------------------------------------------------
@@ -193,9 +193,10 @@ def test_sync_now_refuses_within_5_minutes_of_the_last_attempt(world, capsys):
 def test_sync_now_while_paused_explains_how_to_fix_it(world, capsys):
     configure(paused="bad_credentials")
 
-    assert cli.main(["sync-now"]) == 1
+    assert cli.main(["sync-now"]) == 0
 
     assert world.edusoft.logins == []
+    assert world.iupay.calls == [STUDENT]
     assert "sla-agent setup" in capsys.readouterr().out
 
 
@@ -211,7 +212,7 @@ def test_fetch_saves_the_pages_locally_with_a_privacy_warning(world, tmp_path, c
     saved = sorted(p.name for p in folder.iterdir())
     assert saved == [
         "exams-final.html", "exams-midterm.html", "home.html", "registration.html",
-        "timetable-semester.html", "timetable-weekly.html", "tuition-report.json",
+        "timetable-semester.html", "timetable-weekly.html",
     ]
     assert (folder / "timetable-semester.html").read_text(encoding="utf-8") == "<html>timetable semester</html>"
     assert all(PASSWORD not in p.read_text(encoding="utf-8") for p in folder.iterdir())
@@ -240,18 +241,19 @@ def test_import_uploads_the_parts_found_in_a_saved_folder_even_while_paused(worl
 
     assert world.server.starts == ["import"]
     [(_, result)] = world.server.finishes
-    assert list(result.sections()) == ["exams"]
+    assert list(result.sections()) == ["exams", "iupay"]
     assert world.edusoft.logins == []
+    assert world.iupay.calls == [STUDENT]
 
 
-def test_import_reads_a_saved_tuition_report(world, tmp_path):
+def test_import_no_longer_reads_a_saved_tuition_report(world, tmp_path, capsys):
     configure()
     (tmp_path / "tuition-report.json").write_text('{"pagesArray": []}', encoding="utf-8")
 
-    assert cli.main(["import", str(tmp_path), "--term", "20261"]) == 0
+    assert cli.main(["import", str(tmp_path), "--term", "20261"]) == 1
 
-    [(_, result)] = world.server.finishes
-    assert list(result.sections()) == ["tuition"]
+    assert "No saved EduSoft pages" in capsys.readouterr().out
+    assert (world.server.starts, world.iupay.calls) == ([], [])
 
 
 def test_import_of_exams_needs_to_know_the_semester(world, tmp_path, capsys):

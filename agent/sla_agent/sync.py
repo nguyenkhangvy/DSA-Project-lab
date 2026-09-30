@@ -1,9 +1,9 @@
-"""One sync: EduSoft (timetable, exams, tuition), then Blackboard, then Outlook, each on its own.
+"""One sync: EduSoft (timetable, exams), then IUPay (tuition bills), then Blackboard, then Outlook, each on its own.
 
 Stop-don't-retry rules: a rejected password or an extra-verification request pauses
 that system only (no second login attempt). An expired session gets one re-login and
-one retry. One system failing never stops the others from uploading. Outlook has no
-password to lock out, so an Outlook problem never pauses anything: every sync tries again.
+one retry. One system failing never stops the others from uploading. Outlook and IUPay
+have no password to lock out, so their problems never pause anything: every sync tries again.
 """
 
 import logging
@@ -17,6 +17,7 @@ from sla_agent.errors import AgentError, BadCredentials, ExtraVerification, Sess
 from sla_agent.log import protect
 from sla_agent.mail_rules import Context
 from sla_agent.outlook_reader import semester_start
+from sla_agent.parsers.iupay import parse_iupay
 from sla_agent.parsers.registration import RegisteredCourse, parse_registered_courses
 
 log = logging.getLogger(__name__)
@@ -58,7 +59,9 @@ def blackboard_ready(state):
 
 
 def everything_paused(state):
-    return bool(state.paused) and not blackboard_ready(state) and not state.outlook_account
+    """True only when nothing at all can sync. IUPay needs only the student ID, so it can always run."""
+    return (bool(state.paused) and not blackboard_ready(state) and not state.outlook_account
+            and not state.student_id)
 
 
 def _read_section(name, edusoft, parsers, student_id, password):
@@ -144,6 +147,17 @@ def _collect_blackboard(state, blackboard, password, read):
         blackboard.logout()
 
 
+def collect_iupay(student_id, iupay, parse=parse_iupay):
+    """The IUPay part: every bill, paid or not. IUPay has no password, so a problem never pauses anything."""
+    try:
+        return {"status": "ok", "data": parse(iupay.read_bills(student_id))}
+    except AgentError as error:
+        log.warning("IUPay sync failed: %s", error)
+        return _failed(error)
+    except Exception as error:  # a reader bug must not leave the run unfinished
+        return _unexpected("IUPay", error)
+
+
 def _remember_context(state, sections):
     """What sorting mail needs, from this sync's timetable and Blackboard (kept for syncs where they fail)."""
     timetable = sections.get("timetable") or {}
@@ -204,14 +218,16 @@ def _paused_message(state):
 
 
 def run_sync(trigger, *, state, edusoft, server, parsers, password, now,
-             blackboard=None, blackboard_password=None, read_blackboard=default_read_blackboard, read_outlook=None):
+             blackboard=None, blackboard_password=None, read_blackboard=default_read_blackboard, read_outlook=None,
+             iupay=None):
     """Run one sync and update `state` (the caller saves it). Server errors are raised."""
     protect(password)
     protect(blackboard_password)
     use_edusoft = not state.paused
+    use_iupay = iupay is not None and bool(state.student_id)
     use_blackboard = blackboard is not None and bool(blackboard_password) and blackboard_ready(state)
     use_outlook = read_outlook is not None and bool(state.outlook_account)
-    if not use_edusoft and not use_blackboard and not use_outlook:
+    if not use_edusoft and not use_iupay and not use_blackboard and not use_outlook:
         return Outcome("paused", _paused_message(state))
 
     run_id = server.start(trigger)
@@ -219,6 +235,8 @@ def run_sync(trigger, *, state, edusoft, server, parsers, password, now,
     sections = _paused_sections(state)
     if use_edusoft:
         sections.update(_collect_edusoft(state, edusoft, parsers, password))
+    if use_iupay:
+        sections["iupay"] = collect_iupay(state.student_id, iupay)
     if use_blackboard:
         sections["blackboard"] = _collect_blackboard(state, blackboard, blackboard_password, read_blackboard)
     _remember_context(state, sections)

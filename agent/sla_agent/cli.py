@@ -35,6 +35,7 @@ from sla_agent.errors import (
     RunInProgress,
     ServerError,
 )
+from sla_agent.iupay_client import IupayClient
 from sla_agent.log import protect, setup_logging
 from sla_agent.outlook_reader import (
     accounts,
@@ -49,7 +50,7 @@ from sla_agent.parsers.registration import RegisteredCourse, parse_registered_co
 from sla_agent.scheduler import SchedulerError, current_user, install_task, remove_task, windowless_python
 from sla_agent.server_client import ServerClient, check_server_url
 from sla_agent.state import agent_home, load_state, save_state
-from sla_agent.sync import PAUSE_MESSAGES, everything_paused, run_sync
+from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run_sync
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,10 @@ def make_server(url, key):
 
 def make_blackboard():
     return BlackboardClient()
+
+
+def make_iupay():
+    return IupayClient()
 
 
 def find_outlook_accounts():
@@ -265,7 +270,7 @@ def _sync(trigger, state, password, server):
         outcome = run_sync(trigger, state=state, edusoft=make_edusoft(), server=server, parsers=PARSERS,
                            password=password, now=_now(), blackboard=blackboard,
                            blackboard_password=blackboard_password, read_blackboard=read_blackboard,
-                           read_outlook=read_outlook)
+                           read_outlook=read_outlook, iupay=make_iupay())
     except RunInProgress:
         say("A sync is already running.")
         return 0
@@ -322,9 +327,8 @@ def cmd_sync_now(args):
 
 
 def _file_name(section, part):
-    """timetable + semester -> timetable-semester.html; tuition + report -> tuition-report.json."""
-    extension = "json" if part == "report" else "html"
-    return f"{section}.{extension}" if part == section else f"{section}-{part}.{extension}"
+    """timetable + semester -> timetable-semester.html; exams + exams -> exams.html."""
+    return f"{section}.html" if part == section else f"{section}-{part}.html"
 
 
 def cmd_fetch(args):
@@ -389,7 +393,6 @@ def _read_folder(folder, term):
     found = {
         "timetable": {"weekly": load("timetable", "weekly"), "semester": load("timetable", "semester")},
         "exams": {"final": load("exams", "final"), "midterm": load("exams", "midterm")},
-        "tuition": {"report": load("tuition", "report")},
     }
     found["timetable"] = found["timetable"] if found["timetable"]["semester"] else None
     found = {name: pages for name, pages in found.items() if pages and any(pages.values())}
@@ -397,12 +400,12 @@ def _read_folder(folder, term):
     results = {}
     for name, pages in found.items():
         try:
-            if name in ("exams", "tuition"):
+            if name == "exams":
                 if term is None:
                     timetable = results.get("timetable", {}).get("data")
                     term = timetable.term_code if timetable else None
                 if term is None:
-                    raise ValueError(f"{name} need the semester: add --term, e.g. --term 20261")
+                    raise ValueError("exams need the semester: add --term, e.g. --term 20261")
                 pages = {"term": term, **pages}
             results[name] = {"status": "ok", "data": PARSERS[name](pages)}
         except ParseError as error:
@@ -425,6 +428,8 @@ def cmd_import(args):
     if not results:
         say(f"No saved EduSoft pages found in {folder}. Use the file names that `sla-agent fetch` saves.")
         return 1
+    if state.student_id:
+        results["iupay"] = collect_iupay(state.student_id, make_iupay())  # IUPay needs no saved pages
     server = make_server(state.server_url, key)
     try:
         run_id = server.start("import")

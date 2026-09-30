@@ -12,7 +12,6 @@ import pytest
 
 from sla_agent.errors import ParseError
 from sla_agent.parsers.exams import parse_exams
-from sla_agent.parsers.tuition import parse_tuition
 from sla_agent.parsers.timetable import parse_timetable
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -155,53 +154,3 @@ def test_an_exam_page_that_does_not_look_right_raises_parse_error(part, old, new
 
     with pytest.raises(ParseError):
         parse_exams(pages)
-
-
-# ---- Tuition (EduSoft's report "Tổng Hợp Học Phí Một Sinh Viên"; amounts in the copy are made up) ----
-
-
-def tuition(term, report=None):
-    return parse_tuition({"term": term, "report": report or page("tuition-report.json")})
-
-
-def test_tuition_of_the_current_semester_with_a_discount_and_nothing_paid_yet():
-    result = tuition("20261")
-
-    assert (result.term_code, result.amount_due, result.amount_paid, result.balance, result.due_date) == (
-        "20261", 45_000_000, 0, 45_000_000, None,
-    )
-    assert [(item.description, item.amount) for item in result.items] == [
-        ("Học phí (chưa giảm)", 50_000_000), ("Miễn giảm", -5_000_000),
-    ]
-
-
-def test_blank_cells_count_as_zero_and_values_stay_in_their_own_columns():
-    result = tuition("20251")
-
-    assert (result.amount_due, result.amount_paid, result.balance) == (30_000_000, 30_000_000, 0)
-
-
-def test_an_overpaid_semester_has_a_negative_balance():
-    result = tuition("20241")
-
-    assert (result.amount_paid, result.balance) == (12_000_000, -2_000_000)
-
-
-def test_a_semester_not_billed_yet():
-    result = tuition("20271")
-
-    assert (result.amount_due, result.amount_paid, result.balance) == (0, 0, 0)
-    assert result.status_text == "No tuition listed for this semester yet"
-
-
-@pytest.mark.parametrize(
-    "old, new",
-    [(">Còn nợ<", ">Nợ<"), ('"pagesArray"', '"pages"'), ("{", "<html>")],
-    ids=["owed-column-missing", "no-pages", "not-json"],
-)
-def test_a_tuition_report_that_does_not_look_right_raises_parse_error(old, new):
-    report = page("tuition-report.json")
-    assert old in report, "the test's pattern must exist in the fixture"
-
-    with pytest.raises(ParseError):
-        tuition("20261", report.replace(old, new, 1))

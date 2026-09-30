@@ -258,8 +258,8 @@ IupayResult = Annotated[SectionOk[Iupay] | SectionFailed, Field(discriminator="s
 BlackboardResult = Annotated[SectionOk[Blackboard] | SectionFailed, Field(discriminator="status")]
 OutlookResult = Annotated[SectionOk[Outlook] | SectionFailed, Field(discriminator="status")]
 
-EDUSOFT_SECTIONS = ("timetable", "exams", "tuition")
-SECTION_NAMES = EDUSOFT_SECTIONS + ("iupay", "blackboard", "outlook")
+EDUSOFT_SECTIONS = ("timetable", "exams")
+SECTION_NAMES = ("timetable", "exams", "tuition", "iupay", "blackboard", "outlook")
 
 
 class FinishRun(_Strict):

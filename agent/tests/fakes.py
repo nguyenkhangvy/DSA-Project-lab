@@ -75,7 +75,7 @@ class FakeEduSoft:
         if self.login_error:
             raise self.login_error
 
-    SECTION_PARTS = {"timetable": ("weekly", "semester"), "exams": ("final", "midterm"), "tuition": ("report",),
+    SECTION_PARTS = {"timetable": ("weekly", "semester"), "exams": ("final", "midterm"),
                      "registration": ("registration",)}
 
     def get_page(self, name):
@@ -84,7 +84,7 @@ class FakeEduSoft:
     def read(self, name):
         self.page_calls.append(name)
         default = {part: f"<html>{name} {part}</html>" for part in self.SECTION_PARTS[name]}
-        if name in ("exams", "tuition"):
+        if name == "exams":
             default["term"] = "20261"
         results = self.pages.get(name, [default])
         result = results.pop(0) if len(results) > 1 else results[0]
@@ -115,6 +115,21 @@ class FakeServer:
     def finish(self, run_id, result):
         self.finishes.append((run_id, result))
         return result.overall_status()
+
+
+class FakeIupay:
+    """Stands in for IupayClient. `reply` is what read_bills returns (an exception instance is raised instead);
+    the default is IUPay's answer for a student with no bills."""
+
+    def __init__(self, reply=None):
+        self.reply = reply if reply is not None else {"data": {"data": {"records": []}}}
+        self.calls = []
+
+    def read_bills(self, student_id):
+        self.calls.append(student_id)
+        if isinstance(self.reply, Exception):
+            raise self.reply
+        return self.reply
 
 
 class FakeBlackboard:

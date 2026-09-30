@@ -7,11 +7,9 @@ Safety rules:
 - the login form is submitted once; a rejected password is never retried
 """
 
-import base64
-import json
 import logging
 import time
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -43,7 +41,6 @@ PAGES = {
     "timetable": "thoikhoabieu",
     "exams": "xemlichthi",  # final exams
     "midterm_exams": "xemlichthigk",
-    "tuition": "xemhocphi",
     "registration": "dkmonhoc",  # read only, never submitted
 }
 
@@ -53,24 +50,6 @@ TIMETABLE_VIEW_FIELD = "ctl00$ContentPlaceHolder1$ctl00$ddlLoai"
 SEMESTER_VIEW = "1"  # "TKB học kỳ cá nhân": every course of the semester, not just this week
 FINAL_EXAM_TERM_FIELD = "ctl00$ContentPlaceHolder1$ctl00$dropNHHK"
 
-# Tuition: EduSoft's report viewer, report "Tổng Hợp Học Phí Một Sinh Viên".
-REPORT_URL = f"{BASE_URL}dg/Report/"
-TUITION_REPORT = "HP1SV.001"
-# What EduSoft's report viewer script sends when it loads the first page.
-REPORT_VIEWER_REQUEST = {
-    "viewerId": "MvcViewer",
-    "routes": {"action": "ReportDisplay", "controller": "Report"},
-    "formValues": {},
-    "serverCacheMode": "ObjectCache",
-    "serverCacheTimeout": 20,
-    "serverCacheItemPriority": "Default",
-    "pageNumber": 0,
-    "zoom": 100,
-    "viewMode": "OnePage",
-    "showBookmarks": False,
-    "openLinksTarget": "_self",
-    "sendBookmarks": True,
-}
 
 def _has_login_form(soup):
     return soup.find("input", attrs={"name": USERNAME_FIELD}) is not None
@@ -189,8 +168,6 @@ class EduSoftClient:
             if shown != self.current_term and self.current_term in listed:
                 final = self.switch_view("exams", final, FINAL_EXAM_TERM_FIELD, self.current_term)
             return {"term": self.current_term, "final": final, "midterm": self.get_page("midterm_exams")}
-        if section == "tuition":
-            return {"term": self._learn_current_term(), "report": self._tuition_report()}
         if section == "registration":
             return {"registration": self.get_page("registration")}  # GET only: never submit this form
         raise KeyError(section)
@@ -199,13 +176,3 @@ class EduSoftClient:
         if self.current_term is None:
             self.current_term = _selected(self.get_page("timetable"), TIMETABLE_TERM_FIELD)[0]
         return self.current_term
-
-    def _tuition_report(self):
-        """The report viewer's JSON for the logged-in student's own tuition report."""
-        if not self.student_id:
-            raise SessionExpired("Not logged in to EduSoft.")
-        query = urlencode({"t": TUITION_REPORT, "nhhk": self.current_term, "masv": self.student_id})
-        self._logged_in(self._get_with_retries(f"{REPORT_URL}ReportDisplay?{query}").text)  # opens the report
-        body = {"mvcviewer_parameters": base64.b64encode(
-            json.dumps(REPORT_VIEWER_REQUEST, separators=(",", ":")).encode("utf-8")).decode("ascii")}
-        return self._logged_in(self._request("POST", f"{REPORT_URL}ReportDisplayV?{query}", data=body).text)
