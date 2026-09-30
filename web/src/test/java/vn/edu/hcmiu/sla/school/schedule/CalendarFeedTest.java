@@ -502,4 +502,16 @@ class CalendarFeedTest {
 
         assertThat(nextWeek()).noneMatch(e -> String.valueOf(e.get("title")).contains("Binh"));
     }
+
+    @Test
+    void anOwnEventClashingWithAClassHasAWarning() throws Exception {
+        data.course(an, "IT093IU", "Web Application Development", WEB_TUESDAY); // Tue 29/09 08:00-10:30
+        data.myEvent(an, "Tự học sáng", LocalDate.of(2026, 9, 29), null, LocalTime.of(9, 0), LocalTime.of(10, 0));
+        data.myEvent(an, "Ăn trưa", LocalDate.of(2026, 9, 29), null, LocalTime.of(10, 30), LocalTime.of(11, 30));
+
+        List<Map<String, Object>> mine = nextWeek().stream().filter(e -> "mine".equals(props(e).get("kind"))).toList();
+
+        assertThat(mine).extracting(e -> e.get("title") + " " + e.get("classNames")).containsExactly(
+                "⚠ My event: Tự học sáng [event-mine, event-conflict]", "My event: Ăn trưa [event-mine]");
+    }
 }

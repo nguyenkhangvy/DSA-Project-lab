@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import vn.edu.hcmiu.sla.auth.AppUser;
 import vn.edu.hcmiu.sla.school.VietnamTime;
+import vn.edu.hcmiu.sla.school.events.MyEventConflicts;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAssignment;
 import vn.edu.hcmiu.sla.school.schedule.Schedule.Item;
 
@@ -54,8 +57,11 @@ public class CalendarController {
         }
 
         List<Map<String, Object>> events = new ArrayList<>();
-        for (Item item : schedule.itemsBetween(user.id(), VietnamTime.dayStart(from), VietnamTime.dayStart(to))) {
-            events.add(event(item));
+        List<Item> items = schedule.itemsBetween(user.id(), VietnamTime.dayStart(from), VietnamTime.dayStart(to));
+        Set<Item> clashing = Collections.newSetFromMap(new IdentityHashMap<>());
+        MyEventConflicts.clashes(items).forEach(clash -> clashing.add(clash.occurrence()));
+        for (Item item : items) {
+            events.add(event(item, clashing.contains(item)));
         }
         for (SchoolBbAssignment deadline : schedule.deadlinesBetween(user.id(), VietnamTime.dayStart(from),
                 VietnamTime.dayStart(to))) {
@@ -77,6 +83,11 @@ public class CalendarController {
     }
 
     static Map<String, Object> event(Item item) {
+        return event(item, false);
+    }
+
+    /** clash: an own event's day that overlaps something else, shown with ⚠ and a red border. */
+    static Map<String, Object> event(Item item, boolean clash) {
         String title = item.label() != null ? item.label() + ": " + item.title() : item.title();
         String css = "event-" + item.kind();
         if (item.change() != null) {
@@ -93,6 +104,10 @@ public class CalendarController {
         event.put("start", VietnamTime.wallClock(item.startAt()));
         event.put("classNames", List.of(css));
         event.put("extendedProps", props);
+        if (clash) {
+            event.put("title", "⚠ " + event.get("title"));
+            event.put("classNames", List.of(css, "event-conflict"));
+        }
         if (item.allDay()) {
             event.put("start", VietnamTime.date(item.startAt()).toString());
             event.put("allDay", true);
