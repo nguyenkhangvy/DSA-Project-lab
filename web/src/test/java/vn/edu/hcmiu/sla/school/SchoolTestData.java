@@ -1,14 +1,19 @@
 package vn.edu.hcmiu.sla.school;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.persistence.EntityManager;
 
 import vn.edu.hcmiu.sla.auth.AppUser;
 import vn.edu.hcmiu.sla.auth.User;
+import vn.edu.hcmiu.sla.school.events.Details;
+import vn.edu.hcmiu.sla.school.events.Occurrences;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAnnouncement;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAssignment;
 import vn.edu.hcmiu.sla.school.model.SchoolBbCourse;
@@ -17,6 +22,7 @@ import vn.edu.hcmiu.sla.school.model.SchoolCourse;
 import vn.edu.hcmiu.sla.school.model.SchoolExam;
 import vn.edu.hcmiu.sla.school.model.SchoolMail;
 import vn.edu.hcmiu.sla.school.model.SchoolMailChange;
+import vn.edu.hcmiu.sla.school.model.SchoolMyEvent;
 import vn.edu.hcmiu.sla.school.model.SchoolTuitionBill;
 import vn.edu.hcmiu.sla.school.model.SchoolTuitionStatus;
 
@@ -70,6 +76,19 @@ public final class SchoolTestData {
     public void tuitionChecked(AppUser user, LocalDateTime utc) {
         db.persist(new SchoolTuitionStatus(user.id(), utc));
         db.flush();
+    }
+
+    /** One of the student's own events: every week on these days, or once on the first day when none are given. */
+    public SchoolMyEvent myEvent(AppUser user, String title, LocalDate first, LocalDate last, LocalTime start,
+            LocalTime end, DayOfWeek... weekdays) {
+        Occurrences.Rule rule = weekdays.length == 0
+                ? new Occurrences.Rule(first, first, Occurrences.ONCE, 1, Set.of(), Set.of())
+                : new Occurrences.Rule(first, last, Occurrences.WEEKS, 1, EnumSet.of(weekdays[0], weekdays), Set.of());
+        SchoolMyEvent event = new SchoolMyEvent(user.id(), LocalDateTime.of(2026, 9, 28, 0, 0));
+        event.set(new Details(title, null, null, rule, start, end), LocalDateTime.of(2026, 9, 28, 0, 0));
+        db.persist(event);
+        db.flush();
+        return event;
     }
 
     /** A Blackboard course; add announcements, assignments and materials to it before calling {@link #save}. */

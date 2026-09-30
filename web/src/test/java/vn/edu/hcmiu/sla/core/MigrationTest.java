@@ -46,7 +46,7 @@ class MigrationTest {
                 "school_courses", "school_class_meetings", "school_exams", "school_events",
                 "school_bb_courses", "school_bb_announcements", "school_bb_assignments", "school_bb_materials",
                 "school_mail", "school_mail_changes", "school_mail_choices", "school_mail_status", "school_mail_sessions",
-                "school_mail_settings", "school_mail_joined", "school_tuition_bills", "school_tuition_status",
+                "school_mail_settings", "school_mail_joined", "school_tuition_bills", "school_tuition_status", "school_my_events", "school_my_event_skips",
                 "flyway_schema_history");
         assertThat(tables(dataSource)).doesNotContain("school_tuition");
     }
