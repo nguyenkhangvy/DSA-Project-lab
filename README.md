@@ -62,7 +62,7 @@ Git Bash works too: `cd web && ./mvnw spring-boot:run`. GitHub runs the website'
 
 ## The laptop agent (School sync)
 
-Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
+Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. It checks every minute: new mail in an open Outlook reaches Mailbox within about a minute, and everything else syncs every 30 minutes. After moving the project folder, run `sla-agent schedule` once. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
 
 1. **Install it** (Python 3.12), in the project folder:
 
@@ -78,7 +78,7 @@ Only needed to sync your own EduSoft and Blackboard into the School pages. It ru
 
 2. **Get a device key.** With the site running, open School → Devices, add your laptop and copy its key. It is shown only once.
 
-3. **Set it up:** `sla-agent setup`. It asks for the web app address (`http://localhost:5000`), the device key, your EduSoft student ID and password (checked once with EduSoft), and optionally your Blackboard login. It then checks in every 15 minutes while you're logged in to Windows; the site tells it when a sync is due (every 12 hours, or soon after you press "Sync now").
+3. **Set it up:** `sla-agent setup`. It asks for the web app address (`http://localhost:5000`), the device key, your EduSoft student ID and password (checked once with EduSoft), and optionally your Blackboard login. It then checks in every minute while you're logged in to Windows; the site tells it when a full sync is due (every 30 minutes, or soon after you press "Sync now").
 
 | What | Command |
 |---|---|

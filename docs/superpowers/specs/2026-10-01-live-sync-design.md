@@ -110,7 +110,7 @@ Website
 
 - **`GET /school/api/version`** (logged-in user only; session login like the pages, not the device key): `{"version": <id of the user's newest finished run, any trigger>}`, or `{"version": 0}` when none.
 - Mailbox and Overview carry `data-version` (that id when the page was built) on `<main>` and mark the areas to replace with `data-live="<name>"`:
-  - Mailbox: `status` (the status box / Mailbox notice), `mail` (the boxes: Class, Events, Needs action, Other, Done, Past, and the "gone" joined events);
+  - Mailbox: `status` (the status box / Mailbox notice), `read` (the "Mail read from Outlook …" line), `mail` (the boxes: Class, Events, Needs action, Other, Done, Past, and the "gone" joined events);
   - Overview: `status`, `today`, `tomorrow`, `to-submit`, `announcements`, `next-exam`, `bills`, `notice` (the tuition notice area, present even when empty), `changes`.
 - `static/js/live.js` (loaded by both pages):
   - every 30 seconds while `document.visibilityState === "visible"`, `fetch("/school/api/version")`;
