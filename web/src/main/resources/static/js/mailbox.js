@@ -3,7 +3,8 @@
  * "Web ↗" tells the site, which marks the card opened (and Done when auto-Done is on); the link opens as usual,
  * without waiting. The row turns grey at once; the site's answer only says whether it became Done. A click (also
  * with Ctrl, Shift or ⌘, or Enter on the keyboard) and a middle-click count. "Open in new tab" from the right-click
- * menu can't be seen by a page, so it records nothing. Changing the auto-Done tick box saves it at once.
+ * menu can't be seen by a page, so it records nothing. Changing the auto-Done tick box saves it at once. Links are
+ * handled on the document, so rows that live.js replaces keep working.
  */
 document.addEventListener("DOMContentLoaded", function () {
   var mailbox = document.querySelector(".mailbox");
@@ -32,15 +33,21 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  mailbox.querySelectorAll("a[data-opened]").forEach(function (link) {
-    link.addEventListener("click", function () {
+  function openedLink(event) {
+    var link = event.target.closest && event.target.closest("a[data-opened]");
+    return link && mailbox.contains(link) ? link : null;
+  }
+  document.addEventListener("click", function (event) {
+    var link = openedLink(event);
+    if (link) {
       opened(link);
-    });
-    link.addEventListener("auxclick", function (event) {
-      if (event.button === 1) {
-        opened(link);
-      }
-    });
+    }
+  });
+  document.addEventListener("auxclick", function (event) {
+    var link = openedLink(event);
+    if (link && event.button === 1) {
+      opened(link);
+    }
   });
 
   var autoDone = document.getElementById("auto-done");

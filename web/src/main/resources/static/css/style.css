@@ -418,3 +418,7 @@ h1, .module-card h2, .bb-item h3 { overflow-wrap: anywhere; }
 .field .check input { width: auto; margin: 0; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .mail-automatic { margin-top: 12px; }
+
+/* live.js: the short "Updated 14:32" note */
+.live-note { position: fixed; right: 16px; bottom: 16px; margin: 0; padding: 6px 12px; font-size: 0.9rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }

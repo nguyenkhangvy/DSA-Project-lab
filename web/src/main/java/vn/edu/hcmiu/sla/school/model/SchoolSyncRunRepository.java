@@ -39,4 +39,10 @@ public interface SchoolSyncRunRepository extends JpaRepository<SchoolSyncRun, In
                 .thenComparing(SchoolSyncRun::getId, Comparator.reverseOrder()));
         return recent;
     }
+
+    /** The id of the newest finished run of any kind, 0 when there is none: live pages compare it. */
+    default int version(Integer userId) {
+        return findFirstByUserIdAndStatusNotOrderByIdDesc(userId, SchoolSyncRun.RUNNING).map(SchoolSyncRun::getId)
+                .orElse(0);
+    }
 }

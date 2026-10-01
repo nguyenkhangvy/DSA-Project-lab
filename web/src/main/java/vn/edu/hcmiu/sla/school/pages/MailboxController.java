@@ -152,6 +152,7 @@ public class MailboxController {
                 runs.recentRuns(user.id()).stream().map(RunInfo::of).toList()));
         model.addAttribute("labels", Mailbox.LABELS);
         model.addAttribute("autoDone", settings.autoDone(user.id()));
+        model.addAttribute("version", runs.version(user.id()));
         model.addAttribute("gone", mailSessions.gone(user.id(), view.keys(), nowInVietnam()));
         return "school/mailbox";
     }

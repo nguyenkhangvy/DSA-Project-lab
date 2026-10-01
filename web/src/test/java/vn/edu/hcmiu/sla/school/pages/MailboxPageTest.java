@@ -380,4 +380,16 @@ class MailboxPageTest {
         assertThat(menu.indexOf(">Overview<")).isLessThan(menu.indexOf(">Mailbox<"));
         assertThat(menu.indexOf(">Mailbox<")).isLessThan(menu.indexOf(">Timetable<"));
     }
+
+    @Test
+    void theMailboxMarksItsLiveAreasButNotTheSetting() throws Exception {
+        inbox(an);
+
+        String html = page();
+
+        assertThat(html).contains("data-version=\"0\"", "data-live=\"status\"", "data-live=\"read\"",
+                "data-live=\"mail\"", "src=\"/js/live.js\"");
+        int mail = html.indexOf("data-live=\"mail\"");
+        assertThat(html.indexOf("id=\"auto-done\"")).isLessThan(mail); // the tick box is never replaced
+    }
 }

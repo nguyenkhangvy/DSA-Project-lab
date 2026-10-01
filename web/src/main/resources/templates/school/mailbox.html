@@ -4,10 +4,11 @@
   <title>Mailbox · School-Life-Assistant</title>
 </head>
 <body>
-<main>
+<main th:attr="data-version=${version}">
   <h1>Mailbox</h1>
   <nav th:replace="~{school/fragments :: subnav('mailbox')}"></nav>
 
+  <div data-live="status">
   <section class="card status-card status-failed" th:if="${problem != null}" role="alert">
     <p class="status-headline" th:text="${problem.headline}">Sync failed: Outlook didn't let the agent read your mail</p>
     <p class="status-detail" th:text="${problem.detail}">Check Outlook, then press Sync now.</p>
@@ -19,11 +20,12 @@
     <p>Outlook isn't connected yet. On your laptop, open Outlook (classic), sign in, then run
       <code>sla-agent setup --outlook</code>.</p>
   </section>
+  </div>
 
   <div class="mailbox" th:if="${status != null}"
        th:attr="data-csrf-header=${_csrf.headerName},data-csrf=${_csrf.token}">
     <div class="mail-top">
-      <p class="muted mail-read" th:text="|Mail read from Outlook ${@schoolFormat.when(status.syncedAt)}|">Mail read
+      <p class="muted mail-read" data-live="read" th:text="|Mail read from Outlook ${@schoolFormat.when(status.syncedAt)}|">Mail read
         from Outlook Mon 28/09 07:02</p>
       <form class="mail-setting" method="post" th:action="@{/school/mailbox/settings}">
         <label class="check"><input type="checkbox" id="auto-done" name="autoDone" value="true" th:checked="${autoDone}">
@@ -31,6 +33,7 @@
         <noscript><button type="submit" class="link-button">Save</button></noscript>
       </form>
     </div>
+    <div data-live="mail">
     <p class="status-warning" th:unless="${status.connected}">Outlook was offline when your laptop last read it, so the
       newest mail may be missing. Open Outlook (classic) and check that you're signed in.</p>
 
@@ -84,8 +87,10 @@
         </ul>
       </details>
     </section>
+    </div>
   </div>
   <script th:src="@{/js/mailbox.js}"></script>
+  <script th:src="@{/js/live.js}"></script>
 </main>
 
 <!--/* One row (Mailbox.Card). showNext: Events and School tasks show the next date instead of the time received.

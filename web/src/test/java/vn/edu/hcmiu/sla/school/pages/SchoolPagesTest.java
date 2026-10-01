@@ -556,4 +556,45 @@ class SchoolPagesTest {
         assertThat(linkTo(html, "/school/mailbox#mail-" + key)).isNotEmpty();
         assertThat(html).contains(">See email</a>");
     }
+
+    // ---- Pages that update themselves ------------------------------------------------------
+
+    SchoolSyncRun finishedRun(AppUser who, String trigger, String status) {
+        SchoolSyncRun run = new SchoolSyncRun(who.id(), null, trigger, LocalDateTime.of(2026, 10, 1, 7, 0));
+        if (!status.equals(SchoolSyncRun.RUNNING)) {
+            run.finish(status, LocalDateTime.of(2026, 10, 1, 7, 1), null, null);
+        }
+        db.persist(run);
+        db.flush();
+        return run;
+    }
+
+    @Test
+    void theVersionIsTheNewestFinishedRunOfAnyKind() throws Exception {
+        mvc.perform(get("/school/api/version").with(user(an))).andExpect(jsonPath("$.version").value(0));
+        finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS);
+        SchoolSyncRun mail = finishedRun(an, "mail", SchoolSyncRun.SUCCESS);
+        finishedRun(an, "mail", SchoolSyncRun.RUNNING);
+        finishedRun(data.user("binh@example.com"), "mail", SchoolSyncRun.SUCCESS);
+
+        mvc.perform(get("/school/api/version").with(user(an))).andExpect(jsonPath("$.version").value(mail.getId()));
+    }
+
+    @Test
+    void theVersionNeedsLogin() throws Exception {
+        mvc.perform(get("/school/api/version")).andExpect(redirectedUrl("/auth/login"));
+    }
+
+    @Test
+    void theOverviewMarksItsLiveAreasAndLoadsTheScript() throws Exception {
+        SchoolSyncRun run = finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS);
+
+        String html = page("/school");
+
+        assertThat(html).contains("data-version=\"" + run.getId() + "\"", "src=\"/js/live.js\"");
+        for (String area : List.of("status", "notice", "today", "tomorrow", "to-submit", "announcements", "next-exam",
+                "bills", "changes")) {
+            assertThat(html).contains("data-live=\"" + area + "\"");
+        }
+    }
 }

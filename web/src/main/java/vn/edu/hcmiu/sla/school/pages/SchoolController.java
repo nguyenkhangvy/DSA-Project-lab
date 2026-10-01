@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.data.domain.Limit;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -128,6 +130,7 @@ public class SchoolController {
         model.addAttribute("tuitionNotice", TuitionBills.notice(bills, today));
         model.addAttribute("recentBills", TuitionBills.recent(bills, today));
         model.addAttribute("changes", changes.findTop10ByUserIdOrderByIdDesc(user.id()));
+        model.addAttribute("version", runs.version(user.id()));
         model.addAttribute("now", now);
         return "school/index";
     }
@@ -183,6 +186,13 @@ public class SchoolController {
         model.addAttribute("paid", TuitionBills.paid(bills));
         model.addAttribute("today", VietnamTime.date(now()));
         return "school/tuition";
+    }
+
+    /** For live.js on Mailbox and Overview (docs/superpowers/specs/2026-10-01-live-sync-design.md, 4.3). */
+    @GetMapping("/api/version")
+    @ResponseBody
+    Map<String, Integer> version(@AuthenticationPrincipal AppUser user) {
+        return Map.of("version", runs.version(user.id()));
     }
 
     @PostMapping("/sync-now")

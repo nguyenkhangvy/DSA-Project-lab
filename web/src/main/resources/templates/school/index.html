@@ -4,10 +4,11 @@
   <title>School · School-Life-Assistant</title>
 </head>
 <body>
-<main>
+<main th:attr="data-version=${version}">
   <h1>School</h1>
   <nav th:replace="~{school/fragments :: subnav('overview')}"></nav>
-  <section th:replace="~{school/fragments :: status-card}"></section>
+  <div data-live="status"><section th:replace="~{school/fragments :: status-card}"></section></div>
+  <div data-live="notice">
   <!--/* Only while some bill isn't paid (docs/superpowers/specs/2026-09-30-iupay-tuition-design.md, 4.4). */-->
   <section class="card tuition-notice" th:if="${tuitionNotice != null}"
            th:classappend="${tuitionNotice.overdue} ? 'is-overdue'">
@@ -17,24 +18,30 @@
       15/10/2026</span></th:block></span>
     <a th:href="@{/school/tuition}">See tuition →</a>
   </section>
+  </div>
 
   <div class="two-columns">
     <section class="card">
+      <div data-live="today">
       <h2>Today <span class="muted" th:text="${@schoolFormat.dayLabel(today)}">Tue 29/09</span></h2>
       <ul class="items" th:unless="${todayItems.isEmpty()}">
         <!--/* th:replace runs before th:each on one element, so the loop is on a block around it. */-->
         <th:block th:each="item : ${todayItems}"><li th:replace="~{school/fragments :: item(${item})}"></li></th:block>
       </ul>
       <p class="muted" th:if="${todayItems.isEmpty()}">No classes or exams today.</p>
+      </div>
+      <div data-live="tomorrow">
       <h2>Tomorrow</h2>
       <ul class="items" th:unless="${tomorrowItems.isEmpty()}">
         <th:block th:each="item : ${tomorrowItems}"><li th:replace="~{school/fragments :: item(${item})}"></li></th:block>
       </ul>
       <p class="muted" th:if="${tomorrowItems.isEmpty()}">No classes or exams tomorrow.</p>
+      </div>
       <p><a th:href="@{/school/timetable}">Open the calendar →</a></p>
     </section>
 
     <section class="card">
+      <div data-live="to-submit">
       <h2>To submit</h2>
       <ul class="items" th:unless="${toSubmit.isEmpty()}">
         <li th:each="a : ${toSubmit}" th:with="overdue=${a.dueAt.isBefore(now)}"
@@ -47,7 +54,9 @@
         </li>
       </ul>
       <p class="muted" th:if="${toSubmit.isEmpty()}">Nothing left to submit.</p>
+      </div>
 
+      <div data-live="announcements">
       <h2>Latest announcements</h2>
       <ul class="changes" th:unless="${latestAnnouncements.isEmpty()}">
         <li th:each="a : ${latestAnnouncements}"><a th:href="@{/school/courses/{id}(id=${a.course.id})}"
@@ -55,14 +64,18 @@
           <span class="muted" th:text="${@schoolFormat.preview(a.text)}">Class is cancelled.</span></li>
       </ul>
       <p class="muted" th:if="${latestAnnouncements.isEmpty()}">No announcements yet.</p>
+      </div>
 
+      <div data-live="next-exam">
       <h2>Next exam</h2>
       <p th:if="${nextExam != null}"><strong th:text="${nextExam.courseName}">Web Application Development</strong>
         (<th:block th:text="${nextExam.examType}">final</th:block>)<br>
         <th:block th:text="|${@schoolFormat.date(nextExam.startAt)} at ${@schoolFormat.clock(nextExam.startAt)}|">12/12/2026
           at 08:00</th:block><th:block th:if="${nextExam.room != null}" th:text="| · ${nextExam.room}|"> · A1.101</th:block></p>
       <p class="muted" th:if="${nextExam == null}">No upcoming exams published yet.</p>
+      </div>
 
+      <div data-live="bills">
       <h2>Bills</h2>
       <ul class="changes" th:unless="${recentBills.isEmpty()}">
         <li th:each="bill : ${recentBills}">
@@ -79,15 +92,19 @@
       </ul>
       <p class="muted" th:if="${recentBills.isEmpty()}">No new bills or payments in the last 30 days.</p>
       <p><a th:href="@{/school/tuition}">See all →</a></p>
+      </div>
 
+      <div data-live="changes">
       <h2>What changed</h2>
       <ul class="changes" th:unless="${changes.isEmpty()}">
         <li th:each="change : ${changes}" th:class="|change change-${change.kind}|" th:text="${change.summary}">
           IT093IU Web Application Development: room A2.307 → A2.508</li>
       </ul>
       <p class="muted" th:if="${changes.isEmpty()}">Nothing yet. Changes appear here after each sync.</p>
+      </div>
     </section>
   </div>
+  <script th:src="@{/js/live.js}"></script>
 </main>
 </body>
 </html>
