@@ -40,6 +40,7 @@ class Tools:
     make_edusoft: Callable  # () -> EduSoftClient
     make_blackboard: Callable  # () -> BlackboardClient
     find_outlook_accounts: Callable  # () -> [account address]; raises AgentError
+    find_open_outlook_accounts: Callable  # the same, asking only an Outlook that is already open
     python: Callable  # () -> the windowless Python the task, the links and the shortcuts start
     install_task: Callable  # (python, user, folder=) ; raises SchedulerError
     task_program: Callable  # () -> the program the scheduled task starts, or None
@@ -193,10 +194,11 @@ def change_blackboard(state, username, password, tools):
     return Result(True, BLACKBOARD_SAVED)
 
 
-def outlook_accounts(tools):
-    """(the accounts in classic Outlook, None), or ([], what's wrong)."""
+def outlook_accounts(tools, start=True):
+    """(the accounts in classic Outlook, None), or ([], what's wrong). start=False asks only an Outlook that is
+    already open, so it never starts Outlook (or its first-run wizard where classic Outlook was never set up)."""
     try:
-        found = tools.find_outlook_accounts()
+        found = tools.find_outlook_accounts() if start else tools.find_open_outlook_accounts()
     except AgentError as error:
         return [], str(error)
     if not found:

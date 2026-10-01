@@ -308,3 +308,10 @@ def test_a_change_keeps_what_a_sync_saved_while_it_was_being_checked(fakes):
     assert saved.blackboard_paused == "bad_credentials"
     assert saved.paused is None
     assert state == saved
+
+
+def test_outlook_accounts_can_ask_only_an_outlook_that_is_already_open(fakes):
+    assert accounts.outlook_accounts(fakes.tools(), start=False) == ([ME], None)
+    assert accounts.outlook_accounts(fakes.tools()) == ([ME], None)
+
+    assert fakes.looks == ["open", "start"]

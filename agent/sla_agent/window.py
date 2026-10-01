@@ -136,7 +136,9 @@ class App:
 
 
 class OutlookPicker:
-    """A dropdown of the accounts in classic Outlook, looked for in the background, with Refresh."""
+    """A dropdown of the accounts in classic Outlook, looked for in the background, with Refresh. The first look
+    asks only an Outlook that is already open: opening the window never starts Outlook (or, where classic Outlook was
+    never set up, its first-run wizard). Refresh, the student's choice, may start it."""
 
     def __init__(self, app, frame, variable, row, allow_none):
         self.app, self.variable, self.allow_none = app, variable, allow_none
@@ -147,12 +149,12 @@ class OutlookPicker:
         self.refresh_button.grid(row=row, column=2, padx=(8, 0))
         self.note = tk.StringVar(frame)
         answer_line(frame, self.note, row + 1)
-        self.refresh()
+        self.refresh(start=False)
 
-    def refresh(self):
+    def refresh(self, start=True):
         self.note.set(LOOKING)
         self.refresh_button.state(["disabled"])
-        self.app.run(lambda: accounts.outlook_accounts(self.app.tools), self.found)
+        self.app.run(lambda: accounts.outlook_accounts(self.app.tools, start=start), self.found)
 
     def found(self, answer):
         if not self.box.winfo_exists():  # the form was saved and replaced meanwhile

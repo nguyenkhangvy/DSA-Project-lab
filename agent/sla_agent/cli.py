@@ -33,6 +33,7 @@ from sla_agent.errors import (
     DeviceKeyRejected,
     EmailNotFound,
     ExtraVerification,
+    OutlookNotSetUp,
     ParseError,
     RunInProgress,
     ServerError,
@@ -46,6 +47,7 @@ from sla_agent.outlook_reader import (
     open_email,
     open_outlook,
     read_outlook,
+    running_outlook,
     with_time_limit,
 )
 from sla_agent.parsers import PARSERS
@@ -91,12 +93,25 @@ def find_outlook_accounts():
     return with_time_limit(lambda: outlook_addresses(open_outlook()))
 
 
+def find_open_outlook_accounts():
+    """The accounts in an Outlook that is already open: the window's own look never starts Outlook."""
+
+    def accounts_in_open_outlook():
+        app = running_outlook()
+        if app is None:
+            raise OutlookNotSetUp("Classic Outlook isn't open.")
+        return outlook_addresses(app)
+
+    return with_time_limit(accounts_in_open_outlook)
+
+
 def tools():
     """The real things accounts.py talks to. It reads this module's makers when called, so tests that replace them
     (World) replace them for accounts.py too."""
     return accounts.Tools(
         make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
-        find_outlook_accounts=find_outlook_accounts, python=windowless_python, install_task=install_task,
+        find_outlook_accounts=find_outlook_accounts, find_open_outlook_accounts=find_open_outlook_accounts,
+        python=windowless_python, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
         has_window_link=mail_link.window_registered)

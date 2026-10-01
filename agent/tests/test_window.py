@@ -280,3 +280,13 @@ def test_opening_on_a_laptop_set_up_before_the_window_adds_its_link_and_shortcut
 
     assert {"window link", "mail link", "shortcuts"} <= set(fakes.done)
     assert opened == [""]
+
+
+def test_the_form_looks_only_at_an_open_outlook_and_refresh_may_start_it(root, fakes):
+    app = open_window(root, fakes)
+
+    assert fakes.looks == ["open"]  # opening the window never starts Outlook or its first-run wizard
+
+    app.screen.outlook.refresh_button.invoke()
+
+    assert fakes.looks == ["open", "start"]

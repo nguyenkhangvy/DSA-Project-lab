@@ -17,7 +17,7 @@ PYTHONW = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
 class Fakes:
     """`found` is Outlook's account list (an exception instance is raised instead); `program` is what the scheduled
     task starts; `fail` maps a part ("task", "mail link", "window link", "shortcuts") to the error it raises;
-    `done` lists the parts that ran."""
+    `done` lists the parts that ran; `looks` lists how Outlook was asked: "open" (only an open Outlook) or "start"."""
 
     def __init__(self):
         self.server = FakeServer()
@@ -28,11 +28,12 @@ class Fakes:
         self.fail = {}
         self.done = []
         self.servers = []
+        self.looks = []
 
     def tools(self):
         return accounts.Tools(
             make_server=self._make_server, make_edusoft=lambda: self.edusoft,
-            make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, python=lambda: PYTHONW,
+            make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, find_open_outlook_accounts=self._find_open, python=lambda: PYTHONW,
             install_task=self._part("task"), task_program=lambda: self.program,
             register_mail_link=self._part("mail link"), register_window_link=self._part("window link"),
             make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done)
@@ -42,6 +43,14 @@ class Fakes:
         return self.server
 
     def _find(self):
+        self.looks.append("start")
+        return self._accounts()
+
+    def _find_open(self):
+        self.looks.append("open")
+        return self._accounts()
+
+    def _accounts(self):
         if isinstance(self.found, Exception):
             raise self.found
         return self.found
