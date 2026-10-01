@@ -1,0 +1,4 @@
+# Builds the app and the setup (agent/packaging/build.py). CI and the release compile PyInstaller's launcher from
+# source: PYINSTALLER_COMPILE_BOOTLOADER=1 pip install --no-binary=pyinstaller -r agent/packaging/requirements.txt
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.8
