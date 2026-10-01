@@ -167,6 +167,39 @@ class SyncApiTest {
         assertThat(theDevice().getLastSeenAt()).isNotNull();
     }
 
+    /** A finished run of this device's user, started minutes ago; status "running" leaves it open. */
+    SchoolSyncRun run(String trigger, int minutesAgo, String status) {
+        LocalDateTime started = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(minutesAgo);
+        SchoolSyncRun run = new SchoolSyncRun(theDevice().getUserId(), theDevice().getId(), trigger, started);
+        if (!status.equals(SchoolSyncRun.RUNNING)) {
+            run.finish(status, started.plusSeconds(20), null, null);
+        }
+        return runs.save(run);
+    }
+
+    @Test
+    void aMailOnlyRunDoesNotPostponeTheFullSync() throws Exception {
+        run("scheduled", 40, SchoolSyncRun.SUCCESS);
+        run("mail", 1, SchoolSyncRun.SUCCESS);
+
+        check(key).andExpect(jsonPath("$.due").value(true)).andExpect(jsonPath("$.reason").value("interval"));
+    }
+
+    @Test
+    void aRunningMailOnlyRunDoesNotBlockTheDecision() throws Exception {
+        run("scheduled", 40, SchoolSyncRun.SUCCESS);
+        run("mail", 1, SchoolSyncRun.RUNNING);
+
+        check(key).andExpect(jsonPath("$.reason").value("interval"));
+    }
+
+    @Test
+    void aFullSyncTwentyMinutesAgoIsNotDueYet() throws Exception {
+        run("scheduled", 20, SchoolSyncRun.SUCCESS);
+
+        check(key).andExpect(jsonPath("$.due").value(false)).andExpect(jsonPath("$.reason").value("not_due"));
+    }
+
     // ---- Start ----------------------------------------------------------------
 
     @Test

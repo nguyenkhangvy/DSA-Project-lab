@@ -16,4 +16,15 @@ public interface SchoolSyncRunRepository extends JpaRepository<SchoolSyncRun, In
     List<SchoolSyncRun> findByUserIdAndStatus(Integer userId, String status);
 
     List<SchoolSyncRun> findTop10ByUserIdOrderByStartedAtDescIdDesc(Integer userId);
+
+    Optional<SchoolSyncRun> findFirstByUserIdAndTriggerNotOrderByStartedAtDescIdDesc(Integer userId, String trigger);
+
+    Optional<SchoolSyncRun> findFirstByUserIdAndTriggerNotAndStatusInOrderByStartedAtDescIdDesc(Integer userId,
+            String trigger, Collection<String> statuses);
+
+    List<SchoolSyncRun> findTop10ByUserIdAndTriggerNotOrderByStartedAtDescIdDesc(Integer userId, String trigger);
+
+    Optional<SchoolSyncRun> findFirstByUserIdAndTriggerOrderByStartedAtDescIdDesc(Integer userId, String trigger);
+
+    Optional<SchoolSyncRun> findFirstByUserIdAndStatusNotOrderByIdDesc(Integer userId, String status);
 }

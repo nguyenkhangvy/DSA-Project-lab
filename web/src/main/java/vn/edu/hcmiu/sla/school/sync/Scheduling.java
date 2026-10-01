@@ -12,12 +12,13 @@ public final class Scheduling {
     public static final Duration RUN_TIMEOUT = Duration.ofMinutes(15); // a run older than this is treated as stuck
     public static final Duration MIN_MANUAL_GAP = Duration.ofMinutes(5); // "Sync now" can't start syncs closer than this
     public static final Duration MIN_SCHEDULED_GAP = Duration.ofHours(1); // failed scheduled syncs retry at most hourly
+    public static final Duration FULL_SYNC_EVERY = Duration.ofMinutes(30); // EduSoft, IUPay, Blackboard and Outlook
 
     /** reason: never / running / requested / too_soon / interval / not_due. */
     public record Decision(boolean due, String reason) {
     }
 
-    public static Decision decide(LocalDateTime now, int intervalHours, LocalDateTime syncRequestedAt,
+    public static Decision decide(LocalDateTime now, LocalDateTime syncRequestedAt,
             LocalDateTime lastAttemptStartedAt, LocalDateTime lastSuccessStartedAt, LocalDateTime runningSince) {
         if (runningSince != null && Duration.between(runningSince, now).compareTo(RUN_TIMEOUT) < 0) {
             return new Decision(false, "running");
@@ -37,9 +38,11 @@ public final class Scheduling {
             return new Decision(true, "never");
         }
 
-        Duration interval = Duration.ofHours(intervalHours);
-        if (lastSuccessStartedAt == null || Duration.between(lastSuccessStartedAt, now).compareTo(interval) >= 0) {
-            if (sinceAttempt.compareTo(MIN_SCHEDULED_GAP) < 0) {
+        if (lastSuccessStartedAt == null
+                || Duration.between(lastSuccessStartedAt, now).compareTo(FULL_SYNC_EVERY) >= 0) {
+            // Only a failed attempt waits an hour before the next try; a success is due again after 30 minutes.
+            boolean lastFailed = lastSuccessStartedAt == null || lastAttemptStartedAt.isAfter(lastSuccessStartedAt);
+            if (lastFailed && sinceAttempt.compareTo(MIN_SCHEDULED_GAP) < 0) {
                 return new Decision(false, "too_soon");
             }
             return new Decision(true, "interval");

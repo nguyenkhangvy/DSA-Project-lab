@@ -58,15 +58,24 @@ public class SyncRuns {
         return runs.findFirstByUserIdAndStatusInOrderByStartedAtDescIdDesc(userId, List.of(statuses));
     }
 
+    /** The newest full run (not a mail-only one), or the newest full run with one of these statuses. */
+    @Transactional(readOnly = true)
+    public Optional<SchoolSyncRun> latestFullRun(Integer userId, String... statuses) {
+        if (statuses.length == 0) {
+            return runs.findFirstByUserIdAndTriggerNotOrderByStartedAtDescIdDesc(userId, SchoolSyncRun.MAIL);
+        }
+        return runs.findFirstByUserIdAndTriggerNotAndStatusInOrderByStartedAtDescIdDesc(userId, SchoolSyncRun.MAIL,
+                List.of(statuses));
+    }
+
     @Transactional
     public Check check(Integer userId, LocalDateTime now) {
         SchoolSyncSettings mine = settings(userId);
-        Optional<SchoolSyncRun> last = latestRun(userId);
-        Optional<SchoolSyncRun> lastGood = latestRun(userId, SchoolSyncRun.SUCCESS, SchoolSyncRun.PARTIAL);
-        Optional<SchoolSyncRun> running = latestRun(userId, SchoolSyncRun.RUNNING);
+        Optional<SchoolSyncRun> last = latestFullRun(userId);
+        Optional<SchoolSyncRun> lastGood = latestFullRun(userId, SchoolSyncRun.SUCCESS, SchoolSyncRun.PARTIAL);
+        Optional<SchoolSyncRun> running = latestFullRun(userId, SchoolSyncRun.RUNNING);
         return new Check(mine, Scheduling.decide(
                 now,
-                mine.getIntervalHours(),
                 mine.getSyncRequestedAt(),
                 last.map(SchoolSyncRun::getStartedAt).orElse(null),
                 lastGood.map(SchoolSyncRun::getStartedAt).orElse(null),
