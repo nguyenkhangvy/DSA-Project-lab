@@ -2,6 +2,7 @@
 
     sla-agent setup                  enter your details once; schedules automatic sync
     sla-agent setup --outlook        read your Inbox through classic Outlook at each sync
+    sla-agent window                 open the School-Life-Assistant window: set up or change your accounts
     sla-agent run                    what the scheduled task calls every 15 minutes
     sla-agent sync-now               sync right away
     sla-agent status                 show the last result and whether sync is paused
@@ -448,6 +449,17 @@ def cmd_schedule(args):
     return 0
 
 
+def cmd_window(args):
+    try:
+        from sla_agent import window
+    except ModuleNotFoundError as error:
+        if error.name not in ("tkinter", "_tkinter"):
+            raise
+        say("This Python has no Tkinter. Use `sla-agent setup` in the terminal instead.")
+        return 1
+    return window.main(tools(), link=args.link)
+
+
 # ---- status / forget ----------------------------------------------------------------
 
 
@@ -522,6 +534,7 @@ COMMANDS = {
     "setup": cmd_setup,
     "run": cmd_run,
     "schedule": cmd_schedule,
+    "window": cmd_window,
     "sync-now": cmd_sync_now,
     "status": cmd_status,
     "fetch": cmd_fetch,
@@ -540,6 +553,8 @@ def main(argv=None):
     setup.add_argument("--outlook", action="store_true", help="read your Inbox through classic Outlook")
     commands.add_parser("run", help="scheduled check-in: sync if the web app says it's due")
     commands.add_parser("schedule", help="(re)create the scheduled task, e.g. after moving the project folder")
+    window = commands.add_parser("window", help="open the School-Life-Assistant window to set up or change accounts")
+    window.add_argument("link", nargs="?", help="the sla-agent: link that opened it")
     commands.add_parser("sync-now", help="sync right away")
     commands.add_parser("status", help="show the last result and whether sync is paused")
     fetch = commands.add_parser("fetch", help="save your EduSoft pages on this laptop")

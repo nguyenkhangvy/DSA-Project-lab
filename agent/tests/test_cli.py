@@ -794,3 +794,28 @@ def test_forget_removes_the_window_link_type_and_the_shortcuts(world, isolated_a
 
     assert not [path for _, path in isolated_agent.registry.keys if "sla-agent" in path]
     assert not list(isolated_agent.shell.root.rglob("*.lnk"))
+
+
+def test_window_opens_the_accounts_window(world, monkeypatch):
+    from sla_agent import window
+
+    opened = []
+    monkeypatch.setattr(window, "main", lambda tools, link=None: opened.append(link) or 0)
+
+    assert cli.main(["window", "sla-agent:accounts"]) == 0
+
+    assert opened == ["sla-agent:accounts"]
+
+
+def test_window_without_tkinter_points_to_the_terminal(world, monkeypatch, capsys):
+    import sys
+
+    import sla_agent
+
+    monkeypatch.delitem(sys.modules, "sla_agent.window", raising=False)
+    monkeypatch.delattr(sla_agent, "window", raising=False)
+    monkeypatch.setitem(sys.modules, "tkinter", None)
+
+    assert cli.main(["window"]) == 1
+
+    assert "sla-agent setup" in capsys.readouterr().out
