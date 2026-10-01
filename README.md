@@ -78,17 +78,20 @@ Only needed to sync your own EduSoft and Blackboard into the School pages. It ru
 
 2. **Get a device key.** With the site running, open School → Devices, add your laptop and copy its key. It is shown only once.
 
-3. **Set it up:** `sla-agent setup`. It asks for the web app address (`http://localhost:5000`), the device key, your EduSoft student ID and password (checked once with EduSoft), and optionally your Blackboard login. It then checks in every minute while you're logged in to Windows; the site tells it when a full sync is due (every 30 minutes, or soon after you press "Sync now").
+3. **Set it up:** double-click `School-Life-Assistant.cmd` in the project folder. A window opens: the web app address is filled in (`http://localhost:5000`); paste the device key, enter your EduSoft student ID and password, and if you like your Blackboard login and the Outlook account to read, then press **Check and save**. Each login is checked once, and nothing is saved if one is wrong. It then turns on automatic sync (every minute while you're logged in to Windows; a full sync every 30 minutes, or soon after you press "Sync now") and adds School-Life-Assistant to your Desktop and Start menu.
+
+**Change an account later:** open School-Life-Assistant from the Start menu, or press **Open Accounts on this laptop** on School → Accounts, then press **Change** next to the account. A wrong new password changes nothing. Prefer the terminal? `sla-agent setup` still works.
 
 | What | Command |
 |---|---|
+| Open the School-Life-Assistant window | `sla-agent window` |
 | Sync right away | `sla-agent sync-now` |
 | See the last result | `sla-agent status` |
 | Set up or change the Blackboard login | `sla-agent setup --blackboard` |
 | Read your Inbox through classic Outlook | `sla-agent setup --outlook` |
-| Remove the saved passwords, key, schedule and `sla-mail:` link type | `sla-agent forget` |
+| Remove the saved passwords, key, schedule, the `sla-mail:` and `sla-agent:` link types and the shortcuts | `sla-agent forget` |
 
-**Mailbox (Outlook).** IU doesn't let students approve apps that read mail, so the agent reads your Inbox through the classic Outlook app on your laptop (Windows only). Open **Outlook (classic)**, sign in with your IU account, wait for "All folders are up to date", then run `sla-agent setup --outlook`. Each sync then reads your Inbox since the start of the semester, sorts every email on your laptop, and uploads only the results (sender, subject, time, categories, dates, event times, class changes), **never the text**. School → Mailbox shows them, one row per email with its category first. Clicking the subject opens the email in Outlook on this laptop (Edge asks once to open `sla-agent`), and **Web ↗** opens Outlook on the web anywhere. Opening an email marks it Done, unless it is an event or school task still ahead; untick "Mark emails as done when I open them" to press ✓ Done yourself. Events show the times the laptop found in them, each marked **Conflict** or **No conflict** against your timetable, and **Join…** puts the sessions you pick into your Timetable. A check-in time counts as part of its event, and an event whose registration has closed moves to Past unless you joined it. If Outlook shows a security warning or blocks the agent, the agent never clicks past it; Mailbox says so at the top.
+**Mailbox (Outlook).** IU doesn't let students approve apps that read mail, so the agent reads your Inbox through the classic Outlook app on your laptop (Windows only). Open **Outlook (classic)**, sign in with your IU account, wait for "All folders are up to date", then choose your account in Accounts (or run `sla-agent setup --outlook`). Each sync then reads your Inbox since the start of the semester, sorts every email on your laptop, and uploads only the results (sender, subject, time, categories, dates, event times, class changes), **never the text**. School → Mailbox shows them, one row per email with its category first. Clicking the subject opens the email in Outlook on this laptop (Edge asks once to open `sla-agent`), and **Web ↗** opens Outlook on the web anywhere. Opening an email marks it Done, unless it is an event or school task still ahead; untick "Mark emails as done when I open them" to press ✓ Done yourself. Events show the times the laptop found in them, each marked **Conflict** or **No conflict** against your timetable, and **Join…** puts the sessions you pick into your Timetable. A check-in time counts as part of its event, and an event whose registration has closed moves to Past unless you joined it. If Outlook shows a security warning or blocks the agent, the agent never clicks past it; Mailbox says so at the top.
 
 ### The laptop agent's data format
 
