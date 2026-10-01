@@ -48,7 +48,14 @@ from sla_agent.outlook_reader import (
 )
 from sla_agent.parsers import PARSERS
 from sla_agent.parsers.registration import RegisteredCourse, parse_registered_courses
-from sla_agent.scheduler import SchedulerError, current_user, install_task, remove_task, windowless_python
+from sla_agent.scheduler import (
+    SchedulerError,
+    current_user,
+    install_task,
+    remove_task,
+    task_program,
+    windowless_python,
+)
 from sla_agent.server_client import ServerClient, check_server_url
 from sla_agent.state import agent_home, load_state, save_state
 from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run_mail_sync, run_sync
@@ -464,6 +471,21 @@ def cmd_import(args):
     return 0
 
 
+def cmd_schedule(args):
+    state = load_state()
+    if not state.server_url:
+        say(NOT_SET_UP)
+        return 1
+    python = windowless_python()
+    try:
+        install_task(python, current_user(), folder=agent_home())
+    except SchedulerError as error:
+        say(str(error))
+        return 1
+    say(f"The sync task now runs {python} every minute.")
+    return 0
+
+
 # ---- status / forget ----------------------------------------------------------------
 
 
@@ -488,6 +510,10 @@ def cmd_status(args):
         say(f"Outlook:     on ({state.outlook_account})")
     else:
         say("Outlook:     not set up (run `sla-agent setup --outlook`)")
+    program = task_program()
+    if program and not Path(program).exists():
+        say("Sync task:   points to a Python that no longer exists (the project folder moved?). "
+            "Run `sla-agent schedule`.")
     if state.last_result:
         say(f"Last sync:   {state.last_result['status']} at {state.last_result['at']}: {state.last_result['message']}")
     else:
@@ -528,6 +554,7 @@ def cmd_open_mail(args):
 COMMANDS = {
     "setup": cmd_setup,
     "run": cmd_run,
+    "schedule": cmd_schedule,
     "sync-now": cmd_sync_now,
     "status": cmd_status,
     "fetch": cmd_fetch,
@@ -545,6 +572,7 @@ def main(argv=None):
     setup.add_argument("--blackboard", action="store_true", help="set or change only the Blackboard login")
     setup.add_argument("--outlook", action="store_true", help="read your Inbox through classic Outlook")
     commands.add_parser("run", help="scheduled check-in: sync if the web app says it's due")
+    commands.add_parser("schedule", help="(re)create the scheduled task, e.g. after moving the project folder")
     commands.add_parser("sync-now", help="sync right away")
     commands.add_parser("status", help="show the last result and whether sync is paused")
     fetch = commands.add_parser("fetch", help="save your EduSoft pages on this laptop")

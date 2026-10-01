@@ -39,6 +39,7 @@ class World:
         monkeypatch.setattr(cli, "PARSERS", PARSERS)
         self.blackboard = FakeBlackboard()
         monkeypatch.setattr(cli, "make_blackboard", lambda: self.blackboard)
+        monkeypatch.setattr(cli, "task_program", lambda: None)
         self.iupay = FakeIupay()
         monkeypatch.setattr(cli, "make_iupay", lambda: self.iupay)
 
@@ -680,3 +681,22 @@ def test_a_mail_sync_refused_during_a_full_sync_ends_quietly(world, monkeypatch,
 
     assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
     assert load_state().mail_newest is None
+
+
+def test_schedule_reinstalls_the_task_with_this_python(world, capsys, monkeypatch):
+    configure()
+    monkeypatch.setattr(cli, "windowless_python", lambda: r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe")
+
+    assert cli.main(["schedule"]) == 0
+
+    assert world.tasks == ["installed"]
+    assert r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe every minute" in capsys.readouterr().out
+
+
+def test_status_warns_when_the_task_points_to_a_python_that_is_gone(world, capsys, monkeypatch):
+    configure()
+    monkeypatch.setattr(cli, "task_program", lambda: r"C:\IU SCHOOL\old\.venv\Scripts\pythonw.exe")
+
+    cli.main(["status"])
+
+    assert "Run `sla-agent schedule`" in capsys.readouterr().out
