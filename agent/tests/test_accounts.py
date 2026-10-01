@@ -289,3 +289,22 @@ def test_a_link_or_shortcut_that_fails_is_reported(fakes):
     notes = accounts.add_window_links(fakes.tools())
 
     assert len(notes) == 1 and "shortcuts" in notes[0]
+
+
+# ---- saving while a sync runs -------------------------------------------------------------
+
+
+def test_a_change_keeps_what_a_sync_saved_while_it_was_being_checked(fakes):
+    state = set_up()  # what the window read when the student pressed Check and save
+    synced = load_state()
+    synced.last_result = {"at": "2026-10-01T02:00:00+00:00", "status": "success", "message": "Sync finished."}
+    synced.blackboard_paused = "bad_credentials"
+    save_state(synced)  # a sync that finished during the check
+
+    assert accounts.change_edusoft(state, STUDENT, "new-pass", fakes.tools()).ok
+
+    saved = load_state()
+    assert saved.last_result == synced.last_result
+    assert saved.blackboard_paused == "bad_credentials"
+    assert saved.paused is None
+    assert state == saved

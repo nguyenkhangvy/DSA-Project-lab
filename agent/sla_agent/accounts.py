@@ -7,7 +7,7 @@ is checked once before it is saved, and one that fails changes nothing. Password
 Windows Credential Manager (credentials.py)."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Callable
 
@@ -16,7 +16,7 @@ from sla_agent.errors import AgentError, BadCredentials, DeviceKeyRejected, Extr
 from sla_agent.log import protect
 from sla_agent.scheduler import SchedulerError, current_user
 from sla_agent.server_client import check_server_url
-from sla_agent.state import agent_home, load_state, save_state
+from sla_agent.state import State, agent_home, load_state, save_state
 
 log = logging.getLogger(__name__)
 
@@ -111,6 +111,16 @@ def check_edusoft(student_id, password, tools):
 # ---- saving -------------------------------------------------------------------------
 
 
+def _save(state, change):
+    """Apply `change` to the state as it is saved now, not to `state` as it was read before a check that took
+    seconds (a sync may have saved since), save it, and bring `state` up to date."""
+    current = load_state()
+    change(current)
+    save_state(current)
+    for field in fields(State):
+        setattr(state, field.name, getattr(current, field.name))
+
+
 def _keep_site(state, address, key):
     address = _clean(address)
     if state.server_url and state.server_url != address:
@@ -128,9 +138,12 @@ def _keep_edusoft(state, student_id, password):
 
 def save_site_and_edusoft(state, address, key, student_id, password):
     """Save a checked website connection and EduSoft login together (a first setup)."""
-    _keep_site(state, address, key)
-    _keep_edusoft(state, student_id, password)
-    save_state(state)
+
+    def keep(current):
+        _keep_site(current, address, key)
+        _keep_edusoft(current, student_id, password)
+
+    _save(state, keep)
     return Result(True, SAVED)
 
 
@@ -139,8 +152,7 @@ def change_site(state, address, key, tools):
     checked = check_site(address, key, tools)
     if not checked.ok:
         return checked
-    _keep_site(state, address, key)
-    save_state(state)
+    _save(state, lambda current: _keep_site(current, address, key))
     return Result(True, f"Saved. This laptop now syncs with {state.server_url}.")
 
 
@@ -149,8 +161,7 @@ def change_edusoft(state, student_id, password, tools):
     checked = check_edusoft(student_id, password, tools)
     if not checked.ok:
         return checked
-    _keep_edusoft(state, student_id, password)
-    save_state(state)
+    _save(state, lambda current: _keep_edusoft(current, student_id, password))
     return Result(True, SAVED)
 
 
@@ -171,11 +182,14 @@ def change_blackboard(state, username, password, tools):
         return Result(False, f"Couldn't check your Blackboard login: {error} Nothing was saved; try again later.")
     finally:
         blackboard.logout()
-    if state.blackboard_username and state.blackboard_username != username:
-        credentials.forget(None, None, state.blackboard_username)
-    credentials.save_blackboard(username, password)
-    state.blackboard_username, state.blackboard_paused = username, None
-    save_state(state)
+
+    def keep(current):
+        if current.blackboard_username and current.blackboard_username != username:
+            credentials.forget(None, None, current.blackboard_username)
+        credentials.save_blackboard(username, password)
+        current.blackboard_username, current.blackboard_paused = username, None
+
+    _save(state, keep)
     return Result(True, BLACKBOARD_SAVED)
 
 
@@ -192,8 +206,11 @@ def outlook_accounts(tools):
 
 def choose_outlook(state, address, tools):
     """Read this account's Inbox at each sync, and add the sla-mail: link type."""
-    state.outlook_account = address
-    save_state(state)
+
+    def keep(current):
+        current.outlook_account = address
+
+    _save(state, keep)
     on = (f"Outlook is on: each sync reads the Inbox of {address}, sorts it on this laptop and uploads only the "
           "results, never the text.")
     try:

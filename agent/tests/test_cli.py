@@ -834,3 +834,22 @@ def test_status_says_where_to_set_up_blackboard_and_outlook(world, capsys):
 def test_not_set_up_mentions_the_window(world, capsys):
     assert cli.main(["status"]) == 1
     assert "School-Life-Assistant.cmd" in capsys.readouterr().out
+
+
+def test_a_sync_never_undoes_an_account_changed_while_it_ran(world, monkeypatch):
+    from sla_agent import accounts
+
+    configure(paused="bad_credentials")  # EduSoft paused: the sync skips it, IUPay still runs
+    read_bills = world.iupay.read_bills
+
+    def meanwhile(student_id):  # the student enters the right password in the window during the sync
+        assert accounts.change_edusoft(load_state(), STUDENT, "new-pass", cli.tools()).ok
+        return read_bills(student_id)
+
+    monkeypatch.setattr(world.iupay, "read_bills", meanwhile)
+
+    cli.main(["run"])
+
+    assert load_state().paused is None
+    assert credentials.load_edusoft(STUDENT) == "new-pass"
+    assert load_state().last_result is not None  # the sync's own result is saved too

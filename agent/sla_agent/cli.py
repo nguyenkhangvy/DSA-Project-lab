@@ -13,6 +13,7 @@
 """
 
 import argparse
+import copy
 import getpass
 import json
 import logging
@@ -236,6 +237,7 @@ def _blackboard_login(state):
 
 
 def _sync(trigger, state, password, server):
+    loaded = copy.deepcopy(state)  # the window may save an account while this runs: see save_state
     blackboard, blackboard_password = _blackboard_login(state)
     try:
         outcome = run_sync(trigger, state=state, edusoft=make_edusoft(), server=server, parsers=PARSERS,
@@ -251,9 +253,9 @@ def _sync(trigger, state, password, server):
     except ServerError as error:
         log.warning("Web app problem: %s", error)
         say(f"Couldn't reach the web app: {error}")
-        save_state(state)
+        save_state(state, loaded)
         return 1
-    save_state(state)
+    save_state(state, loaded)
     say(outcome.message)
     return 0 if outcome.status in ("success", "partial") else 1
 
@@ -268,6 +270,7 @@ def _newer_mail(state):
 
 
 def _mail_sync(state, server, seen):
+    loaded = copy.deepcopy(state)  # the window may save an account while this runs: see save_state
     try:
         run_mail_sync(state=state, server=server, read_outlook=read_outlook, now=_now(), seen=seen)
     except RunInProgress:
@@ -275,7 +278,7 @@ def _mail_sync(state, server, seen):
     except ServerError as error:
         log.warning("Web app problem: %s", error)
         return 1
-    save_state(state)
+    save_state(state, loaded)
     return 0
 
 

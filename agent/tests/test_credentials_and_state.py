@@ -1,3 +1,5 @@
+import copy
+
 from sla_agent import credentials
 from sla_agent.state import State, agent_home, load_state, save_state
 
@@ -61,3 +63,19 @@ def test_blackboard_state_round_trips_and_old_state_files_still_load():
 
     (agent_home() / "state.json").write_text('{"server_url": "https://x.example", "paused": null}', encoding="utf-8")
     assert load_state() == State(server_url="https://x.example")
+
+
+def test_saving_with_what_was_loaded_keeps_the_fields_someone_else_changed_meanwhile():
+    save_state(State(server_url="https://sla.example.com", student_id="ITITIU20001", paused="bad_credentials"))
+    mine = load_state()  # a sync starts
+    loaded = copy.deepcopy(mine)
+    other = load_state()  # the window saves a new password and a Blackboard login meanwhile
+    other.paused, other.blackboard_username = None, "ititiu20001"
+    save_state(other)
+    mine.last_result = {"status": "success"}  # the sync's own change
+
+    save_state(mine, loaded)
+
+    saved = load_state()
+    assert (saved.paused, saved.blackboard_username, saved.last_result) == (None, "ititiu20001", {"status": "success"})
+    assert mine == saved
