@@ -246,3 +246,15 @@ def test_no_password_or_key_reaches_the_log_file(fakes, tmp_path):
     text = log_path.read_text(encoding="utf-8")
     assert "***" in text
     assert PASSWORD not in text and BB_PASSWORD not in text and KEY not in text
+
+
+def test_an_unexpected_error_after_saving_stops_only_that_step(fakes):
+    fakes.blackboard.login_error = RuntimeError("a bug")
+
+    results = accounts.first_setup(State(), form(**EVERYTHING), fakes.tools())
+
+    assert results["edusoft"].ok
+    assert not results["blackboard"].ok
+    assert results["blackboard"].message.startswith("Something went wrong (RuntimeError)")
+    assert results["outlook"].ok and results["sync"].ok
+    assert "task" in fakes.done

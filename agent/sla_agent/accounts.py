@@ -241,6 +241,17 @@ def sync_task_state(tools):
 # ---- the first-time form ---------------------------------------------------------------
 
 
+def _after_saving(work):
+    """A first-setup step that runs once the website and EduSoft are saved: an unexpected error (a bug, not a login
+    problem) stops only this step, so automatic sync is still turned on and the screen says what was saved."""
+    try:
+        return work()
+    except Exception as error:  # anything unexpected; the details go to agent.log, secrets scrubbed
+        log.exception("First setup: unexpected error")
+        return Result(False, f"Something went wrong ({error.__class__.__name__}), so this part wasn't saved. "
+                             "The details are in agent.log.")
+
+
 def first_setup(state, form, tools):
     """Check and save a first setup in the order of spec 3.1: the website and EduSoft, saved together only when
     both pass; then Blackboard and Outlook when filled in; then automatic sync. Returns {step: Result} for the steps
@@ -253,8 +264,8 @@ def first_setup(state, form, tools):
         return results
     results["edusoft"] = save_site_and_edusoft(state, form.address, form.key, form.student_id, form.password)
     if form.bb_user or form.bb_password:
-        results["blackboard"] = change_blackboard(state, form.bb_user, form.bb_password, tools)
+        results["blackboard"] = _after_saving(lambda: change_blackboard(state, form.bb_user, form.bb_password, tools))
     if form.outlook:
-        results["outlook"] = choose_outlook(state, form.outlook, tools)
-    results["sync"] = turn_on_sync(tools)
+        results["outlook"] = _after_saving(lambda: choose_outlook(state, form.outlook, tools))
+    results["sync"] = _after_saving(lambda: turn_on_sync(tools))
     return results

@@ -249,6 +249,8 @@ def test_the_window_never_logs_a_password(root, fakes, tmp_path):
     text = log_path.read_text(encoding="utf-8")
     assert "RuntimeError" in text
     assert BB_PASSWORD not in text and PASSWORD not in text and KEY not in text
+    assert isinstance(app.screen, window.AccountsScreen)  # EduSoft was saved and sync turned on
+    assert "✗ Something went wrong (RuntimeError)" in app.screen.notice.get()
 
 
 # ---- one window at a time -------------------------------------------------------------
