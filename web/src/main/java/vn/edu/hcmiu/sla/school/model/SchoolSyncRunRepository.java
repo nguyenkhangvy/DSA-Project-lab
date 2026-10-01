@@ -28,7 +28,7 @@ public interface SchoolSyncRunRepository extends JpaRepository<SchoolSyncRun, In
 
     Optional<SchoolSyncRun> findFirstByUserIdAndTriggerOrderByStartedAtDescIdDesc(Integer userId, String trigger);
 
-    Optional<SchoolSyncRun> findFirstByUserIdAndStatusNotOrderByIdDesc(Integer userId, String status);
+    Optional<SchoolSyncRun> findFirstByUserIdOrderByIdDesc(Integer userId);
 
     /** The 10 newest full runs and the newest mail-only run, newest first: what the status box and Mailbox read. */
     default List<SchoolSyncRun> recentRuns(Integer userId) {
@@ -40,9 +40,13 @@ public interface SchoolSyncRunRepository extends JpaRepository<SchoolSyncRun, In
         return recent;
     }
 
-    /** The id of the newest finished run of any kind, 0 when there is none: live pages compare it. */
+    /**
+     * What live pages compare to know something new happened: it grows when a sync starts and again when it ends
+     * (2 x the newest run's id, plus 1 once that run has finished), so the page can show "Syncing…" too. 0 before
+     * the first run.
+     */
     default int version(Integer userId) {
-        return findFirstByUserIdAndStatusNotOrderByIdDesc(userId, SchoolSyncRun.RUNNING).map(SchoolSyncRun::getId)
-                .orElse(0);
+        return findFirstByUserIdOrderByIdDesc(userId)
+                .map(run -> 2 * run.getId() + (run.getStatus().equals(SchoolSyncRun.RUNNING) ? 0 : 1)).orElse(0);
     }
 }

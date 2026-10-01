@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -195,7 +196,8 @@ class SchoolPagesTest {
         db.persist(run);
         db.flush();
 
-        mvc.perform(post("/school/sync-now").with(user(an)).with(csrf())).andExpect(redirectedUrl("/school"));
+        mvc.perform(post("/school/sync-now").with(user(an)).with(csrf())).andExpect(redirectedUrl("/school"))
+                .andExpect(flash().attributeCount(0)); // the status box says it, and updates itself
 
         mvc.perform(get("/api/school/sync/check").header("Authorization", "Bearer " + key))
                 .andExpect(jsonPath("$.reason").value("requested"));
@@ -569,15 +571,49 @@ class SchoolPagesTest {
         return run;
     }
 
-    @Test
-    void theVersionIsTheNewestFinishedRunOfAnyKind() throws Exception {
-        mvc.perform(get("/school/api/version").with(user(an))).andExpect(jsonPath("$.version").value(0));
-        finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS);
-        SchoolSyncRun mail = finishedRun(an, "mail", SchoolSyncRun.SUCCESS);
-        finishedRun(an, "mail", SchoolSyncRun.RUNNING);
-        finishedRun(data.user("binh@example.com"), "mail", SchoolSyncRun.SUCCESS);
+    int version() throws Exception {
+        String json = mvc.perform(get("/school/api/version").with(user(an))).andReturn().getResponse()
+                .getContentAsString();
+        return Integer.parseInt(json.replaceAll("\\D", ""));
+    }
 
-        mvc.perform(get("/school/api/version").with(user(an))).andExpect(jsonPath("$.version").value(mail.getId()));
+    @Test
+    void theVersionMovesWhenASyncStartsAndWhenItEnds() throws Exception {
+        assertThat(version()).isZero();
+        SchoolSyncRun full = finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS);
+        finishedRun(data.user("binh@example.com"), "mail", SchoolSyncRun.SUCCESS); // another user's: no effect
+        int finished = version();
+        assertThat(finished).isEqualTo(2 * full.getId() + 1);
+
+        SchoolSyncRun running = finishedRun(an, "mail", SchoolSyncRun.RUNNING);
+        int started = version();
+        running.finish(SchoolSyncRun.SUCCESS, LocalDateTime.of(2026, 10, 1, 7, 2), null, null);
+        db.flush();
+        int ended = version();
+
+        assertThat(started).isEqualTo(2 * running.getId()).isGreaterThan(finished);
+        assertThat(ended).isEqualTo(2 * running.getId() + 1);
+    }
+
+    @Test
+    void theOverviewIsBusyOnlyWhileASyncIsRequestedOrRunning() throws Exception {
+        deviceKeys.create(an.id(), "My laptop", LocalDateTime.of(2026, 9, 1, 0, 0));
+        clock.set(LocalDateTime.of(2026, 10, 1, 7, 30));
+        finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS); // 07:00-07:01
+        assertThat(page("/school")).doesNotContain("data-busy");
+
+        mvc.perform(post("/school/sync-now").with(user(an)).with(csrf()));
+        assertThat(page("/school")).contains("data-busy=\"true\"", "waiting for your laptop");
+
+        SchoolSyncRun run = new SchoolSyncRun(an.id(), null, "manual", LocalDateTime.of(2026, 10, 1, 7, 31));
+        db.persist(run); // the laptop started
+        db.flush();
+        clock.set(LocalDateTime.of(2026, 10, 1, 7, 32));
+        assertThat(page("/school")).contains("data-busy=\"true\"", "Syncing…");
+
+        run.finish(SchoolSyncRun.SUCCESS, LocalDateTime.of(2026, 10, 1, 7, 32), null, null);
+        db.flush();
+        assertThat(page("/school")).doesNotContain("data-busy").contains("Synced at");
     }
 
     @Test
@@ -591,7 +627,7 @@ class SchoolPagesTest {
 
         String html = page("/school");
 
-        assertThat(html).contains("data-version=\"" + run.getId() + "\"", "src=\"/js/live.js\"");
+        assertThat(html).contains("data-version=\"" + (2 * run.getId() + 1) + "\"", "src=\"/js/live.js\"");
         for (String area : List.of("status", "notice", "today", "tomorrow", "to-submit", "announcements", "next-exam",
                 "bills", "changes")) {
             assertThat(html).contains("data-live=\"" + area + "\"");

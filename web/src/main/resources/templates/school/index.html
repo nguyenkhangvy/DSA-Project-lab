@@ -4,7 +4,7 @@
   <title>School · School-Life-Assistant</title>
 </head>
 <body>
-<main th:attr="data-version=${version}">
+<main th:attr="data-version=${version},data-busy=${status.state == 'requested' or status.state == 'syncing' ? 'true' : null}">
   <h1>School</h1>
   <nav th:replace="~{school/fragments :: subnav('overview')}"></nav>
   <div data-live="status"><section th:replace="~{school/fragments :: status-card}"></section></div>

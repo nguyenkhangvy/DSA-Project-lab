@@ -19,10 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import vn.edu.hcmiu.sla.auth.AppUser;
-import vn.edu.hcmiu.sla.core.Flash;
 import vn.edu.hcmiu.sla.school.VietnamTime;
 import vn.edu.hcmiu.sla.school.events.MyEvents;
 import vn.edu.hcmiu.sla.school.model.SchoolBbAnnouncement;
@@ -196,9 +194,8 @@ public class SchoolController {
     }
 
     @PostMapping("/sync-now")
-    String syncNow(@AuthenticationPrincipal AppUser user, RedirectAttributes redirect) {
+    String syncNow(@AuthenticationPrincipal AppUser user) {
         syncRuns.requestSync(user.id(), now());
-        Flash.success(redirect, "Sync requested. Your laptop will pick it up at its next check-in.");
-        return "redirect:/school";
+        return "redirect:/school"; // the status box says "Sync requested" and then updates itself (live.js)
     }
 }

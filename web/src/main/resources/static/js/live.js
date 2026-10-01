@@ -1,7 +1,8 @@
 /*
  * Mailbox and Overview update themselves (docs/superpowers/specs/2026-10-01-live-sync-design.md, 4.3). Every 30 s,
- * while the tab is visible, ask the site for the newest finished sync; when it is newer than this page, fetch the
- * page again and swap each [data-live] area, except one where the student is typing or choosing (a focused input,
+ * while the tab is visible, ask the site whether a sync started or ended since this page was built; every 5 s while
+ * the Overview is busy (a sync requested or running: <main data-busy>), for at most 5 minutes after the page loaded.
+ * When there is news, fetch the page again and swap each [data-live] area, except one where the student is typing or choosing (a focused input,
  * select or text box): it waits for the next round, and "Updated" shows once every area is up to date. A focused
  * link or button doesn't hold an area back (a click focuses it). Lists the student opened (<details>) stay open.
  * If the areas differ (e.g. Outlook got connected), the whole page reloads. Failures are silent: tried again later.
@@ -11,7 +12,10 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!main) {
     return;
   }
-  var EVERY_MS = 30000;
+  var CALM_MS = 30000;
+  var BUSY_MS = 5000;
+  var BUSY_FOR_MS = 5 * 60 * 1000; // a laptop that is off leaves a request waiting: slow down again after this
+  var loadedAt = Date.now();
   var VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
   var EDITING = "input, select, textarea, [contenteditable]";
   var note = document.createElement("p");
@@ -81,6 +85,11 @@ document.addEventListener("DOMContentLoaded", function () {
           return; // the version stays, so the next round tries the waiting area again
         }
         main.dataset.version = freshMain.dataset.version;
+        if (freshMain.dataset.busy) {
+          main.dataset.busy = freshMain.dataset.busy;
+        } else {
+          delete main.dataset.busy;
+        }
         note.textContent = "Updated " + clock();
         note.hidden = false;
         setTimeout(function () {
@@ -90,9 +99,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   function check() {
     if (document.visibilityState !== "visible") {
-      return;
+      return Promise.resolve();
     }
-    fetch("/school/api/version", { credentials: "same-origin", headers: { Accept: "application/json" } })
+    return fetch("/school/api/version", { credentials: "same-origin", headers: { Accept: "application/json" } })
       .then(function (answer) {
         var json = answer.ok && (answer.headers.get("Content-Type") || "").indexOf("json") >= 0;
         return json ? answer.json() : null;
@@ -103,8 +112,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       })
       .catch(function () {
-        // tried again in 30 seconds
+        // tried again at the next round
       });
   }
-  setInterval(check, EVERY_MS);
+  function wait() {
+    return main.dataset.busy && Date.now() - loadedAt < BUSY_FOR_MS ? BUSY_MS : CALM_MS;
+  }
+  function round() {
+    check().then(function () {
+      setTimeout(round, wait()); // after any refresh, so a page that just calmed down waits 30 s
+    });
+  }
+  setTimeout(round, wait());
 });

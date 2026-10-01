@@ -41,7 +41,7 @@ Windows task, every minute and at logon (a second copy never starts while one ru
 Website
   Scheduling ── counts only full runs for "due" (every 30 minutes)
   Status box ── headline from the latest full run; the Outlook line from the newest run with Outlook (full or mail)
-  GET /school/api/version ── newest finished run id ◀── live.js on Mailbox and Overview, every 30 s
+  GET /school/api/version ── grows when a sync starts or ends ◀── live.js on Mailbox and Overview, every 30 s (5 s while busy)
                                                       └─ newer? ─▶ fetch the page, replace the marked areas
 ```
 
@@ -108,12 +108,12 @@ Website
 
 ### 4.3 Pages that update themselves
 
-- **`GET /school/api/version`** (logged-in user only; session login like the pages, not the device key): `{"version": <id of the user's newest finished run, any trigger>}`, or `{"version": 0}` when none.
+- **`GET /school/api/version`** (logged-in user only; session login like the pages, not the device key): `{"version": <2 × the id of the user's newest run of any trigger, + 1 once it has finished>}`, or `{"version": 0}` when none: it grows when a sync starts and again when it ends, so an open Overview shows "Syncing…" too. (Changed 2026-10-01 after the student pressed Sync now and saw nothing happen on the page; it was the newest finished run's id.)
 - Mailbox and Overview carry `data-version` (that id when the page was built) on `<main>` and mark the areas to replace with `data-live="<name>"`:
   - Mailbox: `status` (the status box / Mailbox notice), `read` (the "Mail read from Outlook …" line), `mail` (the boxes: Class, Events, Needs action, Other, Done, Past, and the "gone" joined events);
   - Overview: `status`, `today`, `tomorrow`, `to-submit`, `announcements`, `next-exam`, `bills`, `notice` (the tuition notice area, present even when empty), `changes`.
 - `static/js/live.js` (loaded by both pages):
-  - every 30 seconds while `document.visibilityState === "visible"`, `fetch("/school/api/version")`;
+  - every 30 seconds while `document.visibilityState === "visible"`, `fetch("/school/api/version")`; every 5 seconds while the Overview is busy (`<main data-busy>`: a sync requested or running), for at most 5 minutes after the page loaded; the next round is planned after the previous one (and any refresh) ended;
   - when the answer is greater than `data-version`: `fetch(location.pathname)`, parse with `DOMParser`, and for each `[data-live]` area replace its contents with the new page's area of the same name — except an area where the student is typing or choosing (the focused element is an `input`, `select`, `textarea` or `[contenteditable]`), which waits for the next round; a focused link or button doesn't count, because a click focuses it (final review, 2026-10-01: clicking an email froze Mailbox). `<details>` the student opened stay open (matched by the nearest element with an id around them and their place in it). Once every area was replaced, set `data-version`;
   - then shows "Updated 14:32" (Vietnam time from the browser clock + 7 h, like the calendar) in a small `role="status"` note for 5 seconds;
   - any failed request or unexpected answer: ignored, tried again 30 seconds later; never an error on the page;
@@ -143,7 +143,7 @@ Website
 - `Scheduling`: due after 30 minutes; not due at 29.
 - `SyncRuns.check`: a `mail` success after the last full sync doesn't make the full sync "not due"; a running `mail` run doesn't block the decision.
 - Status: headline from the latest full run; Outlook line from a newer mail run; 20 mail runs after a full run still show the EduSoft/IUPay/Blackboard lines; laptop warning after 61 minutes, not at 59.
-- `/school/api/version`: newest id of any trigger; 0 without runs; login needed; another user's runs don't count.
+- `/school/api/version`: 2 × newest id + 1 once finished, any trigger; 0 without runs; login needed; another user's runs don't count. Overview carries `data-busy` only while requested or syncing; Sync now adds no message (the status box says it).
 - Mailbox and Overview have `data-version` and every `data-live` area named in §4.3.
 - Sync API: `start` with trigger `mail`.
 
