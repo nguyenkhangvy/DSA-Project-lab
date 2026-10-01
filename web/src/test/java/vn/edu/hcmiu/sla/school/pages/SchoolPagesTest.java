@@ -163,6 +163,29 @@ class SchoolPagesTest {
     }
 
     @Test
+    void mailOnlyRunsUpdateTheOutlookLineButNeverHideTheOtherSystems() throws Exception {
+        deviceKeys.create(an.id(), "My laptop", LocalDateTime.of(2026, 9, 1, 0, 0));
+        clock.set(LocalDateTime.of(2026, 10, 1, 8, 0)); // 15:00 in Vietnam
+        Map<String, String> ok = Map.of("status", "ok");
+        SchoolSyncRun full = new SchoolSyncRun(an.id(), null, "scheduled", LocalDateTime.of(2026, 10, 1, 7, 0));
+        full.finish(SchoolSyncRun.SUCCESS, LocalDateTime.of(2026, 10, 1, 7, 0), null, null);
+        full.setSections(Map.of("timetable", ok, "exams", ok, "iupay", ok, "outlook", ok));
+        db.persist(full);
+        for (int minute = 10; minute < 30; minute++) {
+            SchoolSyncRun mail = new SchoolSyncRun(an.id(), null, "mail", LocalDateTime.of(2026, 10, 1, 7, minute));
+            mail.finish(SchoolSyncRun.SUCCESS, LocalDateTime.of(2026, 10, 1, 7, minute), null, null);
+            mail.setSections(Map.of("outlook", ok));
+            db.persist(mail);
+        }
+        db.flush();
+
+        String html = page("/school").replaceAll("\\s+", " ");
+
+        assertThat(html).contains("Synced at 14:00", "EduSoft:</strong> synced at 14:00",
+                "IUPay:</strong> synced at 14:00", "Outlook:</strong> synced at 14:29");
+    }
+
+    @Test
     void syncNowMakesTheNextCheckDue() throws Exception {
         String key = deviceKeys.create(an.id(), "My laptop", LocalDateTime.of(2026, 9, 1, 0, 0)).rawKey();
         // A failed run 10 minutes ago, past the 5-minute gap.

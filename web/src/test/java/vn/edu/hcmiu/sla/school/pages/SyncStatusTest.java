@@ -39,7 +39,7 @@ class SyncStatusTest {
 
     static Status status(RunInfo latest, LocalDateTime requested, boolean hasDevice, LocalDateTime lastSeen,
             LocalDateTime lastGood) {
-        return SyncStatus.describe(NOW, 12, requested, latest, lastGood, hasDevice, lastSeen);
+        return SyncStatus.describe(NOW, requested, latest, lastGood, hasDevice, lastSeen);
     }
 
     static Status status(RunInfo latest) {
@@ -174,14 +174,16 @@ class SyncStatusTest {
     }
 
     @Test
-    void laptopSilentForMoreThanTwiceTheInterval() {
+    void laptopSilentForMoreThanAnHour() {
         assertThat(status(null, null, true, LocalDateTime.of(2026, 9, 30, 7, 0), null).laptopWarning())
                 .isEqualTo("Your laptop hasn't checked in since Wed 30/09 14:00.");
     }
 
     @Test
-    void laptopSeenRecentlyGivesNoWarning() {
-        assertThat(status(null, null, true, LocalDateTime.of(2026, 9, 30, 20, 0), null).laptopWarning()).isNull();
+    void laptopSeenWithinTheHourGivesNoWarning() {
+        assertThat(status(null, null, true, NOW.minusMinutes(59), null).laptopWarning()).isNull();
+        assertThat(status(null, null, true, NOW.minusMinutes(61), null).laptopWarning())
+                .isEqualTo("Your laptop hasn't checked in since Thu 01/10 13:29.");
     }
 
     // ---- One line per system ------------------------------------------------------

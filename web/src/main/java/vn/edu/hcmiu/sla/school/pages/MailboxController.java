@@ -149,7 +149,7 @@ public class MailboxController {
                 view.boxes().stream().flatMap(b -> b.cards().stream()).toList(), nowInVietnam()));
         model.addAttribute("status", statuses.findById(user.id()).orElse(null));
         model.addAttribute("problem", SyncStatus.mailProblem(
-                runs.findTop10ByUserIdOrderByStartedAtDescIdDesc(user.id()).stream().map(RunInfo::of).toList()));
+                runs.recentRuns(user.id()).stream().map(RunInfo::of).toList()));
         model.addAttribute("labels", Mailbox.LABELS);
         model.addAttribute("autoDone", settings.autoDone(user.id()));
         model.addAttribute("gone", mailSessions.gone(user.id(), view.keys(), nowInVietnam()));

@@ -24,6 +24,7 @@ public final class SyncStatus {
     }
 
     static final String RETRY = "It will be tried again automatically.";
+    static final Duration LAPTOP_SILENT = Duration.ofHours(1); // the laptop checks in every minute while it's on
     static final List<String> PART_ORDER = List.of("timetable", "exams", "tuition", "iupay", "blackboard", "outlook");
 
     /** What a status says: state, headline, and what to do. */
@@ -186,23 +187,23 @@ public final class SyncStatus {
         return lines;
     }
 
-    static String laptopWarning(LocalDateTime now, int intervalHours, LocalDateTime lastSeenAt) {
+    static String laptopWarning(LocalDateTime now, LocalDateTime lastSeenAt) {
         if (lastSeenAt == null) {
             return "Your laptop hasn't checked in yet. Run `sla-agent setup` on it.";
         }
-        if (Duration.between(lastSeenAt, now).compareTo(Duration.ofHours(2L * intervalHours)) > 0) {
+        if (Duration.between(lastSeenAt, now).compareTo(LAPTOP_SILENT) > 0) {
             return "Your laptop hasn't checked in since " + VietnamTime.when(lastSeenAt) + ".";
         }
         return null;
     }
 
-    public static Status describe(LocalDateTime now, int intervalHours, LocalDateTime syncRequestedAt, RunInfo latest,
+    public static Status describe(LocalDateTime now, LocalDateTime syncRequestedAt, RunInfo latest,
             LocalDateTime lastGoodFinishedAt, boolean hasDevice, LocalDateTime lastSeenAt) {
         if (!hasDevice) {
             return new Status("no_device", "Not set up yet",
                     "Add your laptop on the Devices page, then run `sla-agent setup` on it.", null, null);
         }
-        String warning = laptopWarning(now, intervalHours, lastSeenAt);
+        String warning = laptopWarning(now, lastSeenAt);
 
         boolean running = latest != null && latest.status().equals(SchoolSyncRun.RUNNING);
         if (running && Duration.between(latest.startedAt(), now).compareTo(Scheduling.RUN_TIMEOUT) < 0) {
@@ -210,7 +211,7 @@ public final class SyncStatus {
         }
         if (syncRequestedAt != null && (latest == null || syncRequestedAt.isAfter(latest.startedAt()))) {
             return new Status("requested", "Sync requested, waiting for your laptop",
-                    "Your laptop checks in every 15 minutes while it's on.", lastGoodFinishedAt, warning);
+                    "Your laptop checks in every minute while it's on.", lastGoodFinishedAt, warning);
         }
         if (latest == null) {
             return new Status("never", "Never synced", "Your laptop will sync at its next check-in.",

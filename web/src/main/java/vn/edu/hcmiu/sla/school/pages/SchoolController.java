@@ -100,13 +100,13 @@ public class SchoolController {
 
     private SyncStatus.Status status(Integer userId, LocalDateTime now) {
         SchoolSyncSettings settings = syncRuns.settings(userId);
-        RunInfo latest = syncRuns.latestRun(userId).map(RunInfo::of).orElse(null);
-        LocalDateTime lastGood = syncRuns.latestRun(userId, SchoolSyncRun.SUCCESS, SchoolSyncRun.PARTIAL)
+        RunInfo latest = syncRuns.latestFullRun(userId).map(RunInfo::of).orElse(null);
+        LocalDateTime lastGood = syncRuns.latestFullRun(userId, SchoolSyncRun.SUCCESS, SchoolSyncRun.PARTIAL)
                 .map(SchoolSyncRun::getFinishedAt).orElse(null);
         List<SchoolSyncDevice> active = devices.findByUserIdAndRevokedAtIsNullOrderByCreatedAtAscIdAsc(userId);
         LocalDateTime lastSeen = active.stream().map(SchoolSyncDevice::getLastSeenAt).filter(Objects::nonNull)
                 .max(Comparator.naturalOrder()).orElse(null);
-        return SyncStatus.describe(now, settings.getIntervalHours(), settings.getSyncRequestedAt(), latest, lastGood,
+        return SyncStatus.describe(now, settings.getSyncRequestedAt(), latest, lastGood,
                 !active.isEmpty(), lastSeen);
     }
 
@@ -116,7 +116,7 @@ public class SchoolController {
         LocalDate today = VietnamTime.date(now);
         model.addAttribute("status", status(user.id(), now));
         model.addAttribute("systemLines", SyncStatus.systemLines(
-                runs.findTop10ByUserIdOrderByStartedAtDescIdDesc(user.id()).stream().map(RunInfo::of).toList(), now));
+                runs.recentRuns(user.id()).stream().map(RunInfo::of).toList(), now));
         model.addAttribute("today", today);
         model.addAttribute("todayItems", schedule.itemsOn(user.id(), today));
         model.addAttribute("tomorrowItems", schedule.itemsOn(user.id(), today.plusDays(1)));
