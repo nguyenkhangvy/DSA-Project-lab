@@ -1,3 +1,4 @@
+import subprocess
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -101,3 +102,18 @@ def test_the_tasks_program_is_read_from_windows():
 
 def test_no_program_when_the_task_is_missing():
     assert task_program(runner=lambda *a, **k: Answer(1, "ERROR: The system cannot find the file specified.")) is None
+
+
+def test_schtasks_never_opens_a_console_window(tmp_path):
+    """The window runs under pythonw: without CREATE_NO_WINDOW each schtasks call would flash a console."""
+    flags = []
+
+    def runner(args, **kwargs):
+        flags.append(kwargs.get("creationflags"))
+        return Answer(0, "")
+
+    install_task(PYTHONW, USER, folder=tmp_path, runner=runner)
+    task_program(runner=runner)
+    remove_task(runner=runner)
+
+    assert flags == [getattr(subprocess, "CREATE_NO_WINDOW", 0)] * 3

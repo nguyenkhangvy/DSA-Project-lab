@@ -14,6 +14,8 @@ from pathlib import Path
 
 TASK_NAME = r"\SchoolLifeAssistant\Sync"
 NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
+# schtasks is a console program: started from the window (pythonw, no console) it would flash a console window.
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
 class SchedulerError(Exception):
@@ -90,7 +92,7 @@ def install_task(python_exe, user, folder, runner=subprocess.run):
     xml_path.write_text('<?xml version="1.0" encoding="UTF-16"?>\n' + task_xml(python_exe, user), encoding="utf-16")
     result = runner(
         ["schtasks", "/Create", "/F", "/TN", TASK_NAME, "/XML", str(xml_path)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, creationflags=NO_WINDOW,
     )
     if result.returncode != 0:
         raise SchedulerError(f"Couldn't create the scheduled task: {(result.stderr or result.stdout).strip()}")
@@ -99,7 +101,8 @@ def install_task(python_exe, user, folder, runner=subprocess.run):
 def task_program(runner=subprocess.run):
     """The program the scheduled task starts, or None when the task is missing or can't be read."""
     try:
-        result = runner(["schtasks", "/Query", "/TN", TASK_NAME, "/XML"], capture_output=True, text=True)
+        result = runner(["schtasks", "/Query", "/TN", TASK_NAME, "/XML"], capture_output=True, text=True,
+                        creationflags=NO_WINDOW)
     except OSError:
         return None
     if result.returncode != 0:
@@ -109,4 +112,4 @@ def task_program(runner=subprocess.run):
 
 
 def remove_task(runner=subprocess.run):
-    runner(["schtasks", "/Delete", "/F", "/TN", TASK_NAME], capture_output=True, text=True)
+    runner(["schtasks", "/Delete", "/F", "/TN", TASK_NAME], capture_output=True, text=True, creationflags=NO_WINDOW)
