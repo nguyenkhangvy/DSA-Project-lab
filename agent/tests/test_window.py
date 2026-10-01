@@ -17,7 +17,7 @@ from agent.tests.accounts_fakes import (
     Fakes,
     set_up,
 )
-from sla_agent import accounts, credentials, window
+from sla_agent import __version__, accounts, credentials, launcher, window
 from sla_agent.errors import BadCredentials, OutlookNotSetUp
 from sla_agent.log import setup_logging
 from sla_agent.state import save_state
@@ -290,3 +290,51 @@ def test_the_form_looks_only_at_an_open_outlook_and_refresh_may_start_it(root, f
     app.screen.outlook.refresh_button.invoke()
 
     assert fakes.looks == ["open", "start"]
+
+
+# ---- the built app ------------------------------------------------------------------------
+
+
+def test_the_built_app_fills_in_the_website_online(root, fakes, monkeypatch):
+    monkeypatch.setattr(launcher, "frozen", lambda: True)
+
+    app = open_window(root, fakes)
+
+    assert app.screen.values["address"].get() == "https://school-life-assistant.onrender.com"
+
+
+def test_accounts_shows_the_version_and_when_it_last_updated_itself(root, fakes):
+    state = set_up()
+    state.updated_at = "2026-10-05T07:02:00+00:00"
+    save_state(state)
+
+    app = open_window(root, fakes)
+
+    when = window.local_time("2026-10-05T07:02:00+00:00")
+    assert app.screen.values["version"].get() == f"{__version__}, updated by itself on {when}"
+    assert "version" not in app.screen.buttons
+
+
+def test_before_any_update_accounts_shows_just_the_version(root, fakes):
+    set_up()
+
+    app = open_window(root, fakes)
+
+    assert app.screen.values["version"].get() == __version__
+
+
+def test_the_built_app_offers_repair_when_the_task_runs_another_copy(root, fakes, monkeypatch, tmp_path):
+    set_up()
+    monkeypatch.setattr(launcher, "frozen", lambda: True)
+    (tmp_path / "pythonw.exe").write_text("")
+    (tmp_path / "School-Life-Assistant.exe").write_text("")
+    fakes.program = str(tmp_path / "pythonw.exe")  # set up from source before
+    fakes.me = str(tmp_path / "School-Life-Assistant.exe")
+    app = open_window(root, fakes)
+    assert app.screen.values["sync"].get() == "runs another copy of School-Life-Assistant"
+    fakes.program = fakes.me  # what the new task starts
+
+    app.screen.open("sync")
+
+    assert "task" in fakes.done
+    assert app.screen.values["sync"].get() == "on: every minute"

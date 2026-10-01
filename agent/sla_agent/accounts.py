@@ -11,7 +11,7 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Callable
 
-from sla_agent import credentials
+from sla_agent import credentials, launcher
 from sla_agent.errors import AgentError, BadCredentials, DeviceKeyRejected, ExtraVerification, ServerError
 from sla_agent.log import protect
 from sla_agent.scheduler import SchedulerError, current_user
@@ -270,11 +270,16 @@ def add_window_links(tools):
 
 
 def sync_task_state(tools):
-    """"on", "off" (no task) or "nowhere" (the task starts a Python that no longer exists: the folder moved)."""
+    """"on", "off" (no task), "nowhere" (the task starts a program that no longer exists: the folder moved) or
+    "elsewhere" (this is the built app, but the task starts another copy, such as a Python set up from source)."""
     program = tools.task_program()
     if not program:
         return "off"
-    return "on" if Path(program).exists() else "nowhere"
+    if not Path(program).exists():
+        return "nowhere"
+    if launcher.frozen() and Path(program) != Path(tools.program()):
+        return "elsewhere"
+    return "on"
 
 
 # ---- the first-time form ---------------------------------------------------------------
