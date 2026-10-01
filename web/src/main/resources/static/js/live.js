@@ -1,7 +1,9 @@
 /*
  * Mailbox and Overview update themselves (docs/superpowers/specs/2026-10-01-live-sync-design.md, 4.3). Every 30 s,
  * while the tab is visible, ask the site for the newest finished sync; when it is newer than this page, fetch the
- * page again and swap each [data-live] area, except one holding the focused element (it waits for the next round).
+ * page again and swap each [data-live] area, except one where the student is typing or choosing (a focused input,
+ * select or text box): it waits for the next round, and "Updated" shows once every area is up to date. A focused
+ * link or button doesn't hold an area back (a click focuses it). Lists the student opened (<details>) stay open.
  * If the areas differ (e.g. Outlook got connected), the whole page reloads. Failures are silent: tried again later.
  */
 document.addEventListener("DOMContentLoaded", function () {
@@ -11,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   var EVERY_MS = 30000;
   var VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+  var EDITING = "input, select, textarea, [contenteditable]";
   var note = document.createElement("p");
   note.className = "live-note";
   note.setAttribute("role", "status");
@@ -29,9 +32,27 @@ document.addEventListener("DOMContentLoaded", function () {
     var vietnam = new Date(Date.now() + VIETNAM_OFFSET_MS);
     return pad(vietnam.getUTCHours()) + ":" + pad(vietnam.getUTCMinutes());
   }
-  function focusedIn(area) {
+  function editingIn(area) {
     var focused = document.activeElement;
-    return focused && focused !== document.body && area.contains(focused);
+    return focused && focused.matches && focused.matches(EDITING) && area.contains(focused);
+  }
+  // A <details> is known by the nearest element with an id around it inside the area, and its place there.
+  function detailsKey(details, area) {
+    var holder = details.parentElement.closest("[id]");
+    var scope = holder && area.contains(holder) ? holder : area;
+    var place = Array.prototype.indexOf.call(scope.querySelectorAll("details"), details);
+    return (scope === area ? "" : scope.id) + "#" + place;
+  }
+  function swap(area, fresh) {
+    var open = Array.prototype.map.call(area.querySelectorAll("details[open]"), function (details) {
+      return detailsKey(details, area);
+    });
+    area.innerHTML = fresh.innerHTML;
+    area.querySelectorAll("details").forEach(function (details) {
+      if (open.indexOf(detailsKey(details, area)) >= 0) {
+        details.open = true;
+      }
+    });
   }
   function refresh() {
     return fetch(location.pathname + location.search, { credentials: "same-origin" })
@@ -50,15 +71,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         var waiting = false;
         document.querySelectorAll("[data-live]").forEach(function (area) {
-          if (focusedIn(area)) {
+          if (editingIn(area)) {
             waiting = true;
             return;
           }
-          area.innerHTML = fresh.querySelector('[data-live="' + area.dataset.live + '"]').innerHTML;
+          swap(area, fresh.querySelector('[data-live="' + area.dataset.live + '"]'));
         });
-        if (!waiting) {
-          main.dataset.version = freshMain.dataset.version;
+        if (waiting) {
+          return; // the version stays, so the next round tries the waiting area again
         }
+        main.dataset.version = freshMain.dataset.version;
         note.textContent = "Updated " + clock();
         note.hidden = false;
         setTimeout(function () {

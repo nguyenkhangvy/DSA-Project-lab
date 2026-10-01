@@ -79,10 +79,10 @@ Website
 
 - `server.start("mail")`, then the same `read_outlook(...)` a full sync uses (same context: courses and Blackboard names from the last full sync, kept in the state), then `server.finish(run_id, FinishRun(outlook=...))`.
 - It never logs in to EduSoft, Blackboard or IUPay, and never reads their passwords.
-- After a successful upload (the site answered), `state.mail_newest` = the newest `received_at` in what was uploaded, and `state.last_result` is left alone (it describes full syncs).
-- A full sync also sets `state.mail_newest` when its Outlook part was uploaded `ok`.
+- After the site answered, `state.mail_newest` moves forward (never back) to the newest of: the `received_at` times uploaded, and the newest time the minute's check saw. So a newest email the upload lacks (unreadable, or older than the semester) is synced once, not every minute; the next full sync reads the Inbox again. `state.last_result` is left alone (it describes full syncs).
+- A full sync also moves `state.mail_newest` forward when its Outlook part was uploaded `ok`.
 - If the site refuses the run because another is running (`RunInProgress`): exit 0; the next minute tries again.
-- If Outlook refuses the read: the run is finished with the Outlook part failed (`outlook_blocked` / `outlook_not_set_up`), as in a full sync; `mail_newest` is not changed, so the next minute tries again.
+- If Outlook refuses the read: the run is finished with the Outlook part failed (`outlook_blocked` / `outlook_not_set_up`), as in a full sync; `mail_newest` still moves to the time the check saw, so a lasting problem (a security prompt, a slow Outlook) isn't hit every minute: the next newer email or the next full sync tries again. (Final review, 2026-10-01: retrying every minute repeated the failed read, a run row and a page refresh every minute.)
 - The log gets one line per mail-only sync: "Mail sync success: 3 new emails." (count of uploaded emails newer than the previous `mail_newest`).
 
 ### 3.5 The upload format
@@ -114,8 +114,8 @@ Website
   - Overview: `status`, `today`, `tomorrow`, `to-submit`, `announcements`, `next-exam`, `bills`, `notice` (the tuition notice area, present even when empty), `changes`.
 - `static/js/live.js` (loaded by both pages):
   - every 30 seconds while `document.visibilityState === "visible"`, `fetch("/school/api/version")`;
-  - when the answer is greater than `data-version`: `fetch(location.pathname)`, parse with `DOMParser`, and for each `[data-live]` area replace its contents with the new page's area of the same name — except an area that contains the focused element (`document.activeElement`), which waits for the next round; then set `data-version`;
-  - shows "Updated 14:32" (Vietnam time from the browser clock + 7 h, like the calendar) in a small `role="status"` note for 5 seconds;
+  - when the answer is greater than `data-version`: `fetch(location.pathname)`, parse with `DOMParser`, and for each `[data-live]` area replace its contents with the new page's area of the same name — except an area where the student is typing or choosing (the focused element is an `input`, `select`, `textarea` or `[contenteditable]`), which waits for the next round; a focused link or button doesn't count, because a click focuses it (final review, 2026-10-01: clicking an email froze Mailbox). `<details>` the student opened stay open (matched by the nearest element with an id around them and their place in it). Once every area was replaced, set `data-version`;
+  - then shows "Updated 14:32" (Vietnam time from the browser clock + 7 h, like the calendar) in a small `role="status"` note for 5 seconds;
   - any failed request or unexpected answer: ignored, tried again 30 seconds later; never an error on the page;
   - Mailbox's own scripts (Web ↗ opened marking, auto-Done setting) keep working after a replacement: they listen on `document` (event delegation) instead of on the replaced elements.
 - Scroll position is kept (only area contents change).
@@ -147,7 +147,7 @@ Website
 - Mailbox and Overview have `data-version` and every `data-live` area named in §4.3.
 - Sync API: `start` with trigger `mail`.
 
-**In a real browser** (headless Chrome, as for the Timetable's Show more): an area is replaced when the version grows; a focused field's area is left for the next round; the note appears; a failed version request changes nothing.
+**In a real browser** (headless Chrome, as for the Timetable's Show more): an area is replaced when the version grows; a focused field's area is left for the next round and the note waits too; after clicking a link the area is still replaced; an opened Done list stays open; the note appears; a failed version request changes nothing.
 
 **By hand:** after `sla-agent schedule`, send an email to yourself; Mailbox shows it within about a minute without F5; the status box headline doesn't change.
 

@@ -6,7 +6,7 @@ from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
 from sla_agent import cli, credentials
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, RunInProgress
+from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookBlocked, RunInProgress
 from sla_agent.state import State, agent_home, load_state, save_state
 
 SERVER = "https://sla.example.com"
@@ -681,6 +681,43 @@ def test_a_mail_sync_refused_during_a_full_sync_ends_quietly(world, monkeypatch,
 
     assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
     assert load_state().mail_newest is None
+
+
+def older_inbox(address, since, context):
+    """The upload lacks the newest email (unreadable, or older than the semester): only an older one goes up."""
+    return Outlook(since=since, connected=True,
+                   emails=[MailItem(key="b" * 64, entry_id="00CD", received_at=NEW_MAIL - timedelta(hours=1))])
+
+
+def empty_inbox(address, since, context):
+    return Outlook(since=since, connected=True, emails=[])
+
+
+def blocked(address, since, context):
+    raise OutlookBlocked("Outlook didn't answer in time")
+
+
+@pytest.mark.parametrize("read", [older_inbox, empty_inbox, blocked])
+def test_a_newest_email_the_mail_sync_cannot_upload_is_tried_once_not_every_minute(world, monkeypatch, read):
+    mail_configured("2026-09-30T00:00:00+00:00")
+    world.server.due = False
+    monkeypatch.setattr(cli, "newest_received", lambda address: NEW_MAIL)
+    monkeypatch.setattr(cli, "read_outlook", read)
+
+    for _ in range(3):
+        assert cli.main(["run"]) == 0
+
+    assert world.server.starts == ["mail"]
+
+
+def test_a_full_sync_never_moves_the_newest_time_back(world, monkeypatch):
+    mail_configured(NEW_MAIL.isoformat())
+    monkeypatch.setattr(cli, "read_outlook", older_inbox)
+
+    assert cli.main(["run"]) == 0
+
+    assert world.server.starts == ["scheduled"]
+    assert load_state().mail_newest == NEW_MAIL.isoformat()
 
 
 def test_schedule_reinstalls_the_task_with_this_python(world, capsys, monkeypatch):

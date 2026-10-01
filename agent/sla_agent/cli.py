@@ -296,16 +296,17 @@ def _sync(trigger, state, password, server):
 
 
 def _newer_mail(state):
-    """Whether an already-open Outlook has an email newer than the newest one uploaded."""
+    """The time of the newest email in an already-open Outlook when it is newer than the newest one handled,
+    else None."""
     newest = newest_received(state.outlook_account)
-    if newest is None:
-        return False
-    return state.mail_newest is None or newest > datetime.fromisoformat(state.mail_newest)
+    if newest is None or (state.mail_newest and newest <= datetime.fromisoformat(state.mail_newest)):
+        return None
+    return newest
 
 
-def _mail_sync(state, server):
+def _mail_sync(state, server, seen):
     try:
-        run_mail_sync(state=state, server=server, read_outlook=read_outlook, now=_now())
+        run_mail_sync(state=state, server=server, read_outlook=read_outlook, now=_now(), seen=seen)
     except RunInProgress:
         return 0  # a full sync is running; the next minute tries again
     except ServerError as error:
@@ -332,8 +333,9 @@ def cmd_run(args):
         return 0
     if decision.due:
         return _sync("manual" if decision.reason == "requested" else "scheduled", state, password, server)
-    if state.outlook_account and _newer_mail(state):
-        return _mail_sync(state, server)
+    seen = _newer_mail(state) if state.outlook_account else None
+    if seen is not None:
+        return _mail_sync(state, server, seen)
     log.debug("No sync due (%s)", decision.reason)
     return 0
 

@@ -32,7 +32,7 @@ class State:
     term_code: str | None = None  # EduSoft's semester, from the last timetable read, e.g. "20261"
     courses: list | None = None  # [[course code, course name, lecturer], ...] from the last timetable read
     bb_courses: list | None = None  # [[Blackboard course name, course code], ...] from the last Blackboard read
-    mail_newest: str | None = None  # ISO time (UTC) of the newest email uploaded; the minute's mail check compares with it
+    mail_newest: str | None = None  # ISO time (UTC) of the newest email handled; the minute's mail check compares with it
 
 
 def load_state():
