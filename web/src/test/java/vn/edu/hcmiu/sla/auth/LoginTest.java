@@ -80,10 +80,10 @@ class LoginTest {
         savedUser("an@example.com", WerkzeugPasswordEncoderTest.SCRYPT);
         MockHttpSession session = new MockHttpSession();
 
-        mvc.perform(get("/expense/report").session(session)).andExpect(redirectedUrl("/auth/login"));
+        mvc.perform(get("/school/timetable").session(session)).andExpect(redirectedUrl("/auth/login"));
         mvc.perform(post("/auth/login").session(session).with(csrf())
                         .param("email", "an@example.com").param("password", "correct-horse-8"))
-                .andExpect(redirectedUrl("http://localhost/expense/report?continue"));
+                .andExpect(redirectedUrl("http://localhost/school/timetable?continue"));
     }
 
     @Test

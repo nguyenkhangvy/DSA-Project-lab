@@ -15,7 +15,7 @@
     <nav class="site-nav" sec:authorize="isAuthenticated()">
       <th:block th:each="item : ${navItems}">
         <a th:if="${item.path != null}" th:href="@{${item.path}}" th:text="${item.label}">School</a>
-        <span th:if="${item.path == null}" class="nav-soon" title="Coming soon" th:text="${item.label}">Health</span>
+        <span th:if="${item.path == null}" class="nav-soon" title="Coming soon" th:text="${item.label}">School</span>
       </th:block>
       <form method="post" th:action="@{/auth/logout}" class="inline">
         <button type="submit" class="link-button">Log out</button>

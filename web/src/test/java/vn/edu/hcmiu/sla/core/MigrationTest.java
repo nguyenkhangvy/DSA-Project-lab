@@ -81,7 +81,7 @@ class MigrationTest {
 
     @Test
     void laterMigrationsWorkOnTheDatabaseThePythonSiteMade() throws Exception {
-        // db/later (test files only) has a migration like a teammate's first one: a new table with a key to users.
+        // db/later (test files only) has a later migration: a new table with a key to users.
         DataSource pythonMade = pythonMadeDatabase();
 
         migrate(pythonMade, "classpath:db/migration", "classpath:db/later");

@@ -1,4 +1,4 @@
--- For MigrationTest only: a later migration like a teammate's first one (see the README), with a key to users.
+-- For MigrationTest only: a later migration that adds a table with a key to users.
 CREATE TABLE later_items (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,

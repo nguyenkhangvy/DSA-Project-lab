@@ -44,7 +44,7 @@ class LayoutTest {
                     .andExpect(content().string(containsString("href=\"/css/style.css\"")))
                     .andReturn().getResponse().getContentAsString();
 
-            assertThat(page.split("class=\"card module-card", -1)).hasSize(4); // School, Expense, Health
+            assertThat(page.split("class=\"card module-card", -1)).hasSize(2); // School
         }
 
         @Test
