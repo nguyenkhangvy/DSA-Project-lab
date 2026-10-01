@@ -63,3 +63,13 @@ jobs:
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: root
         run: ./mvnw -B test
+
+  image:
+    # The website as Render builds it (render.yaml), so a broken Dockerfile shows here, not on the live site.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the online site
+        run: docker build web

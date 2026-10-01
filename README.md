@@ -58,6 +58,20 @@ Git Bash works too: `cd web && ./mvnw spring-boot:run`. GitHub runs the website'
 
 ---
 
+## Putting the site online
+
+Online, the site runs on Render's free plan from `web/Dockerfile`, with its database on Aiven's free MySQL; `render.yaml` holds Render's settings. Students then only need the link: no Java, no MySQL. This is done once.
+
+1. **The database.** On aiven.io, create a free MySQL service (a region near Singapore), wait until it says *Running*, and copy its **Service URI** (`mysql://avnadmin:…@…/defaultdb?ssl-mode=REQUIRED`). If the password in it has an `@`, write it as `%40`.
+2. **The site.** On render.com, sign in with GitHub, choose **New → Blueprint**, and pick this repository and the `main` branch. Render reads `render.yaml` and asks for `DATABASE_URL`: paste the Service URI. The first build takes about 10 minutes; Render then shows the site's address (`https://….onrender.com`). On the empty database the site creates every table.
+3. **The laptops.** Each student creates an account on the online site and gets a device key in School → Devices. In the School-Life-Assistant window, put the online address and that key in the first-time form, or, on a laptop already set up, press **Change** next to Website in Accounts.
+
+**New versions** go online by themselves: merge a pull request into `main`, and once GitHub's tests pass, Render builds the new version and switches to it (about 10 minutes). Table changes are applied when it starts, and everyone gets the new version the next time they load a page.
+
+**Free plan limits.** After 15 minutes without visits the site sleeps, and the next visit waits about a minute while it wakes up. A restart or a new version logs everyone out.
+
+---
+
 ## The laptop agent (School sync)
 
 Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. It checks every minute: new mail in an open Outlook reaches Mailbox within about a minute, and everything else syncs every 30 minutes. After moving the project folder, run `sla-agent schedule` once. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
@@ -119,4 +133,5 @@ The laptop agent uploads its data in the format set by `contract/sla_contract/sc
 
 - Work on a branch, open a pull request, and get one teammate's review before merging to `main`.
 - The tests must pass (GitHub shows a green check on the pull request).
+- Merging to `main` puts the new version online (see "Putting the site online").
 - Never commit `.env`, passwords or keys.

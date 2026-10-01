@@ -1,0 +1,21 @@
+# The website online on Render's free plan (README, "Putting the site online").
+# Render reads this file when you create the site with New → Blueprint.
+services:
+  - type: web
+    name: school-life-assistant
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    # A merge to main goes online once GitHub's tests pass.
+    autoDeployTrigger: checksPass
+    dockerContext: ./web
+    dockerfilePath: ./web/Dockerfile
+    healthCheckPath: /auth/login
+    envVars:
+      # Asked for once when you create the site, so the password never goes into git.
+      - key: DATABASE_URL
+        sync: false
+      # Render's proxy handles https; this lets the site's redirects use https too.
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: framework
