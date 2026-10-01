@@ -58,7 +58,7 @@ The website is online (https://school-life-assistant.onrender.com), so students 
 
 **Install** (double-clicked, no arguments):
 
-1. If an app is installed and its `version.txt` is newer than the setup's version, open it (`app\School-Life-Assistant.exe window`) and stop: an old download double-clicked from Downloads never replaces a newer app.
+1. If an app is installed and its `version.txt` is newer than the setup's version, or the same version and its `self-check` passes, open it (`app\School-Life-Assistant.exe window`) and stop: an old download double-clicked from Downloads never replaces a newer app, and a student who double-clicks the download again to open the app gets the window at once, even while a sync runs.
 2. Unpack the app into `app.new\`, then run `app.new\School-Life-Assistant.exe self-check <version>`. If it fails, delete `app.new\` and show a message box with what to do.
 3. Swap: rename `app\` to `app.old\`, then `app.new\` to `app\`, then delete `app.old\`. Windows refuses to rename a folder while a program runs from it; the setup tries for up to a minute (a sync usually ends by then), then deletes `app.new\` and says "Close School-Life-Assistant, then run this again." If the second rename fails, `app.old\` is renamed back.
 4. Start `app\School-Life-Assistant.exe window` and exit.
@@ -104,7 +104,7 @@ Any error in steps 2–4 is logged in `agent.log` and changes nothing; a sync st
 Without code signing, false alarms cannot be ruled out. These make them less likely:
 
 - **No UPX.** Both builds use `--noupx`; UPX-packed files are a common trigger.
-- **PyInstaller's launcher compiled from source** in the release workflow (`PYINSTALLER_COMPILE_BOOTLOADER=1`, `pip install --no-binary=PyInstaller`). The prebuilt launcher is shared by many programs, some of them malware, so antivirus engines know its fingerprint. CI pull-request builds use the prebuilt one for speed.
+- **PyInstaller's launcher compiled from source** in the release workflow (`PYINSTALLER_COMPILE_BOOTLOADER=1`, `pip install --no-binary=PyInstaller`). The prebuilt launcher is shared by many programs, some of them malware, so antivirus engines know its fingerprint. CI's `exe` job builds the same way on every pull request, so the release's exact build is tried before any tag.
 - **Windows version details** (product name, version, description) in both `.exe` files, shown in Properties.
 - **The app is a folder build**; only the setup is a single file, and it runs once per install or update.
 - **Before telling classmates about a release:** upload `School-Life-Assistant.exe` to virustotal.com; if Microsoft Defender flags it, report it as a false positive at microsoft.com/wdsi/filesubmission (usually cleared in a day or two). The README's release steps list this.
