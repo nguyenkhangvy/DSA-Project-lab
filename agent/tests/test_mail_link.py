@@ -21,3 +21,29 @@ def test_unregister_removes_it_and_is_fine_when_it_is_gone(isolated_agent):
     mail_link.unregister()
 
     assert not [path for _, path in isolated_agent.registry.keys if "sla-mail" in path]
+
+
+WINDOW_ROOT = r"Software\Classes\sla-agent"
+
+
+def test_register_window_adds_the_accounts_link_type_beside_sla_mail(isolated_agent):
+    mail_link.register(r"C:\Python\pythonw.exe")
+    mail_link.register_window(r"C:\Python\pythonw.exe")
+
+    keys = isolated_agent.registry.keys
+    assert keys[("HKCU", WINDOW_ROOT)] == {"": "URL:School-Life-Assistant accounts", "URL Protocol": ""}
+    assert keys[("HKCU", WINDOW_ROOT + r"\shell\open\command")] == {
+        "": r'"C:\Python\pythonw.exe" -m sla_agent window "%1"'}
+    assert ("HKCU", ROOT) in keys
+
+
+def test_unregister_window_leaves_sla_mail_and_is_fine_when_it_is_gone(isolated_agent):
+    mail_link.register("pythonw.exe")
+    mail_link.register_window("pythonw.exe")
+
+    mail_link.unregister_window()
+    mail_link.unregister_window()
+
+    paths = [path for _, path in isolated_agent.registry.keys]
+    assert not [path for path in paths if "sla-agent" in path]
+    assert ROOT in paths

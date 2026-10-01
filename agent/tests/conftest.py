@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import keyring
 import pytest
 from keyring.backend import KeyringBackend
@@ -61,18 +63,48 @@ class MemoryRegistry:
         del self.keys[(root, path)]
 
 
+class FakeShortcut:
+    def __init__(self, path):
+        self.path = path
+        self.TargetPath = self.Arguments = self.WorkingDirectory = self.Description = ""
+
+    def Save(self):
+        Path(self.path).write_text(f"{self.TargetPath} {self.Arguments}\n{self.WorkingDirectory}", encoding="utf-8")
+
+
+class FakeShell:
+    """Stands in for Windows' WScript.Shell: a shortcut becomes a small text file in the test's own folders. The
+    Desktop has Vietnamese letters in its path, like OneDrive's "Máy tính" on the student's laptop."""
+
+    FOLDERS = {"Desktop": "OneDrive/Máy tính", "Programs": "Start Menu/Programs"}
+
+    def __init__(self, root):
+        self.root = root
+
+    def SpecialFolders(self, name):
+        folder = self.root / self.FOLDERS[name]
+        folder.mkdir(parents=True, exist_ok=True)
+        return str(folder)
+
+    def CreateShortcut(self, path):
+        return FakeShortcut(path)
+
+
 @pytest.fixture(autouse=True)
 def isolated_agent(tmp_path, monkeypatch):
-    """Every agent test gets a fake keyring, a fake registry and its own agent folder:
-    tests never touch the real Credential Manager, registry or %LOCALAPPDATA%."""
-    from sla_agent import mail_link
+    """Every agent test gets a fake keyring, a fake registry, a fake Windows shell and its own agent folder:
+    tests never touch the real Credential Manager, registry, Desktop, Start menu or %LOCALAPPDATA%."""
+    from sla_agent import mail_link, shortcuts
 
     fake = MemoryKeyring()
     previous = keyring.get_keyring()
     keyring.set_keyring(fake)
     registry = MemoryRegistry()
     monkeypatch.setattr(mail_link, "_winreg", lambda: registry)
+    shell = FakeShell(tmp_path / "windows")
+    monkeypatch.setattr(shortcuts, "_shell", lambda: shell)
     monkeypatch.setenv("SLA_AGENT_HOME", str(tmp_path / "agent-home"))
     fake.registry = registry
+    fake.shell = shell
     yield fake
     keyring.set_keyring(previous)
