@@ -10,6 +10,7 @@
     sla-agent import FOLDER          read pages saved by `fetch` (or your browser) and upload them
     sla-agent forget                 delete the saved secrets and the scheduled task
     sla-agent open-mail LINK         what Mailbox's "Open in Outlook" button runs: shows one email
+    sla-agent self-check VERSION     whether this built app has everything it needs (exit code 0 or 1)
 """
 
 import argparse
@@ -23,7 +24,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import accounts, credentials, launcher, mail_link, shortcuts
+from sla_agent import accounts, credentials, launcher, mail_link, selfcheck, shortcuts
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -479,6 +480,17 @@ def cmd_window(args):
     return window.main(tools(), link=args.link)
 
 
+def cmd_self_check(args):
+    """The setup, CI and the release ask the built app whether it has everything it needs: exit code 0 or 1."""
+    problems = selfcheck.problems(args.version)
+    for problem in problems:
+        log.error("Self-check: %s", problem)
+        say(f"Problem: {problem}")
+    if not problems:
+        say(f"School-Life-Assistant {args.version} has everything it needs.")
+    return 1 if problems else 0
+
+
 # ---- status / forget ----------------------------------------------------------------
 
 
@@ -560,10 +572,14 @@ COMMANDS = {
     "import": cmd_import,
     "forget": cmd_forget,
     "open-mail": cmd_open_mail,
+    "self-check": cmd_self_check,
 }
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv and launcher.frozen():
+        argv = ["window"]  # the app's School-Life-Assistant.exe double-clicked
     parser = argparse.ArgumentParser(prog="sla-agent", description="School-Life-Assistant laptop sync agent.")
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("setup", help="enter your details once; schedules automatic sync")
@@ -584,6 +600,8 @@ def main(argv=None):
     commands.add_parser("forget", help="delete saved secrets and the scheduled task")
     open_mail = commands.add_parser("open-mail", help="show one email in Outlook (run by Mailbox's links)")
     open_mail.add_argument("link")
+    check = commands.add_parser("self-check", help="check that this built app has everything it needs (exit code)")
+    check.add_argument("version")
 
     args = parser.parse_args(argv)
     # Output piped or redirected on Windows uses cp1252; never crash on Vietnamese text.
