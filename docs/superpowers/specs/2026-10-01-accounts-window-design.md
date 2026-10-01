@@ -3,7 +3,7 @@
 **Date:** 2026-10-01
 **Scope:** a School-Life-Assistant window on the laptop replaces the terminal for setting up the agent and for changing the website connection, the EduSoft and Blackboard logins and the Outlook account; the website gets an Accounts page that opens it; messages that tell students to run terminal commands point to Accounts instead
 **Owner:** Nguyen Khang Vy
-**Status:** Approved; plan in docs/superpowers/plans/2026-10-01-accounts-window.md
+**Status:** Built (see docs/superpowers/plans/2026-10-01-accounts-window.md)
 **Builds on:** [EduSoft first, phase 1](2026-09-25-edusoft-first-phase1-design.md), [Blackboard](2026-09-26-blackboard-design.md), [Outlook mailbox](2026-09-28-outlook-mailbox-design.md), [Live sync](2026-10-01-live-sync-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
