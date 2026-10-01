@@ -3,7 +3,7 @@
 **Date:** 2026-10-01
 **Scope:** the laptop agent checks every minute; a new email in Outlook reaches Mailbox within about a minute through a mail-only sync; EduSoft, IUPay, Blackboard and Outlook sync fully every 30 minutes instead of every 12 hours; Mailbox and Overview refresh their content on their own; `sla-agent schedule` fixes the scheduled task after the project folder moved
 **Owner:** Nguyen Khang Vy
-**Status:** Design approved in chat; spec awaiting review
+**Status:** Built (see docs/superpowers/plans/2026-10-01-live-sync.md)
 **Builds on:** [Java website](2026-09-26-java-website-design.md), [Outlook mailbox](2026-09-28-outlook-mailbox-design.md), [IUPay tuition](2026-09-30-iupay-tuition-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
