@@ -23,7 +23,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import accounts, credentials, mail_link, shortcuts
+from sla_agent import accounts, credentials, launcher, mail_link, shortcuts
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -56,7 +56,6 @@ from sla_agent.scheduler import (
     install_task,
     remove_task,
     task_program,
-    windowless_python,
 )
 from sla_agent.server_client import ServerClient, check_server_url
 from sla_agent.state import agent_home, load_state, save_state
@@ -111,7 +110,7 @@ def tools():
     return accounts.Tools(
         make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
         find_outlook_accounts=find_outlook_accounts, find_open_outlook_accounts=find_open_outlook_accounts,
-        python=windowless_python, install_task=install_task,
+        program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
         has_window_link=mail_link.window_registered)
@@ -465,7 +464,7 @@ def cmd_schedule(args):
     if not sync.ok:
         say(sync.message)
         return 1
-    say(f"The sync task now runs {windowless_python()} every minute.")
+    say(f"The sync task now runs {launcher.program()} every minute.")
     return 0
 
 

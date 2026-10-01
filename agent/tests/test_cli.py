@@ -5,7 +5,7 @@ import pytest
 from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
-from sla_agent import cli, credentials
+from sla_agent import cli, credentials, launcher
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookBlocked, RunInProgress
 from sla_agent.state import State, agent_home, load_state, save_state
 
@@ -722,7 +722,7 @@ def test_a_full_sync_never_moves_the_newest_time_back(world, monkeypatch):
 
 def test_schedule_reinstalls_the_task_with_this_python(world, capsys, monkeypatch):
     configure()
-    monkeypatch.setattr(cli, "windowless_python", lambda: r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe")
+    monkeypatch.setattr(launcher, "program", lambda: r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe")
 
     assert cli.main(["schedule"]) == 0
 
@@ -772,7 +772,7 @@ def test_setup_says_when_the_shortcuts_could_not_be_made_but_keeps_the_rest(worl
 def test_schedule_also_points_the_links_and_shortcuts_at_this_python(world, isolated_agent, monkeypatch):
     configure()
     python = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
-    monkeypatch.setattr(cli, "windowless_python", lambda: python)
+    monkeypatch.setattr(launcher, "program", lambda: python)
 
     assert cli.main(["schedule"]) == 0
 

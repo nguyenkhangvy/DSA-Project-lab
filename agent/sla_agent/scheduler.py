@@ -8,9 +8,10 @@ import getpass
 import os
 import re
 import subprocess
-import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+from sla_agent.launcher import arguments
 
 TASK_NAME = r"\SchoolLifeAssistant\Sync"
 NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
@@ -28,12 +29,6 @@ def current_user():
     return f"{domain}\\{user}" if domain else user
 
 
-def windowless_python():
-    """pythonw.exe runs without opening a console window every minute."""
-    pythonw = Path(sys.executable).with_name("pythonw.exe")
-    return str(pythonw if pythonw.exists() else Path(sys.executable))
-
-
 def _add(parent, tag, text=None, **attrs):
     element = ET.SubElement(parent, f"{{{NS}}}{tag}", attrs)
     if text is not None:
@@ -41,7 +36,7 @@ def _add(parent, tag, text=None, **attrs):
     return element
 
 
-def task_xml(python_exe, user):
+def task_xml(program, user):
     ET.register_namespace("", NS)
     task = ET.Element(f"{{{NS}}}Task", version="1.2")
 
@@ -79,17 +74,17 @@ def task_xml(python_exe, user):
         _add(settings, tag, value)
 
     action = _add(_add(task, "Actions", Context="Author"), "Exec")
-    _add(action, "Command", python_exe)
-    _add(action, "Arguments", "-m sla_agent run")
+    _add(action, "Command", program)
+    _add(action, "Arguments", arguments(program, "run"))
 
     return ET.tostring(task, encoding="unicode")
 
 
-def install_task(python_exe, user, folder, runner=subprocess.run):
+def install_task(program, user, folder, runner=subprocess.run):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     xml_path = folder / "sync-task.xml"
-    xml_path.write_text('<?xml version="1.0" encoding="UTF-16"?>\n' + task_xml(python_exe, user), encoding="utf-16")
+    xml_path.write_text('<?xml version="1.0" encoding="UTF-16"?>\n' + task_xml(program, user), encoding="utf-16")
     result = runner(
         ["schtasks", "/Create", "/F", "/TN", TASK_NAME, "/XML", str(xml_path)],
         capture_output=True, text=True, creationflags=NO_WINDOW,

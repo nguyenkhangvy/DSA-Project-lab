@@ -6,6 +6,8 @@ r"""The sla-mail: and sla-agent: link types, registered for this Windows user on
 - sla-agent: the website's "Open Accounts on this laptop" button. A link runs
   `sla-agent window "sla-agent:accounts"`, which only opens the School-Life-Assistant window."""
 
+from sla_agent.launcher import arguments
+
 KEY = r"Software\Classes\sla-mail"
 WINDOW_KEY = r"Software\Classes\sla-agent"
 SUBKEYS = (r"\shell\open\command", r"\shell\open", r"\shell", "")  # deepest first, for deleting
@@ -17,12 +19,12 @@ def _winreg():
     return winreg
 
 
-def command(python_exe):
-    return f'"{python_exe}" -m sla_agent open-mail "%1"'
+def command(program):
+    return f'"{program}" {arguments(program, "open-mail")} "%1"'
 
 
-def window_command(python_exe):
-    return f'"{python_exe}" -m sla_agent window "%1"'
+def window_command(program):
+    return f'"{program}" {arguments(program, "window")} "%1"'
 
 
 def _register(key_path, description, command_line):
@@ -43,16 +45,16 @@ def _unregister(key_path):
             pass
 
 
-def register(python_exe):
-    _register(KEY, "URL:School-Life-Assistant email", command(python_exe))
+def register(program):
+    _register(KEY, "URL:School-Life-Assistant email", command(program))
 
 
 def unregister():
     _unregister(KEY)
 
 
-def register_window(python_exe):
-    _register(WINDOW_KEY, "URL:School-Life-Assistant accounts", window_command(python_exe))
+def register_window(program):
+    _register(WINDOW_KEY, "URL:School-Life-Assistant accounts", window_command(program))
 
 
 def window_registered():

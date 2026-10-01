@@ -41,12 +41,12 @@ class Tools:
     make_blackboard: Callable  # () -> BlackboardClient
     find_outlook_accounts: Callable  # () -> [account address]; raises AgentError
     find_open_outlook_accounts: Callable  # the same, asking only an Outlook that is already open
-    python: Callable  # () -> the windowless Python the task, the links and the shortcuts start
-    install_task: Callable  # (python, user, folder=) ; raises SchedulerError
+    program: Callable  # () -> what the task, the links and the shortcuts start: the built app or a windowless Python
+    install_task: Callable  # (program, user, folder=) ; raises SchedulerError
     task_program: Callable  # () -> the program the scheduled task starts, or None
-    register_mail_link: Callable  # (python)
-    register_window_link: Callable  # (python)
-    make_shortcuts: Callable  # (python, folder)
+    register_mail_link: Callable  # (program)
+    register_window_link: Callable  # (program)
+    make_shortcuts: Callable  # (program, folder)
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
 
 
@@ -216,7 +216,7 @@ def choose_outlook(state, address, tools):
     on = (f"Outlook is on: each sync reads the Inbox of {address}, sorts it on this laptop and uploads only the "
           "results, never the text.")
     try:
-        tools.register_mail_link(tools.python())
+        tools.register_mail_link(tools.program())
     except (ImportError, OSError) as error:  # not Windows, or the registry refused
         return Result(True, on, (f"Couldn't add the sla-mail: link type ({error}). Mailbox's \"Open in Outlook\" "
                                  "won't open emails on this laptop; use \"Outlook on the web\" instead.",))
@@ -226,17 +226,17 @@ def choose_outlook(state, address, tools):
 # ---- automatic sync -----------------------------------------------------------------
 
 
-def _links_and_shortcuts(tools, python):
-    """The sla-agent: and sla-mail: link types and the shortcuts, pointing at `python`; a note for each part that
+def _links_and_shortcuts(tools, program):
+    """The sla-agent: and sla-mail: link types and the shortcuts, pointing at `program`; a note for each part that
     failed."""
     notes = []
     for register, name in ((tools.register_window_link, "sla-agent:"), (tools.register_mail_link, "sla-mail:")):
         try:
-            register(python)
+            register(program)
         except (ImportError, OSError) as error:  # not Windows, or the registry refused
             notes.append(f"Couldn't add the {name} link type ({error}).")
     try:
-        tools.make_shortcuts(python, agent_home())
+        tools.make_shortcuts(program, agent_home())
     except Exception as error:  # pywin32 raises its own com_error, not an OSError
         log.warning("Couldn't make the shortcuts: %s", error)
         notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
@@ -245,13 +245,14 @@ def _links_and_shortcuts(tools, python):
 
 
 def turn_on_sync(tools):
-    """The sla-agent: and sla-mail: link types, the shortcuts and the scheduled task, all pointing at this folder's
-    Python (so this also repairs them after the project folder moved). `ok` says whether the task was made; a link
-    or shortcut that fails becomes a note, and nothing saved is undone."""
-    python = tools.python()
-    notes = _links_and_shortcuts(tools, python)
+    """The sla-agent: and sla-mail: link types, the shortcuts and the scheduled task, all pointing at
+    launcher.program() (the built app, or this folder's Python), so this also repairs them after the project folder
+    moved. `ok` says whether the task was made; a link or shortcut that fails becomes a note, and nothing saved is
+    undone."""
+    program = tools.program()
+    notes = _links_and_shortcuts(tools, program)
     try:
-        tools.install_task(python, current_user(), folder=agent_home())
+        tools.install_task(program, current_user(), folder=agent_home())
     except SchedulerError as error:
         return Result(False, str(error), tuple(notes))
     return Result(True, SYNC_ON, tuple(notes))
@@ -265,7 +266,7 @@ def add_window_links(tools):
     state = load_state()
     if not (state.server_url and state.student_id) or tools.has_window_link():
         return []
-    return _links_and_shortcuts(tools, tools.python())
+    return _links_and_shortcuts(tools, tools.program())
 
 
 def sync_task_state(tools):
