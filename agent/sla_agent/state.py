@@ -33,6 +33,9 @@ class State:
     courses: list | None = None  # [[course code, course name, lecturer], ...] from the last timetable read
     bb_courses: list | None = None  # [[Blackboard course name, course code], ...] from the last Blackboard read
     mail_newest: str | None = None  # ISO time (UTC) of the newest email handled; the minute's mail check compares with it
+    update_checked_at: str | None = None  # ISO time (UTC) the built app last asked GitHub for a newer release
+    agent_version: str | None = None  # the built app's version at its last run: a change means it updated itself
+    updated_at: str | None = None  # ISO time (UTC) the built app last updated itself, shown in Accounts
 
 
 def load_state():
