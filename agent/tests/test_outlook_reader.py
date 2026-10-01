@@ -24,6 +24,7 @@ from sla_agent.mail_rules import Context
 from sla_agent.outlook_reader import (
     accounts,
     entry_id_from_link,
+    newest_received,
     open_email,
     read_outlook,
     semester_start,
@@ -212,3 +213,37 @@ def test_the_reader_only_reads():
     code = re.sub(r'"""[\s\S]*?"""', "", code)
 
     assert not re.findall(r"\.(Send|Delete|Move|Copy|Save|SaveAs|UnRead|MarkAsRead)\b", code)
+
+
+# ---- the minute's quick check ------------------------------------------------------
+
+ADDRESS = "ititiu99001@student.hcmiu.edu.vn"
+
+
+def test_the_quick_check_gives_the_newest_emails_time_from_an_open_outlook():
+    outlook = FakeOutlook(FakeAccount(ADDRESS, [FakeMail("Old", at(20)), FakeMeeting("Meeting", at(29)),
+                                                 FakeMail("New", at(28))]))
+
+    assert newest_received(ADDRESS, running=lambda: outlook) == at(28)
+
+
+def test_the_quick_check_never_opens_outlook():
+    assert newest_received(ADDRESS, running=lambda: None) is None
+
+
+def test_an_empty_inbox_has_no_newest_time():
+    assert newest_received(ADDRESS, running=lambda: FakeOutlook(FakeAccount(ADDRESS, []))) is None
+
+
+def test_an_account_no_longer_in_outlook_gives_no_time():
+    assert newest_received(ADDRESS, running=lambda: FakeOutlook(FakeAccount("other@example.com", []))) is None
+
+
+def test_an_outlook_that_does_not_answer_gives_no_time_after_the_limit():
+    import time
+    from datetime import timedelta
+
+    def stuck():
+        time.sleep(2)
+
+    assert newest_received(ADDRESS, running=stuck, limit=timedelta(milliseconds=200)) is None

@@ -33,6 +33,7 @@ PR_SENDER_SMTP = "http://schemas.microsoft.com/mapi/proptag/0x5D01001F"
 PR_MESSAGE_ID = "http://schemas.microsoft.com/mapi/proptag/0x1035001F"
 REFUSED = (-2147467260, -2147024891, -2147418111)  # E_ABORT, E_ACCESSDENIED, RPC_E_CALL_REJECTED
 TIME_LIMIT = timedelta(minutes=3)
+QUICK_LIMIT = timedelta(seconds=5)  # the minute's mail check gives up after this
 CONNECT_WAIT = timedelta(seconds=30)  # a hidden Outlook needs ~5 s to connect after it starts
 MAX_EMAILS = 2000
 VIETNAM_OFFSET = timedelta(hours=7)
@@ -69,6 +70,21 @@ def open_outlook():
         return win32com.client.Dispatch("Outlook.Application")
     except pywintypes.com_error as error:
         raise OutlookNotSetUp(NOT_SET_UP) from error
+
+
+def running_outlook():
+    """The Outlook that is already open, or None: the minute's mail check never starts one. Windows only."""
+    try:
+        import pythoncom
+        import pywintypes
+        import win32com.client
+    except ImportError:
+        return None
+    pythoncom.CoInitialize()
+    try:
+        return win32com.client.GetActiveObject("Outlook.Application")
+    except pywintypes.com_error:
+        return None
 
 
 def _refused(error):
@@ -211,6 +227,31 @@ def read_outlook(address, since, context, *, open_outlook=open_outlook, sleep=cl
         log.warning("Skipped %d emails Outlook couldn't read", skipped)
     items = [mail_rules.sort_email(email, context) for email in emails[:MAX_EMAILS]]
     return Outlook(since=since, connected=connected, emails=items)
+
+
+def newest_received(address, *, running=running_outlook, limit=QUICK_LIMIT):
+    """When the newest email in this account's Inbox arrived (aware UTC), from an Outlook that is already open;
+    None when Outlook isn't open, the Inbox has no email, or Outlook doesn't answer within `limit`. Reads no text."""
+
+    def work():
+        app = running()
+        if app is None:
+            return None
+        _, inbox = inbox_of(app, address)
+        items = inbox.Items
+        items.Sort("[ReceivedTime]", True)
+        item = items.GetFirst()
+        while item is not None:
+            if item.Class == OL_MAIL:
+                return _received(item)
+            item = items.GetNext()
+        return None
+
+    try:
+        return with_time_limit(work, limit)
+    except Exception as error:  # closed, busy, blocked or no longer set up: no check this minute
+        log.debug("No mail check this minute (%s)", error.__class__.__name__)
+        return None
 
 
 def entry_id_from_link(link):

@@ -40,6 +40,7 @@ from sla_agent.log import protect, setup_logging
 from sla_agent.outlook_reader import (
     accounts,
     entry_id_from_link,
+    newest_received,
     open_email,
     open_outlook,
     read_outlook,
@@ -50,7 +51,7 @@ from sla_agent.parsers.registration import RegisteredCourse, parse_registered_co
 from sla_agent.scheduler import SchedulerError, current_user, install_task, remove_task, windowless_python
 from sla_agent.server_client import ServerClient, check_server_url
 from sla_agent.state import agent_home, load_state, save_state
-from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run_sync
+from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run_mail_sync, run_sync
 
 log = logging.getLogger(__name__)
 
@@ -287,6 +288,26 @@ def _sync(trigger, state, password, server):
     return 0 if outcome.status in ("success", "partial") else 1
 
 
+def _newer_mail(state):
+    """Whether an already-open Outlook has an email newer than the newest one uploaded."""
+    newest = newest_received(state.outlook_account)
+    if newest is None:
+        return False
+    return state.mail_newest is None or newest > datetime.fromisoformat(state.mail_newest)
+
+
+def _mail_sync(state, server):
+    try:
+        run_mail_sync(state=state, server=server, read_outlook=read_outlook, now=_now())
+    except RunInProgress:
+        return 0  # a full sync is running; the next minute tries again
+    except ServerError as error:
+        log.warning("Web app problem: %s", error)
+        return 1
+    save_state(state)
+    return 0
+
+
 def cmd_run(args):
     loaded = _load()
     if loaded is None:
@@ -302,10 +323,12 @@ def cmd_run(args):
     if everything_paused(state):
         log.info("Automatic sync is paused for every system; not syncing")
         return 0
-    if not decision.due:
-        log.info("No sync due (%s)", decision.reason)
-        return 0
-    return _sync("manual" if decision.reason == "requested" else "scheduled", state, password, server)
+    if decision.due:
+        return _sync("manual" if decision.reason == "requested" else "scheduled", state, password, server)
+    if state.outlook_account and _newer_mail(state):
+        return _mail_sync(state, server)
+    log.debug("No sync due (%s)", decision.reason)
+    return 0
 
 
 def cmd_sync_now(args):

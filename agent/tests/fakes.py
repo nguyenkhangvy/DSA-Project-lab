@@ -94,8 +94,8 @@ class FakeEduSoft:
 
 
 class FakeServer:
-    def __init__(self, due=True, reason="interval", check_error=None):
-        self.due, self.reason, self.check_error = due, reason, check_error
+    def __init__(self, due=True, reason="interval", check_error=None, start_error=None):
+        self.due, self.reason, self.check_error, self.start_error = due, reason, check_error, start_error
         self.checks = 0
         self.starts = []
         self.finishes = []
@@ -109,6 +109,8 @@ class FakeServer:
         return CheckResult(due=self.due, reason=self.reason, interval_hours=12)
 
     def start(self, trigger):
+        if self.start_error:
+            raise self.start_error
         self.starts.append(trigger)
         return 41
 

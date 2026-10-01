@@ -2,20 +2,21 @@ import logging
 from datetime import date, datetime, timezone
 
 import pytest
-from sla_contract.schema import Blackboard, Exams, Timetable
+from sla_contract.schema import Blackboard, Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
 from sla_agent.errors import (
     BadCredentials,
     ExtraVerification,
     NetworkError,
+    OutlookBlocked,
     ParseError,
     SessionExpired,
     SourceChanged,
 )
 from sla_agent.log import setup_logging
 from sla_agent.state import State
-from sla_agent.sync import run_sync
+from sla_agent.sync import run_mail_sync, run_sync
 
 NOW = datetime(2026, 10, 1, 7, 0, tzinfo=timezone.utc)
 PASSWORD = "s3cret-pass"
@@ -530,3 +531,49 @@ def test_nothing_is_paused_for_good_while_iupay_can_run(state):
 
     assert not everything_paused(state)
     assert everything_paused(State(paused="bad_credentials"))
+
+
+def email(key, received):
+    return MailItem(key=key * 64, entry_id="00AB", received_at=received)
+
+
+def test_a_mail_sync_uploads_only_outlook_as_a_mail_run(mail_state):
+    mail_state.mail_newest = datetime(2026, 10, 1, 1, 0, tzinfo=timezone.utc).isoformat()
+    newer = datetime(2026, 10, 1, 1, 30, tzinfo=timezone.utc)
+    server = FakeServer()
+
+    def read(address, since, context):
+        return Outlook(since=since, connected=True,
+                       emails=[email("b", newer), email("a", datetime(2026, 10, 1, 1, 0, tzinfo=timezone.utc))])
+
+    outcome = run_mail_sync(state=mail_state, server=server, read_outlook=read, now=NOW)
+
+    assert server.starts == ["mail"]
+    assert list(only_finish(server).sections()) == ["outlook"]
+    assert (outcome.status, outcome.message) == ("success", "Mail sync success: 1 new email.")
+    assert mail_state.mail_newest == newer.isoformat()
+    assert mail_state.last_result is None
+
+
+def test_outlook_refusing_a_mail_sync_keeps_the_newest_time(mail_state):
+    mail_state.mail_newest = "2026-10-01T01:00:00+00:00"
+
+    def refused(address, since, context):
+        raise OutlookBlocked("Outlook didn't let the agent read your mail.")
+
+    outcome = run_mail_sync(state=mail_state, server=FakeServer(), read_outlook=refused, now=NOW)
+
+    assert outcome.status == "failed"
+    assert outcome.message == "Mail sync failed: Outlook didn't let the agent read your mail."
+    assert mail_state.mail_newest == "2026-10-01T01:00:00+00:00"
+
+
+def test_a_full_sync_remembers_the_newest_email(mail_state):
+    newest = datetime(2026, 10, 1, 2, 0, tzinfo=timezone.utc)
+
+    def read(address, since, context):
+        return Outlook(since=since, connected=True, emails=[email("c", newest)])
+
+    sync_with_outlook(mail_state, FakeEduSoft(), read)
+
+    assert mail_state.mail_newest == newest.isoformat()

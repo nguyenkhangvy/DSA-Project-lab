@@ -8,7 +8,7 @@ have no password to lock out, so their problems never pause anything: every sync
 
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
@@ -183,6 +183,31 @@ def _collect_outlook(state, read, now):
         return _unexpected("Outlook", error)
 
 
+def remember_newest_mail(state, part):
+    """After Outlook's part was uploaded ok: the newest email's time, so the minute's check knows what is new."""
+    if part.get("status") == "ok":
+        newest = max((email.received_at for email in part["data"].emails), default=None)
+        if newest is not None:
+            state.mail_newest = newest.isoformat()
+
+
+def run_mail_sync(*, state, server, read_outlook, now):
+    """A mail-only sync (trigger "mail"): the Inbox, uploaded as a run with only the Outlook part. It never logs in
+    to EduSoft, Blackboard or IUPay. Server errors are raised."""
+    previous = datetime.fromisoformat(state.mail_newest) if state.mail_newest else None
+    run_id = server.start("mail")
+    part = _collect_outlook(state, read_outlook, now)
+    status = server.finish(run_id, FinishRun.model_validate({"outlook": part}))
+    if part["status"] == "ok":
+        new = sum(1 for email in part["data"].emails if previous is None or email.received_at > previous)
+        remember_newest_mail(state, part)
+        message = f"Mail sync {status}: {new} new email{'' if new == 1 else 's'}."
+    else:
+        message = f"Mail sync {status}: {part['error_message']}"
+    log.info(message)
+    return Outcome(status, message)
+
+
 def _paused_sections(state):
     """A paused system is reported as failed in every run, so the web page keeps showing the pause."""
     sections = {}
@@ -244,6 +269,8 @@ def run_sync(trigger, *, state, edusoft, server, parsers, password, now,
         sections["outlook"] = _collect_outlook(state, read_outlook, now)
     result = FinishRun.model_validate(sections)
     status = server.finish(run_id, result)
+    if "outlook" in sections:
+        remember_newest_mail(state, sections["outlook"])
 
     message = _message(state, result)
     state.last_result = {"at": now.isoformat(), "status": status, "message": message}

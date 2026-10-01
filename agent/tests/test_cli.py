@@ -1,11 +1,12 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sla_contract.schema import Exams, Timetable
+from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
 from sla_agent import cli, credentials
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification
+from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, RunInProgress
 from sla_agent.state import State, agent_home, load_state, save_state
 
 SERVER = "https://sla.example.com"
@@ -599,3 +600,83 @@ def test_open_mail_for_an_email_that_is_gone(monkeypatch, messages):
     assert cli.main(["open-mail", "sla-mail:00AB12"]) == 1
 
     assert messages == ["This email is no longer in your Outlook Inbox."]
+
+
+NEW_MAIL = datetime(2026, 10, 1, 1, 0, tzinfo=timezone.utc)
+
+
+def mail_configured(mail_newest=None):
+    configure()
+    state = load_state()
+    state.outlook_account, state.mail_newest = ME, mail_newest
+    save_state(state)
+
+
+def inbox(address, since, context):
+    return Outlook(since=since, connected=True,
+                   emails=[MailItem(key="a" * 64, entry_id="00AB", received_at=NEW_MAIL)])
+
+
+def never(*args, **kwargs):
+    raise AssertionError("must not be called")
+
+
+def test_run_uploads_new_mail_between_full_syncs(world, monkeypatch):
+    mail_configured("2026-09-30T00:00:00+00:00")
+    world.server.due = False
+    monkeypatch.setattr(cli, "newest_received", lambda address: NEW_MAIL)
+    monkeypatch.setattr(cli, "read_outlook", inbox)
+
+    assert cli.main(["run"]) == 0
+
+    assert world.server.starts == ["mail"]
+    [(_, result)] = world.server.finishes
+    assert list(result.sections()) == ["outlook"]
+    assert (world.edusoft.logins, world.iupay.calls, world.blackboard.logins) == ([], [], [])
+    assert load_state().mail_newest == NEW_MAIL.isoformat()
+
+
+def test_a_quiet_minute_contacts_nothing_and_logs_nothing(world, monkeypatch, caplog):
+    mail_configured(NEW_MAIL.isoformat())
+    world.server.due = False
+    monkeypatch.setattr(cli, "newest_received", lambda address: NEW_MAIL)
+
+    with caplog.at_level(logging.INFO):
+        assert cli.main(["run"]) == 0
+
+    assert world.server.starts == []
+    assert [r.getMessage() for r in caplog.records if r.levelno >= logging.INFO] == []
+
+
+def test_the_mail_check_needs_outlook_set_up(world, monkeypatch):
+    configure()
+    world.server.due = False
+    monkeypatch.setattr(cli, "newest_received", never)
+
+    assert cli.main(["run"]) == 0
+
+    assert world.server.starts == []
+
+
+def test_a_due_full_sync_wins_over_the_mail_check(world, monkeypatch):
+    mail_configured()
+    monkeypatch.setattr(cli, "newest_received", never)
+    monkeypatch.setattr(cli, "read_outlook", inbox)
+
+    assert cli.main(["run"]) == 0
+
+    assert world.server.starts == ["scheduled"]
+    assert load_state().mail_newest == NEW_MAIL.isoformat()
+
+
+def test_a_mail_sync_refused_during_a_full_sync_ends_quietly(world, monkeypatch, caplog):
+    mail_configured()
+    world.server.due = False
+    world.server.start_error = RunInProgress("running")
+    monkeypatch.setattr(cli, "newest_received", lambda address: NEW_MAIL)
+
+    with caplog.at_level(logging.INFO):
+        assert cli.main(["run"]) == 0
+
+    assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
+    assert load_state().mail_newest is None
