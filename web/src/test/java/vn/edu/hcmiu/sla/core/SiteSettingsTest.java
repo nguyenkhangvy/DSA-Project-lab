@@ -18,7 +18,16 @@ class SiteSettingsTest {
 
     @Test
     void theSiteRunsOnPort5000WhereTheLaptopAgentLooksForIt() throws Exception {
-        assertThat(settings().getProperty("server.port")).isEqualTo("5000");
+        String port = settings().getProperty("server.port", "");
+
+        assertThat(new MockEnvironment().resolvePlaceholders(port)).isEqualTo("5000");
+    }
+
+    @Test
+    void onlineTheHostChoosesThePort() throws Exception {
+        String port = settings().getProperty("server.port", "");
+
+        assertThat(new MockEnvironment().withProperty("PORT", "10000").resolvePlaceholders(port)).isEqualTo("10000");
     }
 
     @Test
