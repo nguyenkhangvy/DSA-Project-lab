@@ -337,4 +337,20 @@ class SyncApiTest {
 
         assertThat(bytes(payload).length).isGreaterThan(1_200_000);
     }
+
+    @Test
+    void anAgentOlderThanTheOldestAcceptedIsToldToUpdate() throws Exception {
+        mvc.perform(withKey(get("/api/school/sync/check"), key)
+                        .header("User-Agent", "SchoolLifeAssistant/0.0.9 (IU student project)"))
+                .andExpect(status().is(426))
+                .andExpect(content().json("{\"error\": \"update_required\"}", JsonCompareMode.STRICT));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SchoolLifeAssistant/0.1 (IU student project)",
+            "SchoolLifeAssistant/0.2.0 (IU student project)", "SchoolLifeAssistant/99999999999.0", "curl/8.9.1"})
+    void todaysAgentsAndRequestsWithoutAnAgentVersionAreLetThrough(String userAgent) throws Exception {
+        mvc.perform(withKey(get("/api/school/sync/check"), key).header("User-Agent", userAgent))
+                .andExpect(status().isOk());
+    }
 }
