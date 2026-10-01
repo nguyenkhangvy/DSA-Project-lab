@@ -14,6 +14,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from sla_agent import __version__
 from sla_agent.errors import (
     BadCredentials,
     ExtraVerification,
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 HOST = "edusoftweb.hcmiu.edu.vn"
 BASE_URL = f"https://{HOST}/"
 LOGIN_URL = f"{BASE_URL}default.aspx?page=dangnhap"
-USER_AGENT = "SchoolLifeAssistant/0.1 (IU student project)"
+USER_AGENT = f"SchoolLifeAssistant/{__version__} (IU student project)"
 RETRY_WAITS = (5, 30)  # seconds to wait before the 2nd and 3rd try
 
 USERNAME_FIELD = "ctl00$ContentPlaceHolder1$ctl00$txtTaiKhoa"
