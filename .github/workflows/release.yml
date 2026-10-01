@@ -1,0 +1,48 @@
+name: release
+
+# Pushing a tag such as v0.2.0 builds the app and the setup (agent/packaging/build.py), starts them, and publishes
+# School-Life-Assistant.exe and SHA256SUMS.txt on the Releases page (README, "Making a release"). Installed laptops
+# update themselves from there within a day.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write  # to publish the release
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install, with PyInstaller's launcher compiled here (fewer antivirus false alarms)
+        env:
+          PYINSTALLER_COMPILE_BOOTLOADER: "1"
+        run: pip install -r requirements-dev.txt --no-binary=pyinstaller -r agent/packaging/requirements.txt
+
+      - name: The tag is the agent's version
+        run: |
+          $version = (python -c "from sla_agent import __version__; print(__version__)").Trim()
+          if ("v$version" -ne "${{ github.ref_name }}") {
+            throw "The tag is ${{ github.ref_name }}, but agent/sla_agent/__init__.py says $version"
+          }
+
+      - name: Build the app and the setup
+        run: python agent/packaging/build.py
+
+      - name: Start them
+        run: ./agent/packaging/smoke-test.ps1
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${{ github.ref_name }}" dist/School-Life-Assistant.exe dist/SHA256SUMS.txt
+          --title "School-Life-Assistant ${{ github.ref_name }}"
+          --notes "Download School-Life-Assistant.exe and double-click it. If Windows says 'Windows protected your PC', press More info, then Run anyway. Installed laptops update themselves within a day."
