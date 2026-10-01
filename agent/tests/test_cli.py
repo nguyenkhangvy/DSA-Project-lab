@@ -737,3 +737,60 @@ def test_status_warns_when_the_task_points_to_a_python_that_is_gone(world, capsy
     cli.main(["status"])
 
     assert "Run `sla-agent schedule`" in capsys.readouterr().out
+
+
+# ---- the window's link type and shortcuts --------------------------------------------
+
+WINDOW_COMMAND = ("HKCU", r"Software\Classes\sla-agent\shell\open\command")
+
+
+def test_setup_adds_the_window_link_type_and_the_shortcuts(world, isolated_agent, capsys):
+    world.answer_setup()
+
+    assert cli.main(["setup"]) == 0
+
+    assert isolated_agent.registry.keys[WINDOW_COMMAND][""].endswith('-m sla_agent window "%1"')
+    assert [path.name for path in isolated_agent.shell.root.rglob("*.lnk")] == ["School-Life-Assistant.lnk"] * 2
+    assert "every minute" in capsys.readouterr().out
+
+
+def test_setup_says_when_the_shortcuts_could_not_be_made_but_keeps_the_rest(world, monkeypatch, capsys):
+    from sla_agent import shortcuts
+
+    def blocked(*args):
+        raise RuntimeError("blocked")
+
+    monkeypatch.setattr(shortcuts, "make", blocked)
+    world.answer_setup()
+
+    assert cli.main(["setup"]) == 0
+
+    assert "Couldn't make the Desktop and Start menu shortcuts" in capsys.readouterr().out
+    assert world.tasks == ["installed"]
+
+
+def test_schedule_also_points_the_links_and_shortcuts_at_this_python(world, isolated_agent, monkeypatch):
+    configure()
+    python = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
+    monkeypatch.setattr(cli, "windowless_python", lambda: python)
+
+    assert cli.main(["schedule"]) == 0
+
+    keys = isolated_agent.registry.keys
+    assert keys[WINDOW_COMMAND][""] == f'"{python}" -m sla_agent window "%1"'
+    assert keys[("HKCU", r"Software\Classes\sla-mail\shell\open\command")][""] == f'"{python}" -m sla_agent open-mail "%1"'
+    assert all(path.read_text(encoding="utf-8").startswith(f"{python} -m sla_agent window")
+               for path in isolated_agent.shell.root.rglob("*.lnk"))
+
+
+def test_forget_removes_the_window_link_type_and_the_shortcuts(world, isolated_agent, tmp_path):
+    from sla_agent import mail_link, shortcuts
+
+    configure()
+    mail_link.register_window("pythonw.exe")
+    shortcuts.make("pythonw.exe", tmp_path)
+
+    assert cli.main(["forget"]) == 0
+
+    assert not [path for _, path in isolated_agent.registry.keys if "sla-agent" in path]
+    assert not list(isolated_agent.shell.root.rglob("*.lnk"))

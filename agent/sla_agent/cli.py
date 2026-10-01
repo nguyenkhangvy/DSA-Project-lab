@@ -21,7 +21,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import credentials, mail_link
+from sla_agent import accounts, credentials, mail_link, shortcuts
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -38,7 +38,7 @@ from sla_agent.errors import (
 from sla_agent.iupay_client import IupayClient
 from sla_agent.log import protect, setup_logging
 from sla_agent.outlook_reader import (
-    accounts,
+    accounts as outlook_addresses,
     entry_id_from_link,
     newest_received,
     open_email,
@@ -49,8 +49,6 @@ from sla_agent.outlook_reader import (
 from sla_agent.parsers import PARSERS
 from sla_agent.parsers.registration import RegisteredCourse, parse_registered_courses
 from sla_agent.scheduler import (
-    SchedulerError,
-    current_user,
     install_task,
     remove_task,
     task_program,
@@ -87,7 +85,17 @@ def make_iupay():
 
 
 def find_outlook_accounts():
-    return with_time_limit(lambda: accounts(open_outlook()))
+    return with_time_limit(lambda: outlook_addresses(open_outlook()))
+
+
+def tools():
+    """The real things accounts.py talks to. It reads this module's makers when called, so tests that replace them
+    (World) replace them for accounts.py too."""
+    return accounts.Tools(
+        make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
+        find_outlook_accounts=find_outlook_accounts, python=windowless_python, install_task=install_task,
+        task_program=task_program, register_mail_link=mail_link.register,
+        register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make)
 
 
 def say(message):
@@ -122,35 +130,17 @@ def _load():
 
 def _setup_blackboard(state, username=None):
     """Ask for (or use) the Blackboard login, check it once, save it. Returns an exit code."""
-    username = username or ask(f"Blackboard username [{state.blackboard_username or ''}]: ").strip()         or state.blackboard_username or ""
+    username = username or ask(f"Blackboard username [{state.blackboard_username or ''}]: ").strip() \
+        or state.blackboard_username or ""
     password = ask_secret("Blackboard password (not shown): ")
     protect(password)
     if not (username and password):
         say("Blackboard username and password are both needed. Nothing was saved.")
         return 1
     say("Checking your Blackboard login (one attempt)...")
-    blackboard = make_blackboard()
-    try:
-        blackboard.login(username, password)
-    except BadCredentials:
-        say("Blackboard rejected the username or password. Nothing was saved.")
-        return 1
-    except ExtraVerification:
-        say("Blackboard asked for extra verification, so automatic Blackboard sync can't be used. Nothing was saved.")
-        return 1
-    except AgentError as error:
-        say(f"Couldn't check your Blackboard login: {error} Nothing was saved; try again later.")
-        return 1
-    finally:
-        blackboard.logout()
-    if state.blackboard_username and state.blackboard_username != username:
-        credentials.forget(None, None, state.blackboard_username)
-    credentials.save_blackboard(username, password)
-    state.blackboard_username, state.blackboard_paused = username, None
-    save_state(state)
-    say("Blackboard saved. Its password is in Windows Credential Manager too.")
-    return 0
-
+    result = accounts.change_blackboard(state, username, password, tools())
+    say(result.message)
+    return 0 if result.ok else 1
 
 OUTLOOK_HOW_TO = ("Open Outlook (classic), sign in with your IU account, wait until it says "
                   "'All folders are up to date', then run `sla-agent setup --outlook` again.")
@@ -159,13 +149,9 @@ OUTLOOK_HOW_TO = ("Open Outlook (classic), sign in with your IU account, wait un
 def _setup_outlook(state):
     """Choose the Outlook account whose Inbox each sync reads, and add the sla-mail: link type."""
     say("Looking for classic Outlook on this laptop...")
-    try:
-        found = find_outlook_accounts()
-    except AgentError as error:
-        say(f"{error} {OUTLOOK_HOW_TO}")
-        return 1
-    if not found:
-        say(f"Classic Outlook has no account yet. {OUTLOOK_HOW_TO}")
+    found, problem = accounts.outlook_accounts(tools())
+    if problem:
+        say(f"{problem} {OUTLOOK_HOW_TO}")
         return 1
     if len(found) == 1:
         if ask(f"Read the Inbox of {found[0]}? [Y/n]: ").strip().lower() not in ("", "y", "yes"):
@@ -180,17 +166,11 @@ def _setup_outlook(state):
             say("Nothing was changed.")
             return 1
         address = found[int(answer) - 1]
-    state.outlook_account = address
-    save_state(state)
-    try:
-        mail_link.register(windowless_python())
-    except OSError as error:
-        say(f"Couldn't add the sla-mail: link type ({error}). Mailbox's \"Open in Outlook\" won't open emails "
-            "on this laptop; use \"Outlook on the web\" instead.")
-    say(f"Outlook is on: each sync reads the Inbox of {address}, sorts it on this laptop and uploads only the "
-        "results, never the text.")
+    result = accounts.choose_outlook(state, address, tools())
+    for note in result.notes:
+        say(note)
+    say(result.message)
     return 0
-
 
 def cmd_setup(args):
     state = load_state()
@@ -215,51 +195,31 @@ def cmd_setup(args):
         return 1
 
     say("Checking the device key with the web app...")
-    try:
-        make_server(server_url, device_key).check()
-    except DeviceKeyRejected:
-        say("The web app rejected this device key. Create a new one on the Devices page. Nothing was saved.")
+    site = accounts.check_site(server_url, device_key, tools())
+    if not site.ok:
+        say(site.message)
         return 1
-    except ServerError as error:
-        say(f"Couldn't reach the web app: {error} Nothing was saved.")
-        return 1
-
     say("Checking your EduSoft login (one attempt)...")
-    try:
-        make_edusoft().login(student_id, password)
-    except BadCredentials:
-        say("EduSoft rejected the student ID or password. Nothing was saved.")
+    edusoft = accounts.check_edusoft(student_id, password, tools())
+    if not edusoft.ok:
+        say(edusoft.message)
         return 1
-    except ExtraVerification:
-        say("EduSoft asked for extra verification (CAPTCHA or code), so automatic sync can't be used. "
-            "Nothing was saved. You can still use `sla-agent import` with pages saved from your browser.")
-        return 1
-    except AgentError as error:
-        say(f"Couldn't check your EduSoft login: {error} Nothing was saved; try again later.")
-        return 1
-
-    if state.student_id and state.student_id != student_id:
-        credentials.forget(state.student_id, None)
-    credentials.save_edusoft(student_id, password)
-    credentials.save_device_key(server_url, device_key)
-    state.server_url, state.student_id, state.paused = server_url, student_id, None
-    save_state(state)
-    say("Saved. Your password is in Windows Credential Manager, not in any file.")
+    say(accounts.save_site_and_edusoft(state, server_url, device_key, student_id, password).message)
 
     blackboard_user = ask(f"Blackboard username (press Enter to skip) [{state.blackboard_username or ''}]: ").strip()
     if blackboard_user and _setup_blackboard(state, blackboard_user) != 0:
         say("EduSoft is saved; set up Blackboard later with `sla-agent setup --blackboard`.")
 
     if not args.no_schedule:
-        try:
-            install_task(windowless_python(), current_user(), folder=agent_home())
-        except SchedulerError as error:
-            say(f"{error} You can still sync by hand with `sla-agent sync-now`.")
+        sync = accounts.turn_on_sync(tools())
+        for note in sync.notes:
+            say(note)
+        if not sync.ok:
+            say(f"{sync.message} You can still sync by hand with `sla-agent sync-now`.")
             return 1
-        say("Automatic sync is on: this laptop checks in every 15 minutes while you're logged in.")
+        say(sync.message)
     say("Run `sla-agent sync-now` to sync right away.")
     return 0
-
 
 # ---- syncing -----------------------------------------------------------------
 
@@ -478,13 +438,13 @@ def cmd_schedule(args):
     if not state.server_url:
         say(NOT_SET_UP)
         return 1
-    python = windowless_python()
-    try:
-        install_task(python, current_user(), folder=agent_home())
-    except SchedulerError as error:
-        say(str(error))
+    sync = accounts.turn_on_sync(tools())
+    for note in sync.notes:
+        say(note)
+    if not sync.ok:
+        say(sync.message)
         return 1
-    say(f"The sync task now runs {python} every minute.")
+    say(f"The sync task now runs {windowless_python()} every minute.")
     return 0
 
 
@@ -527,13 +487,18 @@ def cmd_forget(args):
     state = load_state()
     credentials.forget(state.student_id, state.server_url, state.blackboard_username)
     remove_task()
+    for unregister in (mail_link.unregister, mail_link.unregister_window):
+        try:
+            unregister()
+        except (ImportError, OSError):  # not Windows, or already gone
+            pass
     try:
-        mail_link.unregister()
-    except (ImportError, OSError):  # not Windows, or already gone
+        shortcuts.remove()
+    except Exception:  # not Windows (ImportError) or pywin32's com_error: nothing to remove
         pass
     (agent_home() / "state.json").unlink(missing_ok=True)
-    say("Removed your saved EduSoft password, the device key, the scheduled task and the sla-mail: link type "
-        "from this laptop.")
+    say("Removed your saved EduSoft password, the device key, the scheduled task, the sla-mail: and sla-agent: "
+        "link types and the shortcuts from this laptop.")
     return 0
 
 
