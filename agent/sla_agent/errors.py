@@ -57,6 +57,10 @@ class RunInProgress(ServerError):
     pass
 
 
+class UpdateRequired(ServerError):
+    """The website no longer accepts this version of the agent (HTTP 426): it must update itself first."""
+
+
 class OutlookNotSetUp(AgentError):
     """Classic Outlook is missing, has no account, or the account chosen at setup is gone."""
 

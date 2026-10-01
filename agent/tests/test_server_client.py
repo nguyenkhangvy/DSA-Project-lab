@@ -5,7 +5,7 @@ import requests
 import responses
 from sla_contract.schema import FinishRun
 
-from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable
+from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable, UpdateRequired
 from sla_agent.server_client import ServerClient
 
 BASE = "https://sla.example.com"
@@ -89,3 +89,11 @@ def test_the_device_key_is_never_sent_over_plain_http(url):
 @pytest.mark.parametrize("url", ["http://localhost:5000", "http://127.0.0.1:5000/"])
 def test_plain_http_is_allowed_for_a_local_development_server(url):
     assert ServerClient(url, "sla_key-123") is not None
+
+
+@responses.activate
+def test_a_version_the_website_no_longer_accepts_raises_update_required(server):
+    responses.get(f"{API}/check", json={"error": "update_required"}, status=426)
+
+    with pytest.raises(UpdateRequired, match="too old"):
+        server.check()

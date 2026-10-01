@@ -24,7 +24,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import accounts, credentials, launcher, mail_link, selfcheck, shortcuts
+from sla_agent import accounts, credentials, launcher, mail_link, selfcheck, shortcuts, update
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -38,6 +38,7 @@ from sla_agent.errors import (
     ParseError,
     RunInProgress,
     ServerError,
+    UpdateRequired,
 )
 from sla_agent.iupay_client import IupayClient
 from sla_agent.log import protect, setup_logging
@@ -297,15 +298,40 @@ def _mail_sync(state, server, seen):
     return 0
 
 
+def _updating(state):
+    """The built app's update step (update.py): note a new version, tidy the downloads, and once a day look for a
+    newer release. True when a new setup was started."""
+    before = copy.deepcopy(state)
+    if update.note_new_version(state, _now()):
+        save_state(state, before)
+    update.clean_downloads()
+    return update.check_and_start(state, _now())
+
+
+def _too_old(state, error):
+    """The website refused this version (HTTP 426): look for an update at the next run, and say why nothing
+    syncs."""
+    before = copy.deepcopy(state)
+    state.update_checked_at = None
+    state.last_result = {"at": _now().isoformat(), "status": "failed", "message": str(error)}
+    save_state(state, before)
+    log.warning("%s", error)
+
+
 def cmd_run(args):
     loaded = _load()
     if loaded is None:
         say(NOT_SET_UP)
         return 1
     state, password, key = loaded
+    if launcher.frozen() and _updating(state):
+        return 0  # the setup swaps the app; the next minute's run is the new version
     server = make_server(state.server_url, key)
     try:
         decision = server.check()  # also tells the web app this laptop is alive
+    except UpdateRequired as error:
+        _too_old(state, error)
+        return 1
     except ServerError as error:
         log.warning("Check-in failed: %s", error)
         return 1
