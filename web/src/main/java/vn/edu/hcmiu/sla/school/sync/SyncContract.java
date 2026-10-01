@@ -37,7 +37,7 @@ public final class SyncContract {
             "class|event|training_points|school_task|money|requests_account|system_notice|promotion";
     static final String BLACKBOARD_URL = "(?s)https://blackboard\\.hcmiu\\.edu\\.vn/.*";
 
-    public record StartRun(@NotNull @Pattern(regexp = "scheduled|manual|import") String trigger) {
+    public record StartRun(@NotNull @Pattern(regexp = "scheduled|manual|import|mail") String trigger) {
     }
 
     // ---- EduSoft ----------------------------------------------------------------

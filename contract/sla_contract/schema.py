@@ -26,7 +26,7 @@ ErrorCode = Literal[
     "outlook_blocked",  # Outlook refused the read or didn't answer in time (e.g. a security prompt)
     "unknown",
 ]
-Trigger = Literal["scheduled", "manual", "import"]
+Trigger = Literal["scheduled", "manual", "import", "mail"]  # mail: a mail-only run (only the Outlook part), between full syncs
 
 Code = Annotated[str, Field(min_length=1, max_length=20)]
 Name = Annotated[str, Field(min_length=1, max_length=255)]

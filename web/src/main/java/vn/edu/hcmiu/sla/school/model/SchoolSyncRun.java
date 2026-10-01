@@ -19,6 +19,7 @@ import org.hibernate.type.SqlTypes;
 public class SchoolSyncRun {
 
     public static final String RUNNING = "running";
+    public static final String MAIL = "mail"; // trigger of a mail-only run: never counts as a full sync
     public static final String SUCCESS = "success";
     public static final String PARTIAL = "partial";
     public static final String FAILED = "failed";

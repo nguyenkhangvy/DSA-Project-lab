@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from sla_contract.schema import FinishRun
+from sla_contract.schema import FinishRun, StartRun
 
 SAMPLES = Path(__file__).resolve().parents[1] / "samples"
 BB = "https://blackboard.hcmiu.edu.vn"
@@ -341,3 +341,13 @@ def test_every_shared_sample_is_accepted(path):
 def test_every_shared_invalid_sample_is_refused(path):
     with pytest.raises(ValidationError):
         FinishRun.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+
+@pytest.mark.parametrize("trigger", ["scheduled", "manual", "import", "mail"])
+def test_every_trigger_the_agent_sends_is_accepted(trigger):
+    assert StartRun(trigger=trigger).trigger == trigger
+
+
+def test_an_unknown_trigger_is_refused():
+    with pytest.raises(ValidationError):
+        StartRun(trigger="hourly")

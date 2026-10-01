@@ -211,6 +211,13 @@ class SyncApiTest {
         assertThat(runs.count()).isZero();
     }
 
+    @Test
+    void startAcceptsAMailOnlyRun() throws Exception {
+        start(key, "mail").andExpect(status().isCreated());
+
+        assertThat(lastRun().getTrigger()).isEqualTo("mail");
+    }
+
     // ---- Finish ---------------------------------------------------------------
 
     @Test
