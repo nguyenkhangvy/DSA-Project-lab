@@ -17,8 +17,8 @@
   </section>
 
   <section class="card" th:if="${status == null}">
-    <p>Outlook isn't connected yet. On your laptop, open Outlook (classic), sign in, then run
-      <code>sla-agent setup --outlook</code>.</p>
+    <p>Outlook isn't connected yet. On your laptop, open Outlook (classic) and sign in,
+      then choose your account in <a th:href="@{/school/accounts}">Accounts</a>.</p>
   </section>
   </div>
 

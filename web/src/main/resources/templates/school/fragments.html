@@ -3,7 +3,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!--/* The school menu; current is the page's name: overview, mailbox, timetable, courses, exams, tuition or devices. */-->
+<!--/* The school menu; current is the page's name: overview, mailbox, timetable, courses, exams, tuition, devices or accounts. */-->
 <nav th:fragment="subnav(current)" class="subnav" aria-label="School pages">
   <a th:href="@{/school}" th:attr="aria-current=${current == 'overview' ? 'page' : null}">Overview</a>
   <a th:href="@{/school/mailbox}" th:attr="aria-current=${current == 'mailbox' ? 'page' : null}">Mailbox</a>
@@ -12,6 +12,7 @@
   <a th:href="@{/school/exams}" th:attr="aria-current=${current == 'exams' ? 'page' : null}">Exams</a>
   <a th:href="@{/school/tuition}" th:attr="aria-current=${current == 'tuition' ? 'page' : null}">Tuition</a>
   <a th:href="@{/school/devices}" th:attr="aria-current=${current == 'devices' ? 'page' : null}">Devices</a>
+  <a th:href="@{/school/accounts}" th:attr="aria-current=${current == 'accounts' ? 'page' : null}">Accounts</a>
 </nav>
 
 <!--/* Needs ${status} (SyncStatus.Status) and ${systemLines}. */-->
@@ -22,6 +23,8 @@
     <li th:each="line : ${systemLines}" th:class="|system-${line.state}|"><strong th:text="|${line.name}:|">EduSoft:</strong>
       <th:block th:text="${line.text}">synced at 14:05</th:block></li>
   </ul>
+  <p class="status-detail" th:if="${status.state == 'paused' or !systemLines.?[state == 'paused'].isEmpty()}">
+    <a th:href="@{/school/accounts}">Open Accounts →</a></p>
   <p class="status-detail" th:if="${status.lastSyncedAt != null and status.state != 'success' and status.state != 'partial'}"
      th:text="|Last good sync: ${@schoolFormat.when(status.lastSyncedAt)}|">Last good sync: Tue 29/09 08:00</p>
   <p class="status-warning" th:if="${status.laptopWarning != null}" th:text="${status.laptopWarning}">Your laptop…</p>

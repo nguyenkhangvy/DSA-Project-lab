@@ -97,6 +97,7 @@ class DevicesPageTest {
         String key = keyIn(html);
 
         assertThat(key).isNotNull();
+        assertThat(html).contains("open School-Life-Assistant on the laptop");
         check(key).andExpect(status().isOk());
         assertThat(devicesPage()).doesNotContain(key);
     }

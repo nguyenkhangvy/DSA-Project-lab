@@ -1,0 +1,44 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Accounts · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Accounts</h1>
+  <nav th:replace="~{school/fragments :: subnav('accounts')}"></nav>
+  <p>Your EduSoft, Blackboard and Outlook accounts are entered and changed on your laptop, in the
+     School-Life-Assistant window. Passwords are only ever entered there, never on this website.</p>
+
+  <section class="card">
+    <h2>Syncing</h2>
+    <ul class="system-lines">
+      <li th:each="line : ${accountLines}" th:class="|system-${line.state}|"><strong th:text="|${line.name}:|">EduSoft:</strong>
+        <th:block th:text="${line.text}">synced at 14:05</th:block></li>
+    </ul>
+  </section>
+
+  <section class="card" th:unless="${devices.isEmpty()}">
+    <h2>Change your accounts</h2>
+    <p><a class="button" href="sla-agent:accounts">Open Accounts on this laptop</a></p>
+    <p class="muted">Nothing opened? Open School-Life-Assistant from the Start menu on the laptop where you set it
+      up.</p>
+    <h2>Your laptops</h2>
+    <ul class="device-list">
+      <li class="device" th:each="device : ${devices}">
+        <div>
+          <strong th:text="${device.name}">My laptop</strong>
+          <span class="muted" th:text="|Last check-in: ${@schoolFormat.when(device.lastSeenAt)}|">Last check-in: never</span>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card" th:if="${devices.isEmpty()}">
+    <h2>No laptop yet</h2>
+    <p>Add your laptop on the <a th:href="@{/school/devices}">Devices</a> page, install sla-agent, then double-click
+      <code>School-Life-Assistant.cmd</code> in the project folder.</p>
+  </section>
+</main>
+</body>
+</html>

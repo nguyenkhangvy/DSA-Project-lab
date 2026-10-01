@@ -72,6 +72,7 @@ class SyncStatusTest {
 
         assertThat(result.state()).isEqualTo("no_device");
         assertThat(result.detail()).contains("Devices page");
+        assertThat(result.detail()).contains("open School-Life-Assistant");
         assertThat(result.laptopWarning()).isNull();
     }
 
@@ -121,7 +122,7 @@ class SyncStatusTest {
         Status result = status(run("failed", "07:00", "07:05", "bad_credentials", null));
 
         assertThat(result.state()).isEqualTo("paused");
-        assertThat(result.detail()).contains("sla-agent setup");
+        assertThat(result.detail()).contains("in Accounts");
     }
 
     @Test
@@ -171,6 +172,7 @@ class SyncStatusTest {
     @Test
     void laptopThatNeverCheckedIn() {
         assertThat(status(null, null, true, null, null).laptopWarning()).contains("hasn't checked in yet");
+        assertThat(status(null, null, true, null, null).laptopWarning()).contains("School-Life-Assistant");
     }
 
     @Test
@@ -199,7 +201,7 @@ class SyncStatusTest {
                 .containsExactly(tuple("EduSoft", "ok"),
                         tuple("Blackboard", "paused"));
         assertThat(lines.get(0).text()).isEqualTo("synced at 14:05");
-        assertThat(lines.get(1).text()).contains("sla-agent setup --blackboard");
+        assertThat(lines.get(1).text()).isEqualTo("paused: wrong username or password. Change it in Accounts.");
     }
 
     @Test
@@ -223,7 +225,7 @@ class SyncStatusTest {
 
         assertThat(result.state()).isEqualTo("paused");
         assertThat(result.headline()).contains("Blackboard");
-        assertThat(result.detail()).contains("sla-agent setup --blackboard");
+        assertThat(result.detail()).contains("in Accounts");
     }
 
     // ---- Outlook ------------------------------------------------------------------
@@ -333,5 +335,14 @@ class SyncStatusTest {
 
         assertThat(status(run("partial", "07:00", "07:05", null, sections)).detail())
                 .startsWith("Couldn't read: tuition (IUPay).");
+    }
+
+    @Test
+    void accountLinesNameEverySystemEvenWithoutARun() {
+        List<SystemLine> lines = SyncStatus.accountLines(List.of(run("success", "07:00", "07:05", null, edu())), NOW);
+
+        assertThat(lines).extracting(SystemLine::name, SystemLine::state, SystemLine::text).containsExactly(
+                tuple("EduSoft", "ok", "synced at 14:05"), tuple("IUPay", "none", "never synced"),
+                tuple("Blackboard", "none", "not set up"), tuple("Outlook", "none", "not set up"));
     }
 }

@@ -159,7 +159,7 @@ class SchoolPagesTest {
 
         String html = page("/school");
 
-        assertThat(html).contains("EduSoft:", "IUPay:", "Blackboard:", "sla-agent setup --blackboard");
+        assertThat(html).contains("EduSoft:", "IUPay:", "Blackboard:", "Change it in Accounts.", "Open Accounts →");
     }
 
     @Test
@@ -596,5 +596,18 @@ class SchoolPagesTest {
                 "bills", "changes")) {
             assertThat(html).contains("data-live=\"" + area + "\"");
         }
+    }
+
+    @Test
+    void theStatusCardLinksToAccountsOnlyWhileSomethingIsPaused() throws Exception {
+        deviceKeys.create(an.id(), "My laptop", LocalDateTime.of(2026, 9, 1, 0, 0));
+        finishedRun(an, "scheduled", SchoolSyncRun.SUCCESS);
+
+        assertThat(page("/school")).doesNotContain("Open Accounts →");
+    }
+
+    @Test
+    void withoutBlackboardCoursesThePagePointsToAccounts() throws Exception {
+        assertThat(page("/school/courses")).contains("Set up Blackboard in <a href=\"/school/accounts\">Accounts</a>");
     }
 }

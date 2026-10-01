@@ -13,8 +13,8 @@
   <th:block th:if="${newKey != null}">
     <section class="card key-card">
       <h2>Your new device key</h2>
-      <p><strong>Copy it now. It won't be shown again.</strong> Then run <code>sla-agent setup</code>
-         on the laptop and paste it when asked.</p>
+      <p><strong>Copy it now. It won't be shown again.</strong> Then open School-Life-Assistant on the laptop
+         (double-click <code>School-Life-Assistant.cmd</code> the first time) and paste it when asked.</p>
       <div class="key-row">
         <code id="new-key" class="key" th:text="${newKey}">sla_…</code>
         <button type="button" class="button" id="copy-key">Copy</button>

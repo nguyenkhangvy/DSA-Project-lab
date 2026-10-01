@@ -171,7 +171,8 @@ class MailboxPageTest {
 
     @Test
     void beforeOutlookIsConnectedThePageSaysHow() throws Exception {
-        assertThat(page()).contains("Outlook isn't connected yet.").contains("sla-agent setup --outlook")
+        assertThat(page()).contains("Outlook isn't connected yet.")
+                .contains("then choose your account in <a href=\"/school/accounts\">Accounts</a>")
                 .doesNotContain("From lecturers");
     }
 

@@ -15,8 +15,9 @@
         IT093IU · 3 announcements · 2 assignments</p>
     </a>
   </div>
-  <section class="card" th:if="${courses.isEmpty()}"><p>No Blackboard courses yet. Set up Blackboard on your laptop with
-    <code>sla-agent setup --blackboard</code>; your courses appear after the next sync.</p></section>
+  <section class="card" th:if="${courses.isEmpty()}"><p>No Blackboard courses yet.
+    Set up Blackboard in <a th:href="@{/school/accounts}">Accounts</a> on your laptop; your courses appear after the
+    next sync.</p></section>
 </main>
 </body>
 </html>
