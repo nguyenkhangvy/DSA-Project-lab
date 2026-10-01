@@ -199,7 +199,7 @@ def test_sync_now_while_paused_explains_how_to_fix_it(world, capsys):
 
     assert world.edusoft.logins == []
     assert world.iupay.calls == [STUDENT]
-    assert "sla-agent setup" in capsys.readouterr().out
+    assert "in Accounts" in capsys.readouterr().out
 
 
 # ---- fetch --save-html ---------------------------------------------------------
@@ -286,7 +286,7 @@ def test_status_shows_a_pause_and_what_to_do(world, capsys):
 
     out = capsys.readouterr().out
     assert STUDENT in out
-    assert "sla-agent setup" in out
+    assert "in Accounts" in out
 
 
 def test_forget_removes_secrets_state_and_the_task(world, isolated_agent):
@@ -357,7 +357,7 @@ def test_status_shows_blackboard(world, capsys):
 
     out = capsys.readouterr().out
     assert "Blackboard" in out
-    assert "sla-agent setup --blackboard" in out
+    assert "in Accounts" in out
 
 
 def test_forget_removes_the_blackboard_password_too(world, isolated_agent):
@@ -819,3 +819,18 @@ def test_window_without_tkinter_points_to_the_terminal(world, monkeypatch, capsy
     assert cli.main(["window"]) == 1
 
     assert "sla-agent setup" in capsys.readouterr().out
+
+
+def test_status_says_where_to_set_up_blackboard_and_outlook(world, capsys):
+    configure()
+
+    cli.main(["status"])
+
+    out = capsys.readouterr().out
+    assert "Blackboard:  not set up (set it up in Accounts" in out
+    assert "Outlook:     not set up (set it up in Accounts" in out
+
+
+def test_not_set_up_mentions_the_window(world, capsys):
+    assert cli.main(["status"]) == 1
+    assert "School-Life-Assistant.cmd" in capsys.readouterr().out

@@ -3,7 +3,7 @@
     sla-agent setup                  enter your details once; schedules automatic sync
     sla-agent setup --outlook        read your Inbox through classic Outlook at each sync
     sla-agent window                 open the School-Life-Assistant window: set up or change your accounts
-    sla-agent run                    what the scheduled task calls every 15 minutes
+    sla-agent run                    what the scheduled task calls every minute
     sla-agent sync-now               sync right away
     sla-agent status                 show the last result and whether sync is paused
     sla-agent fetch --save-html DIR  save your EduSoft pages on this laptop (for building the readers)
@@ -62,7 +62,8 @@ from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run
 log = logging.getLogger(__name__)
 
 MIN_MANUAL_GAP = timedelta(minutes=5)
-NOT_SET_UP = "sla-agent isn't set up yet. Run `sla-agent setup` first."
+NOT_SET_UP = ("sla-agent isn't set up yet. Open School-Life-Assistant (double-click School-Life-Assistant.cmd in "
+              "the project folder), or run `sla-agent setup`.")
 
 # Replaced in tests.
 ask = input
@@ -244,7 +245,7 @@ def _sync(trigger, state, password, server):
         say("A sync is already running.")
         return 0
     except DeviceKeyRejected as error:
-        say(f"{error} Run `sla-agent setup` with a new key.")
+        say(f"{error} Paste a new key in Accounts (open School-Life-Assistant), or run `sla-agent setup`.")
         return 1
     except ServerError as error:
         log.warning("Web app problem: %s", error)
@@ -475,19 +476,19 @@ def cmd_status(args):
     else:
         say("EduSoft:     on")
     if not state.blackboard_username:
-        say("Blackboard:  not set up (run `sla-agent setup --blackboard`)")
+        say("Blackboard:  not set up (set it up in Accounts: open School-Life-Assistant)")
     elif state.blackboard_paused:
-        say(f"Blackboard:  PAUSED ({state.blackboard_paused}). Run `sla-agent setup --blackboard`.")
+        say(f"Blackboard:  PAUSED ({state.blackboard_paused}). Change it in Accounts (open School-Life-Assistant).")
     else:
         say("Blackboard:  on")
     if state.outlook_account:
         say(f"Outlook:     on ({state.outlook_account})")
     else:
-        say("Outlook:     not set up (run `sla-agent setup --outlook`)")
+        say("Outlook:     not set up (set it up in Accounts: open School-Life-Assistant)")
     program = task_program()
     if program and not Path(program).exists():
         say("Sync task:   points to a Python that no longer exists (the project folder moved?). "
-            "Run `sla-agent schedule`.")
+            "Run `sla-agent schedule`, or press Repair in Accounts.")
     if state.last_result:
         say(f"Last sync:   {state.last_result['status']} at {state.last_result['at']}: {state.last_result['message']}")
     else:

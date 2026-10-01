@@ -24,13 +24,13 @@ log = logging.getLogger(__name__)
 
 PAUSE_MESSAGES = {
     "bad_credentials": "EduSoft rejected your student ID or password. EduSoft sync is paused; "
-                       "run `sla-agent setup` to enter them again.",
+                       "enter them again in Accounts (open School-Life-Assistant on this laptop).",
     "extra_verification": "EduSoft asked for extra verification (CAPTCHA or code). EduSoft sync is "
                           "paused; save the pages from your browser and use `sla-agent import`.",
 }
 BLACKBOARD_PAUSE_MESSAGES = {
     "bad_credentials": "Blackboard rejected your username or password. Blackboard sync is paused; "
-                       "run `sla-agent setup --blackboard` to enter them again.",
+                       "enter them again in Accounts (open School-Life-Assistant on this laptop).",
     "extra_verification": "Blackboard asked for extra verification (CAPTCHA, code or Microsoft sign-in). "
                           "Blackboard sync is paused.",
 }

@@ -87,7 +87,7 @@ def test_a_wrong_password_pauses_after_exactly_one_login_attempt(state):
     assert {name: part.error_code for name, part in result.sections().items()} == {
         "timetable": "bad_credentials", "exams": "bad_credentials"}
     assert state.paused == "bad_credentials"
-    assert "sla-agent setup" in outcome.message
+    assert "in Accounts" in outcome.message
 
 
 def test_a_paused_agent_contacts_nobody(state):
@@ -234,7 +234,7 @@ def test_a_wrong_blackboard_password_pauses_only_blackboard(bb_state):
     assert (result.timetable.status, result.blackboard.error_code) == ("ok", "bad_credentials")
     assert (bb_state.paused, bb_state.blackboard_paused) == (None, "bad_credentials")
     assert len(blackboard.logins) == 1
-    assert "sla-agent setup --blackboard" in outcome.message
+    assert "in Accounts" in outcome.message
 
 
 def test_a_paused_blackboard_is_not_contacted(bb_state):
@@ -481,7 +481,7 @@ def test_iupay_still_syncs_while_edusoft_is_paused(state):
     assert iupay.calls == ["ITITIU20001"]
     result = only_finish(server)
     assert (result.iupay.status, result.timetable.error_code) == ("ok", "bad_credentials")
-    assert "sla-agent setup" in outcome.message
+    assert "in Accounts" in outcome.message
 
 
 def test_iupay_still_syncs_when_edusoft_cannot_be_reached(state):
