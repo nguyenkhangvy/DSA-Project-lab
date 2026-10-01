@@ -258,3 +258,34 @@ def test_an_unexpected_error_after_saving_stops_only_that_step(fakes):
     assert results["blackboard"].message.startswith("Something went wrong (RuntimeError)")
     assert results["outlook"].ok and results["sync"].ok
     assert "task" in fakes.done
+
+
+# ---- a laptop set up before the window existed ------------------------------------------
+
+
+def test_the_window_adds_its_link_type_and_shortcuts_to_a_laptop_set_up_before_it_existed(fakes):
+    set_up()
+
+    assert accounts.add_window_links(fakes.tools()) == []
+
+    assert {"window link", "mail link", "shortcuts"} <= set(fakes.done)
+
+
+def test_the_window_adds_nothing_where_the_link_type_exists_or_nothing_is_set_up(fakes):
+    assert accounts.add_window_links(fakes.tools()) == []  # not set up: the first-time form makes them
+    assert fakes.done == []
+
+    set_up()
+    fakes.done.append("window link")  # already registered, e.g. by `sla-agent setup` since this change
+
+    assert accounts.add_window_links(fakes.tools()) == []
+    assert fakes.done == ["window link"]
+
+
+def test_a_link_or_shortcut_that_fails_is_reported(fakes):
+    set_up()
+    fakes.fail = {"shortcuts": RuntimeError("com_error")}
+
+    notes = accounts.add_window_links(fakes.tools())
+
+    assert len(notes) == 1 and "shortcuts" in notes[0]

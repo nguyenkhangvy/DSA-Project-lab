@@ -80,7 +80,7 @@ Only needed to sync your own EduSoft and Blackboard into the School pages. It ru
 
 3. **Set it up:** double-click `School-Life-Assistant.cmd` in the project folder. A window opens: the web app address is filled in (`http://localhost:5000`); paste the device key, enter your EduSoft student ID and password, and if you like your Blackboard login and the Outlook account to read, then press **Check and save**. Each login is checked once, and nothing is saved if one is wrong. It then turns on automatic sync (every minute while you're logged in to Windows; a full sync every 30 minutes, or soon after you press "Sync now") and adds School-Life-Assistant to your Desktop and Start menu.
 
-**Change an account later:** open School-Life-Assistant from the Start menu, or press **Open Accounts on this laptop** on School → Accounts, then press **Change** next to the account. A wrong new password changes nothing. Prefer the terminal? `sla-agent setup` still works.
+**Change an account later:** open School-Life-Assistant from the Start menu, or press **Open Accounts on this laptop** on School → Accounts, then press **Change** next to the account. A wrong new password changes nothing. Prefer the terminal? `sla-agent setup` still works. Set up before this window existed? Double-click `School-Life-Assistant.cmd` once: it adds the Start menu entry and makes the website's button work.
 
 | What | Command |
 |---|---|

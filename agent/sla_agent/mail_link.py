@@ -55,5 +55,15 @@ def register_window(python_exe):
     _register(WINDOW_KEY, "URL:School-Life-Assistant accounts", window_command(python_exe))
 
 
+def window_registered():
+    """Whether the sla-agent: link type is registered for this Windows user."""
+    registry = _winreg()
+    try:
+        with registry.OpenKey(registry.HKEY_CURRENT_USER, WINDOW_KEY + r"\shell\open\command"):
+            return True
+    except FileNotFoundError:
+        return False
+
+
 def unregister_window():
     _unregister(WINDOW_KEY)

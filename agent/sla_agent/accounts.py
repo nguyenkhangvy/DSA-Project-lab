@@ -16,7 +16,7 @@ from sla_agent.errors import AgentError, BadCredentials, DeviceKeyRejected, Extr
 from sla_agent.log import protect
 from sla_agent.scheduler import SchedulerError, current_user
 from sla_agent.server_client import check_server_url
-from sla_agent.state import agent_home, save_state
+from sla_agent.state import agent_home, load_state, save_state
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ class Tools:
     register_mail_link: Callable  # (python)
     register_window_link: Callable  # (python)
     make_shortcuts: Callable  # (python, folder)
+    has_window_link: Callable  # () -> whether the sla-agent: link type is registered
 
 
 @dataclass(frozen=True)
@@ -206,11 +207,9 @@ def choose_outlook(state, address, tools):
 # ---- automatic sync -----------------------------------------------------------------
 
 
-def turn_on_sync(tools):
-    """The sla-agent: and sla-mail: link types, the shortcuts and the scheduled task, all pointing at this folder's
-    Python (so this also repairs them after the project folder moved). `ok` says whether the task was made; a link
-    or shortcut that fails becomes a note, and nothing saved is undone."""
-    python = tools.python()
+def _links_and_shortcuts(tools, python):
+    """The sla-agent: and sla-mail: link types and the shortcuts, pointing at `python`; a note for each part that
+    failed."""
     notes = []
     for register, name in ((tools.register_window_link, "sla-agent:"), (tools.register_mail_link, "sla-mail:")):
         try:
@@ -223,11 +222,31 @@ def turn_on_sync(tools):
         log.warning("Couldn't make the shortcuts: %s", error)
         notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
                      "School-Life-Assistant.cmd in the project folder opens this window too.")
+    return notes
+
+
+def turn_on_sync(tools):
+    """The sla-agent: and sla-mail: link types, the shortcuts and the scheduled task, all pointing at this folder's
+    Python (so this also repairs them after the project folder moved). `ok` says whether the task was made; a link
+    or shortcut that fails becomes a note, and nothing saved is undone."""
+    python = tools.python()
+    notes = _links_and_shortcuts(tools, python)
     try:
         tools.install_task(python, current_user(), folder=agent_home())
     except SchedulerError as error:
         return Result(False, str(error), tuple(notes))
     return Result(True, SYNC_ON, tuple(notes))
+
+
+def add_window_links(tools):
+    """A laptop set up before the window existed has neither the sla-agent: link type nor the shortcuts, so neither
+    the website's button nor the Start menu can open the window. The first time the window opens there (from
+    School-Life-Assistant.cmd), add them; a laptop not set up yet gets them from its first setup. Returns a note for
+    each part that failed (tried again the next time)."""
+    state = load_state()
+    if not (state.server_url and state.student_id) or tools.has_window_link():
+        return []
+    return _links_and_shortcuts(tools, tools.python())
 
 
 def sync_task_state(tools):

@@ -35,7 +35,7 @@ class Fakes:
             make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, python=lambda: PYTHONW,
             install_task=self._part("task"), task_program=lambda: self.program,
             register_mail_link=self._part("mail link"), register_window_link=self._part("window link"),
-            make_shortcuts=self._part("shortcuts"))
+            make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done)
 
     def _make_server(self, address, key):
         self.servers.append((address, key))

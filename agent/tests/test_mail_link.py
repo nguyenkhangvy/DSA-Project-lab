@@ -47,3 +47,11 @@ def test_unregister_window_leaves_sla_mail_and_is_fine_when_it_is_gone(isolated_
     paths = [path for _, path in isolated_agent.registry.keys]
     assert not [path for path in paths if "sla-agent" in path]
     assert ROOT in paths
+
+
+def test_window_registered_says_whether_the_accounts_link_type_is_there(isolated_agent):
+    assert not mail_link.window_registered()
+
+    mail_link.register_window("pythonw.exe")
+
+    assert mail_link.window_registered()

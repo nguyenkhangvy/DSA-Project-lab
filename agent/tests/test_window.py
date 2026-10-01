@@ -262,3 +262,21 @@ def test_a_second_start_brings_the_open_window_forward_instead():
     assert window.claim_single_window(first=lambda name: True, bring_forward=forward.append)
     assert not window.claim_single_window(first=lambda name: False, bring_forward=forward.append)
     assert forward == [window.TITLE]
+
+
+def test_opening_on_a_laptop_set_up_before_the_window_adds_its_link_and_shortcuts(fakes, monkeypatch):
+    set_up()
+    opened = []
+
+    class Root:
+        def mainloop(self):
+            pass
+
+    monkeypatch.setattr(window, "claim_single_window", lambda: True)
+    monkeypatch.setattr(window.tk, "Tk", Root)
+    monkeypatch.setattr(window, "App", lambda root, tools, notice="": opened.append(notice))
+
+    assert window.main(fakes.tools()) == 0
+
+    assert {"window link", "mail link", "shortcuts"} <= set(fakes.done)
+    assert opened == [""]

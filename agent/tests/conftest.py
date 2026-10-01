@@ -55,6 +55,11 @@ class MemoryRegistry:
     def SetValueEx(self, key, name, reserved, kind, value):
         self.keys[key.path][name] = value
 
+    def OpenKey(self, root, path):
+        if (root, path) not in self.keys:
+            raise FileNotFoundError(path)
+        return self.Key((root, path))
+
     def DeleteKey(self, root, path):
         if (root, path) not in self.keys:
             raise FileNotFoundError(path)

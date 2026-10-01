@@ -97,7 +97,8 @@ def tools():
         make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
         find_outlook_accounts=find_outlook_accounts, python=windowless_python, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
-        register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make)
+        register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
+        has_window_link=mail_link.window_registered)
 
 
 def say(message):

@@ -64,7 +64,7 @@ class AccountsPageTest {
         String html = main(page());
 
         assertThat(html).contains("href=\"sla-agent:accounts\"", "Open Accounts on this laptop", "My laptop",
-                "Start menu");
+                "Start menu", "School-Life-Assistant.cmd");
         assertThat(html).doesNotContain("type=\"password\"").doesNotContain("<form").doesNotContain("<input");
     }
 

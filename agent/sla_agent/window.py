@@ -112,7 +112,7 @@ def local_time(iso):
 class App:
     """The window: the first-time form (SetupScreen) or Accounts (AccountsScreen), rebuilt after each save."""
 
-    def __init__(self, root, tools, run=None):
+    def __init__(self, root, tools, run=None, notice=""):
         self.root, self.tools = root, tools
         self.run = run or run_in_background(root)
         root.title(TITLE)
@@ -120,7 +120,7 @@ class App:
         root.columnconfigure(0, weight=1)
         self.body = None
         self.screen = None
-        self.show()
+        self.show(notice)
 
     def show(self, notice=""):
         if self.body is not None:
@@ -436,9 +436,10 @@ def main(tools, link=None):
         log.debug("Opened from %s", link)
     if not claim_single_window():
         return 0
+    notes = accounts.add_window_links(tools)  # a laptop set up before the window existed
     _sharp_on_high_dpi()
     root = tk.Tk()
     root.report_callback_exception = lambda *exc: log.error("Accounts window error", exc_info=exc)
-    App(root, tools)
+    App(root, tools, notice="\n".join(notes))
     root.mainloop()
     return 0
