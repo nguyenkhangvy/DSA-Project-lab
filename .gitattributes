@@ -1,0 +1,2 @@
+# Shell scripts run on Linux (deploy/oracle), where a Windows line ending breaks them: always LF, even on Windows.
+*.sh text eol=lf
