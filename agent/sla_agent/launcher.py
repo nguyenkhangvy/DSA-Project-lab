@@ -6,6 +6,7 @@ import sys
 from pathlib import Path, PureWindowsPath
 
 APP_EXE = "School-Life-Assistant.exe"
+_held = None  # the app's open version.txt (hold_app_folder)
 
 
 def frozen():
@@ -19,6 +20,20 @@ def program():
         return sys.executable
     pythonw = Path(sys.executable).with_name("pythonw.exe")
     return str(pythonw if pythonw.exists() else Path(sys.executable))
+
+
+def hold_app_folder():
+    """While the built app runs, keep the version.txt beside its .exe open, so Windows refuses to rename its folder and
+    the setup (installer.py) waits instead of swapping a new app in under a running one. A running program's own
+    .exe and DLLs don't stop a rename; an open file does. Returns the open file, or None from source or when the
+    file is missing."""
+    global _held
+    if frozen() and _held is None:
+        try:
+            _held = open(Path(sys.executable).with_name("version.txt"), "rb")  # noqa: SIM115 (held until the end)
+        except OSError:
+            pass
+    return _held
 
 
 def arguments(program, command):

@@ -1,9 +1,13 @@
 """How the scheduled task, the links and the shortcuts start the agent (launcher.py): the built app, or a Python
 running the source."""
 
+import os
 import sys
+from pathlib import Path
 
-from sla_agent import launcher, mail_link, shortcuts
+import pytest
+
+from sla_agent import cli, launcher, mail_link, shortcuts
 from sla_agent.scheduler import task_xml
 
 APP = r"C:\Users\Nguyễn Văn An\AppData\Local\SchoolLifeAssistant\app\School-Life-Assistant.exe"
@@ -54,3 +58,55 @@ def test_the_task_the_links_and_the_shortcuts_start_the_app_without_python(isola
     made = list(isolated_agent.shell.root.rglob("*.lnk"))
     assert len(made) == 2
     assert all(path.read_text(encoding="utf-8").startswith(f"{APP} window\n") for path in made)
+
+
+# ---- the built app holds its own folder (review C1) -------------------------------------------
+
+
+def built_app_in(monkeypatch, folder):
+    """This process as the built app installed in `folder`, holding nothing yet."""
+    folder.mkdir()
+    (folder / "version.txt").write_text("0.2.0", encoding="utf-8")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(folder / launcher.APP_EXE))
+    monkeypatch.setattr(launcher, "_held", None)
+
+
+def test_the_built_app_keeps_its_version_file_open_while_it_runs(monkeypatch, tmp_path):
+    built_app_in(monkeypatch, tmp_path / "app")
+
+    held = launcher.hold_app_folder()
+    try:
+        assert not held.closed
+        assert Path(held.name) == tmp_path / "app" / "version.txt"
+    finally:
+        held.close()
+
+
+def test_from_source_nothing_is_held(monkeypatch):
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    monkeypatch.setattr(launcher, "_held", None)
+
+    assert launcher.hold_app_folder() is None
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' rule: a folder with an open file can't be renamed")
+def test_while_the_built_app_runs_windows_refuses_to_swap_its_folder(monkeypatch, tmp_path):
+    built_app_in(monkeypatch, tmp_path / "app")
+
+    held = launcher.hold_app_folder()
+    try:
+        with pytest.raises(PermissionError):
+            os.rename(tmp_path / "app", tmp_path / "app.old")
+    finally:
+        held.close()
+    os.rename(tmp_path / "app", tmp_path / "app.old")  # once it has ended, the setup can swap it
+
+
+def test_every_command_of_the_built_app_holds_its_folder_first(monkeypatch):
+    held = []
+    monkeypatch.setattr(launcher, "hold_app_folder", lambda: held.append("held"))
+    monkeypatch.setitem(cli.COMMANDS, "status", lambda args: 0)
+
+    assert cli.main(["status"]) == 0
+    assert held == ["held"]

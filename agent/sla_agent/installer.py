@@ -8,8 +8,9 @@ It carries the app (app.zip, a folder build that starts without unpacking anythi
                                                to end, then install with no window and no messages
 
 A new app is unpacked into app.new and used only once its own `self-check` passes; then app is renamed to app.old
-and app.new to app. Windows refuses to rename a folder while a program runs from it, so the swap is tried again for
-a while. Any failure leaves the old app as it was. Standard library only, so the setup stays small."""
+and app.new to app. Windows refuses to rename a folder while a file in it is open, and every running app keeps its
+version.txt open (launcher.hold_app_folder), so the swap is tried again for a while. Any failure leaves the old app
+as it was. Standard library only, so the setup stays small."""
 
 import logging
 import os

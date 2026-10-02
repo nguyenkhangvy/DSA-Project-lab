@@ -603,6 +603,7 @@ COMMANDS = {
 
 
 def main(argv=None):
+    launcher.hold_app_folder()  # the built app's folder can't be swapped while this runs
     argv = sys.argv[1:] if argv is None else argv
     if not argv and launcher.frozen():
         argv = ["window"]  # the app's School-Life-Assistant.exe double-clicked
