@@ -309,10 +309,10 @@ def _updating(state):
 
 
 def _too_old(state, error):
-    """The website refused this version (HTTP 426): look for an update at the next run, and say why nothing
+    """The website refused this version (HTTP 426): look for an update within the hour, and say why nothing
     syncs."""
     before = copy.deepcopy(state)
-    state.update_checked_at = None
+    update.check_soon(state, _now())
     state.last_result = {"at": _now().isoformat(), "status": "failed", "message": str(error)}
     save_state(state, before)
     log.warning("%s", error)

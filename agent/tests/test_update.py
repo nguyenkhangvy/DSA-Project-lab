@@ -195,3 +195,23 @@ def test_downloaded_setups_are_deleted():
 
     assert downloaded() == []
     update.clean_downloads()  # and nothing to delete is fine
+
+
+# ---- after the website refused this version (review I1) ----------------------------------------
+
+
+def test_after_a_refusal_the_next_check_is_within_the_hour_not_every_minute():
+    state = State(update_checked_at=(NOW - timedelta(hours=2)).isoformat())
+
+    update.check_soon(state, NOW)
+
+    assert not update.due(state, NOW + timedelta(minutes=59))
+    assert update.due(state, NOW + timedelta(minutes=61))
+
+
+def test_after_a_refusal_a_check_already_due_stays_due():
+    state = State()
+
+    update.check_soon(state, NOW)
+
+    assert update.due(state, NOW)

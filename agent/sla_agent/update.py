@@ -28,6 +28,7 @@ DOWNLOADS = f"https://github.com/{REPOSITORY}/releases/download/"
 SETUP = "School-Life-Assistant.exe"
 SUMS = "SHA256SUMS.txt"
 EVERY = timedelta(hours=24)
+SOON = timedelta(hours=1)  # after the website refused this version
 MAX_BYTES = 150 * 1024 * 1024
 TIMEOUT = (10, 60)
 # The setup must outlive this run: started on its own, and outside the scheduled task's job where Windows allows it.
@@ -48,6 +49,14 @@ def due(state, now):
     if not state.update_checked_at:
         return True
     return not timedelta(0) <= now - datetime.fromisoformat(state.update_checked_at) < EVERY
+
+
+def check_soon(state, now):
+    """After the website refused this version (HTTP 426): look for an update within the hour. Not every minute: the
+    release may take a while to appear, and GitHub allows 60 checks an hour per network."""
+    if due(state, now):
+        return  # the next run checks anyway
+    state.update_checked_at = min(datetime.fromisoformat(state.update_checked_at), now - EVERY + SOON).isoformat()
 
 
 def check_and_start(state, now, session=None, start=None):

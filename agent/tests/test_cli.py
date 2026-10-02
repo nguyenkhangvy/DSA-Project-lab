@@ -935,16 +935,18 @@ def test_downloaded_setups_are_tidied_at_a_later_run(world, built_app):
     assert list(update.downloads().iterdir()) == []
 
 
-def test_a_version_the_website_refuses_looks_for_an_update_at_the_next_run(world):
+def test_a_version_the_website_refuses_looks_for_an_update_within_the_hour_not_every_minute(world):
     configure()
+    now = datetime.now(timezone.utc)
     state = load_state()
-    state.update_checked_at = "2026-10-05T07:00:00+00:00"
+    state.update_checked_at = (now - timedelta(hours=2)).isoformat()
     save_state(state)
     world.server.check_error = UpdateRequired(TOO_OLD)
 
     assert cli.main(["run"]) == 1
 
     state = load_state()
-    assert state.update_checked_at is None
+    assert not update.due(state, now + timedelta(minutes=1))
+    assert update.due(state, now + timedelta(minutes=61))
     assert state.last_result["message"] == TOO_OLD
     assert world.server.starts == []

@@ -22,7 +22,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class AgentVersionInterceptor implements HandlerInterceptor {
 
-    /** The oldest agent still accepted. Raise it when the upload format changes in a way older agents can't follow. */
+    /**
+     * The oldest agent still accepted. Raise it when the upload format changes in a way older agents can't follow,
+     * and only once the release that follows the new format is published: refused agents look for it every hour.
+     */
     static final List<Integer> OLDEST = List.of(0, 1, 0);
 
     private static final Pattern AGENT = Pattern.compile("SchoolLifeAssistant/(\\d{1,6})\\.(\\d{1,6})(?:\\.(\\d{1,6}))?\\b");
