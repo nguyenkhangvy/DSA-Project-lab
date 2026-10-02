@@ -240,7 +240,7 @@ def _links_and_shortcuts(tools, program):
     except Exception as error:  # pywin32 raises its own com_error, not an OSError
         log.warning("Couldn't make the shortcuts: %s", error)
         notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
-                     "School-Life-Assistant.cmd in the project folder opens this window too.")
+                     "The Accounts page on the website opens this window too.")
     return notes
 
 

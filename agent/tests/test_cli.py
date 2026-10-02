@@ -773,7 +773,10 @@ def test_setup_says_when_the_shortcuts_could_not_be_made_but_keeps_the_rest(worl
 
     assert cli.main(["setup"]) == 0
 
-    assert "Couldn't make the Desktop and Start menu shortcuts" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "Couldn't make the Desktop and Start menu shortcuts" in out
+    assert "The Accounts page on the website opens this window too." in out
+    assert "School-Life-Assistant.cmd" not in out
     assert world.tasks == ["installed"]
 
 
