@@ -637,3 +637,13 @@ def main(argv=None):
             stream.reconfigure(errors="replace")
     setup_logging()
     return COMMANDS[args.command](args)
+
+
+def app_main(argv=None):
+    """The built app's entry point (agent/packaging/app_entry.py): main, but an unexpected error goes to agent.log
+    instead of PyInstaller's error box, which would block the every-minute run until someone closed it."""
+    try:
+        return main(argv)
+    except Exception:  # SystemExit (argparse) still ends the program normally
+        log.exception("Unexpected error")
+        return 1

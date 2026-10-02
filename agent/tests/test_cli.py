@@ -950,3 +950,22 @@ def test_a_version_the_website_refuses_looks_for_an_update_within_the_hour_not_e
     assert update.due(state, now + timedelta(minutes=61))
     assert state.last_result["message"] == TOO_OLD
     assert world.server.starts == []
+
+
+# ---- the built app never shows PyInstaller's error box (review I3) -----------------------------
+
+
+def test_the_built_app_logs_an_unexpected_error_instead_of_showing_a_box(monkeypatch):
+    def broken(args):
+        raise RuntimeError("the website changed its answer")
+
+    monkeypatch.setitem(cli.COMMANDS, "run", broken)
+
+    assert cli.app_main(["run"]) == 1
+    assert "the website changed its answer" in (agent_home() / "agent.log").read_text(encoding="utf-8")
+
+
+def test_the_built_app_otherwise_answers_like_sla_agent(monkeypatch):
+    monkeypatch.setitem(cli.COMMANDS, "status", lambda args: 0)
+
+    assert cli.app_main(["status"]) == 0
