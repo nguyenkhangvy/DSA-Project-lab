@@ -13,8 +13,9 @@ class FakeMachine:
     """`version` is the app this setup carries; `failing` names folders whose app fails its self-check; `busy` is how
     many times renaming app\\ fails as "in use" before it works; `broken` names a folder that never renames."""
 
-    def __init__(self, version="0.2.0", failing=(), busy=0, broken=None, claimed=True):
+    def __init__(self, version="0.2.0", failing=(), busy=0, broken=None, claimed=True, busy_new=0):
         self.version, self.failing, self.busy, self.broken = version, set(failing), busy, broken
+        self.busy_new = busy_new  # how many times renaming app.new fails, e.g. while the antivirus scans it
         self.claimed = claimed  # False: another setup is already running
         self.started, self.told, self.waited, self.checked = [], [], [], []
         self.now = 0.0
@@ -41,6 +42,9 @@ class FakeMachine:
     def rename(self, source, target):
         if source.name == "app" and self.busy:
             self.busy -= 1
+            raise PermissionError("The process cannot access the file because it is being used by another process")
+        if source.name == "app.new" and self.busy_new:
+            self.busy_new -= 1
             raise PermissionError("The process cannot access the file because it is being used by another process")
         if source.name == self.broken:
             raise PermissionError("Access is denied")
@@ -282,3 +286,17 @@ def test_an_update_while_another_setup_runs_gives_up_quietly(monkeypatch, tmp_pa
 
     assert fake.told == []
     assert fake.waited == []
+
+
+# ---- new files held for a moment (review M1) ---------------------------------------------------
+
+
+def test_new_files_the_antivirus_holds_for_a_moment_are_waited_for(home):
+    put_app(home / "app", "0.1.0")
+    fake = FakeMachine(busy_new=2)
+
+    assert installer.install(home, "0.2.0", fake.machine()) == 0
+
+    assert app_version(home) == "app 0.2.0"
+    assert leftovers(home) == []
+    assert fake.told == []

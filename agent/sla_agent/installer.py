@@ -109,26 +109,29 @@ def _keep_installed(app, version, machine):
 
 
 def _swap(app, new, old, machine, seconds):
-    """app → app.old, then app.new → app, trying again while a program runs from app. False when the first rename
-    never worked (app is as it was) or the second failed (app.old is renamed back)."""
-    deadline = machine.clock() + seconds
-    while app.exists():
-        try:
-            machine.rename(app, old)
-            break
-        except OSError as error:
-            if machine.clock() >= deadline:
-                log.warning("The app stayed in use: %s", error)
-                return False
-            machine.sleep(RETRY_EVERY)
-    try:
-        machine.rename(new, app)
-    except OSError as error:
-        log.warning("Couldn't move the new app into place: %s", error)
+    """app → app.old, then app.new → app, each tried again for up to `seconds` while something holds a file in it (a
+    running app, or the antivirus scanning the new files). False when either never worked: app is then as it was
+    (app.old is renamed back)."""
+    if app.exists() and not _rename_when_free(app, old, machine, seconds):
+        return False
+    if not _rename_when_free(new, app, machine, seconds):
         if old.exists() and not app.exists():
             machine.rename(old, app)
         return False
     return True
+
+
+def _rename_when_free(source, target, machine, seconds):
+    deadline = machine.clock() + seconds
+    while True:
+        try:
+            machine.rename(source, target)
+            return True
+        except OSError as error:
+            if machine.clock() >= deadline:
+                log.warning("Couldn't rename %s: %s", source.name, error)
+                return False
+            machine.sleep(RETRY_EVERY)
 
 
 def _failed(machine, quiet, message):
