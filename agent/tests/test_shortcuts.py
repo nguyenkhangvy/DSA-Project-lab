@@ -11,15 +11,19 @@ def made(isolated_agent):
     return sorted(isolated_agent.shell.root.rglob("*.lnk"))
 
 
-def test_make_puts_a_shortcut_on_the_desktop_and_in_the_start_menu(isolated_agent, tmp_path):
+def test_make_puts_the_app_on_the_desktop_and_in_the_start_menu_and_accounts_in_the_start_menu(isolated_agent,
+                                                                                               tmp_path):
     shortcuts.make(PYTHONW, tmp_path / "home")
 
     desktop = isolated_agent.shell.root / "OneDrive" / "Máy tính" / "School-Life-Assistant.lnk"
     start_menu = isolated_agent.shell.root / "Start Menu" / "Programs" / "School-Life-Assistant.lnk"
-    assert made(isolated_agent) == sorted([desktop, start_menu])
+    accounts = isolated_agent.shell.root / "Start Menu" / "Programs" / "School-Life-Assistant Accounts.lnk"
+    assert made(isolated_agent) == sorted([desktop, start_menu, accounts])
     for shortcut in (desktop, start_menu):
         assert shortcut.read_text(encoding="utf-8").splitlines() == [
-            f"{PYTHONW} -m sla_agent window", str(tmp_path / "home")]
+            f"{PYTHONW} -m sla_agent open", str(tmp_path / "home")]
+    assert accounts.read_text(encoding="utf-8").splitlines() == [
+        f"{PYTHONW} -m sla_agent window", str(tmp_path / "home")]
 
 
 def test_make_again_replaces_them_and_remove_is_fine_when_they_are_gone(isolated_agent, tmp_path):

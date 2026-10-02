@@ -758,7 +758,8 @@ def test_setup_adds_the_window_link_type_and_the_shortcuts(world, isolated_agent
     assert cli.main(["setup"]) == 0
 
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""].endswith('-m sla_agent window "%1"')
-    assert [path.name for path in isolated_agent.shell.root.rglob("*.lnk")] == ["School-Life-Assistant.lnk"] * 2
+    assert sorted(path.name for path in isolated_agent.shell.root.rglob("*.lnk")) == [
+        "School-Life-Assistant Accounts.lnk", "School-Life-Assistant.lnk", "School-Life-Assistant.lnk"]
     assert "every minute" in capsys.readouterr().out
 
 
@@ -790,8 +791,9 @@ def test_schedule_also_points_the_links_and_shortcuts_at_this_python(world, isol
     keys = isolated_agent.registry.keys
     assert keys[WINDOW_COMMAND][""] == f'"{python}" -m sla_agent window "%1"'
     assert keys[("HKCU", r"Software\Classes\sla-mail\shell\open\command")][""] == f'"{python}" -m sla_agent open-mail "%1"'
-    assert all(path.read_text(encoding="utf-8").startswith(f"{python} -m sla_agent window")
-               for path in isolated_agent.shell.root.rglob("*.lnk"))
+    assert all(path.read_text(encoding="utf-8").startswith(
+        f"{python} -m sla_agent {'window' if 'Accounts' in path.name else 'open'}\n")
+        for path in isolated_agent.shell.root.rglob("*.lnk"))
 
 
 def test_forget_removes_the_window_link_type_and_the_shortcuts(world, isolated_agent, tmp_path):
@@ -990,9 +992,10 @@ def test_the_first_run_of_a_new_version_points_the_links_and_shortcuts_at_this_a
 
     cli.main(["run"])
 
-    made = list(isolated_agent.shell.root.rglob("*.lnk"))
-    assert len(made) == 2
-    assert all(path.read_text(encoding="utf-8").startswith(f"{APP} window\n") for path in made)
+    made = sorted((path.name, path.read_text(encoding="utf-8").splitlines()[0])
+                  for path in isolated_agent.shell.root.rglob("*.lnk"))
+    assert made == [("School-Life-Assistant Accounts.lnk", f"{APP} window"),
+                    ("School-Life-Assistant.lnk", f"{APP} open"), ("School-Life-Assistant.lnk", f"{APP} open")]
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""] == f'"{APP}" window "%1"'
 
 

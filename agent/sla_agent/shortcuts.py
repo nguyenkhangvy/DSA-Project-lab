@@ -1,5 +1,6 @@
-"""The "School-Life-Assistant" shortcuts on the Desktop and in the Start menu: they open the accounts window
-(spec 2026-10-01-accounts-window-design.md, 4.3).
+"""The School-Life-Assistant shortcuts (spec 2026-10-01-accounts-window-design.md, 4.3): "School-Life-Assistant" on
+the Desktop and in the Start menu opens the website as an app (`open`), and "School-Life-Assistant Accounts" in the
+Start menu opens the accounts window (`window`), through the built app or a windowless Python (launcher.py).
 
 Made with Windows' own WScript.Shell (through pywin32), for this Windows user only. Tests replace `_shell`."""
 
@@ -7,8 +8,10 @@ from pathlib import Path
 
 from sla_agent.launcher import arguments
 
-NAME = "School-Life-Assistant.lnk"
-DESCRIPTION = "Enter and change your School-Life-Assistant accounts"
+APP = "School-Life-Assistant.lnk"
+ACCOUNTS = "School-Life-Assistant Accounts.lnk"
+OPEN_DESCRIPTION = "Open School-Life-Assistant"
+ACCOUNTS_DESCRIPTION = "Enter and change your School-Life-Assistant accounts"
 
 
 def _shell():
@@ -24,18 +27,26 @@ def _places(shell):
     return [Path(shell.SpecialFolders("Desktop")), Path(shell.SpecialFolders("Programs"))]
 
 
+def _shortcuts(shell):
+    """(path, command, description) of each shortcut: the app on the Desktop and in the Start menu, Accounts in the
+    Start menu."""
+    desktop, programs = _places(shell)
+    return [(desktop / APP, "open", OPEN_DESCRIPTION), (programs / APP, "open", OPEN_DESCRIPTION),
+            (programs / ACCOUNTS, "window", ACCOUNTS_DESCRIPTION)]
+
+
 def make(program, folder):
-    """Make, or replace, both shortcuts: `program` opening the window (launcher.arguments), started in `folder`."""
+    """Make, or replace, the shortcuts, each starting `program` (launcher.arguments) in `folder`."""
     shell = _shell()
-    for place in _places(shell):
-        shortcut = shell.CreateShortcut(str(place / NAME))
+    for path, command, description in _shortcuts(shell):
+        shortcut = shell.CreateShortcut(str(path))
         shortcut.TargetPath = str(program)
-        shortcut.Arguments = arguments(program, "window")
+        shortcut.Arguments = arguments(program, command)
         shortcut.WorkingDirectory = str(folder)
-        shortcut.Description = DESCRIPTION
+        shortcut.Description = description
         shortcut.Save()
 
 
 def remove():
-    for place in _places(_shell()):
-        (place / NAME).unlink(missing_ok=True)
+    for path, _, _ in _shortcuts(_shell()):
+        path.unlink(missing_ok=True)
