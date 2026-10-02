@@ -200,9 +200,12 @@ class SitePage(Page):
         self.steps.values["key"].set(text)  # checked by key_changed
 
     def fill_from_clipboard(self):
-        """A device key copied meanwhile fills the empty box; anything else on the clipboard is left alone."""
+        """A device key copied meanwhile fills the empty box; anything else on the clipboard is left alone, and the
+        clipboard isn't even read while the box holds something (spec 2026-10-02-easy-install-design.md, 9)."""
+        if self.steps.values["key"].get().strip():
+            return
         text = read_clipboard(self.app.root).strip()
-        if not self.steps.values["key"].get().strip() and accounts.is_device_key(text):
+        if accounts.is_device_key(text):
             self.steps.values["key"].set(text)
 
     def key_changed(self):

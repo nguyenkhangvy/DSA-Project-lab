@@ -22,10 +22,20 @@ def fakes():
 
 @pytest.fixture(autouse=True)
 def clipboard(monkeypatch):
-    """What the clipboard holds (clipboard[0]): tests never read the real one."""
-    held = [""]
-    monkeypatch.setattr(setup_steps, "read_clipboard", lambda root: held[0])
+    """What the clipboard holds (clipboard[0]) and how often the pages read it (clipboard.reads): tests never read
+    the real one."""
+    held = Clipboard([""])
+
+    def read(root):
+        held.reads += 1
+        return held[0]
+
+    monkeypatch.setattr(setup_steps, "read_clipboard", read)
     return held
+
+
+class Clipboard(list):
+    reads = 0
 
 
 @pytest.fixture
@@ -209,6 +219,16 @@ def test_coming_back_never_replaces_a_key_already_there_or_takes_other_text(root
     steps.came_forward()
 
     assert steps.values["key"].get() == "sla_typed-by-hand"
+
+
+def test_coming_back_reads_the_clipboard_only_while_the_key_box_is_empty(root, fakes, clipboard):
+    _, steps = start(root, fakes)
+    steps.values["key"].set("sla_typed-by-hand")
+    clipboard[0] = "a password copied from a password manager"
+
+    steps.came_forward()
+
+    assert clipboard.reads == 0
 
 
 def test_change_shows_the_address_box_and_a_new_address_checks_the_key_again(root, fakes):  # Review Focus 3
