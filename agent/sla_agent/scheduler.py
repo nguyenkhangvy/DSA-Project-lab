@@ -6,7 +6,6 @@ which is also what gives it access to that user's Credential Manager.
 
 import getpass
 import os
-import re
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -93,17 +92,24 @@ def install_task(program, user, folder, runner=subprocess.run):
         raise SchedulerError(f"Couldn't create the scheduled task: {(result.stderr or result.stdout).strip()}")
 
 
-def task_program(runner=subprocess.run):
-    """The program the scheduled task starts, or None when the task is missing or can't be read."""
+def _task_scheduler():
+    """Task Scheduler's own COM interface (through pywin32), connected."""
+    import win32com.client
+
+    service = win32com.client.Dispatch("Schedule.Service")
+    service.Connect()
+    return service
+
+
+def task_program(service=None):
+    """The program the scheduled task starts, or None when the task is missing or can't be read. Read through Task
+    Scheduler's COM interface, not `schtasks /Query`: schtasks prints in the console's code page, which turns the
+    letters of a Vietnamese user folder into '?' (and the program would seem to be gone)."""
     try:
-        result = runner(["schtasks", "/Query", "/TN", TASK_NAME, "/XML"], capture_output=True, text=True,
-                        creationflags=NO_WINDOW)
-    except OSError:
+        task = (_task_scheduler() if service is None else service).GetFolder("\\").GetTask(TASK_NAME)
+        return task.Definition.Actions.Item(1).Path
+    except Exception:  # not Windows (ImportError), no such task, or Task Scheduler refused (pywin32's com_error)
         return None
-    if result.returncode != 0:
-        return None
-    match = re.search(r"<Command>(.*?)</Command>", result.stdout or "", re.S)
-    return match.group(1).strip() if match else None
 
 
 def remove_task(runner=subprocess.run):
