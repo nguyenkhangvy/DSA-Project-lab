@@ -40,3 +40,43 @@ def test_the_project_folder_has_a_double_click_starter():
     text = starter.read_text(encoding="utf-8")
 
     assert r'start "" "%~dp0.venv\Scripts\pythonw.exe" -m sla_agent window' in text
+
+
+# ---- COM on a background thread (Repair and the first-time form save run on one) -------------
+
+import sys  # noqa: E402
+import threading  # noqa: E402
+
+import pytest  # noqa: E402
+
+from sla_agent.scheduler import _task_scheduler as real_task_scheduler  # noqa: E402
+from sla_agent.shortcuts import _shell as real_shell  # noqa: E402  (taken before the tests' fake replaces it)
+
+
+def on_a_background_thread(work):
+    """Run `work` the way the window runs Repair: on a worker thread, after pywin32 was first loaded on this one."""
+    import win32com.client  # noqa: F401  (loaded on the main thread first, as the Accounts screen does)
+
+    errors = []
+    thread = threading.Thread(target=lambda: errors.extend(_attempt(work)))
+    thread.start()
+    thread.join()
+    return errors
+
+
+def _attempt(work):
+    try:
+        work()
+        return []
+    except Exception as error:
+        return [error]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' own shell and Task Scheduler")
+def test_the_windows_shell_can_be_reached_from_a_background_thread():
+    assert on_a_background_thread(real_shell) == []
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows' own shell and Task Scheduler")
+def test_task_scheduler_can_be_reached_from_a_background_thread():
+    assert on_a_background_thread(real_task_scheduler) == []

@@ -222,7 +222,7 @@ def test_repair_turns_sync_on_again(root, fakes, tmp_path):
     set_up()
     fakes.program = str(tmp_path / "moved" / "pythonw.exe")
     app = open_window(root, fakes)
-    assert app.screen.values["sync"].get() == "points to a Python that no longer exists"
+    assert app.screen.values["sync"].get() == "points to a program that no longer exists"
     (tmp_path / "pythonw.exe").write_text("")
     fakes.program = str(tmp_path / "pythonw.exe")  # what the new task starts
 

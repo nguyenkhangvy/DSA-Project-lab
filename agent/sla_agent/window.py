@@ -34,7 +34,7 @@ EDUSOFT_PAUSES = {"bad_credentials": "paused: wrong student ID or password",
                   "extra_verification": "paused: EduSoft asked for extra verification"}
 BLACKBOARD_PAUSES = {"bad_credentials": "paused: wrong username or password",
                      "extra_verification": "paused: Blackboard asked for extra verification"}
-SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a Python that no longer exists",
+SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a program that no longer exists",
                "elsewhere": "runs another copy of School-Life-Assistant"}
 SECRETS = ("key", "password", "bb_password")
 

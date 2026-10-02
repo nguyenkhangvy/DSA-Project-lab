@@ -299,11 +299,13 @@ def _mail_sync(state, server, seen):
 
 
 def _updating(state):
-    """The built app's update step (update.py): note a new version, tidy the downloads, and once a day look for a
-    newer release. True when a new setup was started."""
+    """The built app's update step (update.py): note a new version (and point the links and shortcuts at it), tidy
+    the downloads, and once a day look for a newer release. True when a new setup was started."""
     before = copy.deepcopy(state)
     if update.note_new_version(state, _now()):
         save_state(state, before)
+        for note in accounts.point_links_and_shortcuts_here(tools()):
+            log.warning("After the update: %s", note)
     update.clean_downloads()
     return update.check_and_start(state, _now())
 

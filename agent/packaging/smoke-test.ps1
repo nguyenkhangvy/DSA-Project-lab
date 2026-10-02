@@ -16,6 +16,11 @@ function Start-Checked($program, [string[]] $arguments) {
     }
 }
 
+# SHA256SUMS.txt is one line, "<sha256>  School-Life-Assistant.exe", ending with LF as sha256sum -c expects.
+$sums = [System.IO.File]::ReadAllText((Join-Path $dist "SHA256SUMS.txt"))
+$setupHash = (Get-FileHash (Join-Path $dist "School-Life-Assistant.exe") -Algorithm SHA256).Hash.ToLower()
+if ($sums -ne "$setupHash  School-Life-Assistant.exe`n") { throw "SHA256SUMS.txt should be one LF line for the setup: $sums" }
+
 Start-Checked (Join-Path $dist "School-Life-Assistant\School-Life-Assistant.exe") @("self-check", $version)
 Start-Checked (Join-Path $dist "School-Life-Assistant.exe") @("--update", "0")
 Start-Checked (Join-Path $agentHome "app\School-Life-Assistant.exe") @("self-check", $version)

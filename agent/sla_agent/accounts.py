@@ -240,7 +240,7 @@ def _links_and_shortcuts(tools, program):
     except Exception as error:  # pywin32 raises its own com_error, not an OSError
         log.warning("Couldn't make the shortcuts: %s", error)
         notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
-                     "School-Life-Assistant.cmd in the project folder opens this window too.")
+                     "The Accounts page on the website opens this window too.")
     return notes
 
 
@@ -266,6 +266,13 @@ def add_window_links(tools):
     state = load_state()
     if not (state.server_url and state.student_id) or tools.has_window_link():
         return []
+    return _links_and_shortcuts(tools, tools.program())
+
+
+def point_links_and_shortcuts_here(tools):
+    """The built app's first run of a new version (cli._updating): the sla-agent: and sla-mail: link types and the
+    shortcuts point at this app again, so a laptop gets them where 0.2.0 couldn't make the shortcuts, or where they
+    still start a Python set up from source. Returns a note for each part that failed."""
     return _links_and_shortcuts(tools, tools.program())
 
 
