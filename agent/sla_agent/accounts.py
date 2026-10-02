@@ -7,12 +7,20 @@ is checked once before it is saved, and one that fails changes nothing. Password
 Windows Credential Manager (credentials.py)."""
 
 import logging
+import re
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Callable
 
 from sla_agent import credentials, launcher
-from sla_agent.errors import AgentError, BadCredentials, DeviceKeyRejected, ExtraVerification, ServerError
+from sla_agent.errors import (
+    AgentError,
+    BadCredentials,
+    DeviceKeyRejected,
+    ExtraVerification,
+    ServerError,
+    UnexpectedAnswer,
+)
 from sla_agent.log import protect
 from sla_agent.scheduler import SchedulerError, current_user
 from sla_agent.server_client import check_server_url
@@ -23,6 +31,9 @@ log = logging.getLogger(__name__)
 SAVED = "Saved. Your password is in Windows Credential Manager, not in any file."
 BLACKBOARD_SAVED = "Blackboard saved. Its password is in Windows Credential Manager too."
 SYNC_ON = "Automatic sync is on: this laptop checks in every minute while you're logged in."
+DESKTOP_ICON_ADDED = "The School-Life-Assistant icon is on your Desktop."
+SITE_ACCEPTED = "The website accepted this key."
+DEVICE_KEY = re.compile(r"sla_[A-Za-z0-9_-]{43}")  # the website's keys: sla_ and 32 random bytes, URL-safe Base64
 
 
 @dataclass(frozen=True)
@@ -40,28 +51,18 @@ class Tools:
     make_edusoft: Callable  # () -> EduSoftClient
     make_blackboard: Callable  # () -> BlackboardClient
     find_outlook_accounts: Callable  # () -> [account address]; raises AgentError
-    find_open_outlook_accounts: Callable  # the same, asking only an Outlook that is already open
+    outlook_state: Callable  # () -> outlook_reader.MISSING, NOT_SIGNED_IN or SIGNED_IN, from the registry
+    start_outlook: Callable  # () -> opens Outlook (classic) for the student to sign in; raises OSError
     program: Callable  # () -> what the task, the links and the shortcuts start: the built app or a windowless Python
     install_task: Callable  # (program, user, folder=) ; raises SchedulerError
     task_program: Callable  # () -> the program the scheduled task starts, or None
     register_mail_link: Callable  # (program)
     register_window_link: Callable  # (program)
-    make_shortcuts: Callable  # (program, folder)
+    make_shortcuts: Callable  # (program, folder): the Start menu entries; points a Desktop icon that is there too
+    add_desktop_shortcut: Callable  # (program, folder): the Desktop icon, when the student asks for it
+    has_desktop_shortcut: Callable  # () -> whether the Desktop icon is there
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
     open_site: Callable  # (address) -> opens the website as an app (app_window.open_app)
-
-
-@dataclass(frozen=True)
-class SetupForm:
-    """The first-time form. Blackboard and Outlook are optional: empty means skipped."""
-
-    address: str
-    key: str
-    student_id: str
-    password: str
-    bb_user: str = ""
-    bb_password: str = ""
-    outlook: str = ""
 
 
 def _clean(address):
@@ -87,9 +88,19 @@ def check_site(address, key, tools):
     except DeviceKeyRejected:
         return Result(False, "The web app rejected this device key. Create a new one on the Devices page. "
                              "Nothing was saved.")
+    except UnexpectedAnswer as error:  # e.g. a host's "service suspended" page: its HTML goes to the log only
+        log.warning("Checking the device key: %s", error)
+        return Result(False, f"The website at {address} isn't working right now (HTTP {error.status}). "
+                             "Try again later. Nothing was saved.")
     except ServerError as error:
         return Result(False, f"Couldn't reach the web app: {error} Nothing was saved.")
-    return Result(True, "The web app accepted this device key.")
+    return Result(True, SITE_ACCEPTED)
+
+
+def is_device_key(text):
+    """Whether `text`, without the spaces or line break around it, has a device key's exact shape (the website's
+    DeviceKeys.java). Text of any other shape is never sent to the website."""
+    return bool(DEVICE_KEY.fullmatch((text or "").strip()))
 
 
 def check_edusoft(student_id, password, tools):
@@ -195,11 +206,11 @@ def change_blackboard(state, username, password, tools):
     return Result(True, BLACKBOARD_SAVED)
 
 
-def outlook_accounts(tools, start=True):
-    """(the accounts in classic Outlook, None), or ([], what's wrong). start=False asks only an Outlook that is
-    already open, so it never starts Outlook (or its first-run wizard where classic Outlook was never set up)."""
+def outlook_accounts(tools):
+    """(the accounts in classic Outlook, None), or ([], what's wrong). It may start a hidden Outlook for a moment, so
+    the Outlook page asks it only once someone has signed in to Outlook (outlook_reader.classic_outlook)."""
     try:
-        found = tools.find_outlook_accounts() if start else tools.find_open_outlook_accounts()
+        found = tools.find_outlook_accounts()
     except AgentError as error:
         return [], str(error)
     if not found:
@@ -240,7 +251,7 @@ def _links_and_shortcuts(tools, program):
         tools.make_shortcuts(program, agent_home())
     except Exception as error:  # pywin32 raises its own com_error, not an OSError
         log.warning("Couldn't make the shortcuts: %s", error)
-        notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
+        notes.append(f"Couldn't make the Start menu entries ({error.__class__.__name__}). "
                      "The Accounts page on the website opens this window too.")
     return notes
 
@@ -277,6 +288,30 @@ def point_links_and_shortcuts_here(tools):
     return _links_and_shortcuts(tools, tools.program())
 
 
+# ---- the Desktop icon -------------------------------------------------------------------
+
+
+def add_desktop_icon(tools):
+    """The School-Life-Assistant icon on the Desktop, which only the student asks for (spec
+    2026-10-02-easy-install-design.md, 5): the setup's last page, or Accounts' Add."""
+    try:
+        tools.add_desktop_shortcut(tools.program(), agent_home())
+    except Exception as error:  # pywin32 raises its own com_error, not an OSError
+        log.warning("Couldn't add the Desktop icon: %s", error)
+        return Result(False, f"Couldn't add the Desktop icon ({error.__class__.__name__}). "
+                             "School-Life-Assistant is in the Start menu.")
+    return Result(True, DESKTOP_ICON_ADDED)
+
+
+def desktop_icon_on(tools):
+    """Whether the School-Life-Assistant icon is on the Desktop; False when Windows can't say."""
+    try:
+        return bool(tools.has_desktop_shortcut())
+    except Exception as error:  # pywin32's com_error, or not Windows
+        log.debug("Couldn't look for the Desktop icon (%s)", error.__class__.__name__)
+        return False
+
+
 def sync_task_state(tools):
     """"on", "off" (no task), "nowhere" (the task starts a program that no longer exists: the folder moved) or
     "elsewhere" (this is the built app, but the task starts another copy, such as a Python set up from source)."""
@@ -290,7 +325,7 @@ def sync_task_state(tools):
     return "on"
 
 
-# ---- the first-time form ---------------------------------------------------------------
+# ---- the setup pages ---------------------------------------------------------------
 
 
 def _after_saving(work):
@@ -304,20 +339,15 @@ def _after_saving(work):
                              "The details are in agent.log.")
 
 
-def first_setup(state, form, tools):
-    """Check and save a first setup in the order of spec 3.1: the website and EduSoft, saved together only when
-    both pass; then Blackboard and Outlook when filled in; then automatic sync. Returns {step: Result} for the steps
-    that ran, in order: site, edusoft, blackboard, outlook, sync."""
-    results = {"site": check_site(form.address, form.key, tools)}
-    if not results["site"].ok:
-        return results
-    results["edusoft"] = check_edusoft(form.student_id, form.password, tools)
-    if not results["edusoft"].ok:
-        return results
-    results["edusoft"] = save_site_and_edusoft(state, form.address, form.key, form.student_id, form.password)
-    if form.bb_user or form.bb_password:
-        results["blackboard"] = _after_saving(lambda: change_blackboard(state, form.bb_user, form.bb_password, tools))
-    if form.outlook:
-        results["outlook"] = _after_saving(lambda: choose_outlook(state, form.outlook, tools))
-    results["sync"] = _after_saving(lambda: turn_on_sync(tools))
-    return results
+def save_and_turn_on_sync(state, address, key, student_id, password, tools):
+    """The setup's step 2 (spec 2026-10-02-easy-install-design.md, 3): one EduSoft login attempt; when it passes, the
+    website's address and device key (accepted on step 1) and EduSoft are saved together, then automatic sync is
+    turned on. Returns {"edusoft": Result} when the login failed and nothing was saved, else {"edusoft": Result,
+    "sync": Result}."""
+    protect(key)
+    protect(password)
+    checked = check_edusoft(student_id, password, tools)
+    if not checked.ok:
+        return {"edusoft": checked}
+    saved = save_site_and_edusoft(state, address, key, student_id, password)
+    return {"edusoft": saved, "sync": _after_saving(lambda: turn_on_sync(tools))}

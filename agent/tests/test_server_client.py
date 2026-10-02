@@ -5,7 +5,14 @@ import requests
 import responses
 from sla_contract.schema import FinishRun
 
-from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable, UpdateRequired
+from sla_agent.errors import (
+    DeviceKeyRejected,
+    RunInProgress,
+    ServerError,
+    ServerUnreachable,
+    UnexpectedAnswer,
+    UpdateRequired,
+)
 from sla_agent.server_client import ServerClient
 
 BASE = "https://sla.example.com"
@@ -25,6 +32,17 @@ def test_check_sends_the_device_key_and_reads_the_answer(server):
 
     assert (result.due, result.reason, result.interval_hours) == (True, "interval", 12)
     assert responses.calls[0].request.headers["Authorization"] == "Bearer sla_key-123"
+
+
+@responses.activate
+def test_an_error_page_raises_unexpected_answer_with_its_status(server):
+    responses.get(f"{API}/check", status=503, content_type="text/html",
+                  body="<!DOCTYPE html><html><body>This service has been suspended by its owner.</body></html>")
+
+    with pytest.raises(UnexpectedAnswer) as raised:
+        server.check()
+
+    assert raised.value.status == 503
 
 
 @responses.activate

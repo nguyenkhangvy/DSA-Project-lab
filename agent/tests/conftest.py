@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 
 import keyring
@@ -30,6 +31,7 @@ class MemoryKeyring(KeyringBackend):
 class MemoryRegistry:
     """Stands in for winreg (the Windows registry) during tests: keys are paths, values a dict per key."""
 
+    HKEY_CLASSES_ROOT = "HKCR"
     HKEY_CURRENT_USER = "HKCU"
     REG_SZ = 1
 
@@ -67,6 +69,15 @@ class MemoryRegistry:
             raise OSError("has subkeys")
         del self.keys[(root, path)]
 
+    def EnumKey(self, key, index):
+        """The name of `key`'s subkey number `index`, as winreg's; OSError past the last one."""
+        root, path = key.path
+        names = sorted({other[len(path) + 1:].split("\\")[0] for other_root, other in self.keys
+                        if other_root == root and other.startswith(path + "\\")})
+        if index >= len(names):
+            raise OSError("No more data is available")
+        return names[index]
+
 
 class FakeShortcut:
     def __init__(self, path):
@@ -99,13 +110,14 @@ class FakeShell:
 def isolated_agent(tmp_path, monkeypatch):
     """Every agent test gets a fake keyring, a fake registry, a fake Windows shell and its own agent folder:
     tests never touch the real Credential Manager, registry, Desktop, Start menu or %LOCALAPPDATA%."""
-    from sla_agent import mail_link, shortcuts
+    from sla_agent import mail_link, outlook_reader, shortcuts
 
     fake = MemoryKeyring()
     previous = keyring.get_keyring()
     keyring.set_keyring(fake)
     registry = MemoryRegistry()
     monkeypatch.setattr(mail_link, "_winreg", lambda: registry)
+    monkeypatch.setattr(outlook_reader, "_winreg", lambda: registry)
     shell = FakeShell(tmp_path / "windows")
     monkeypatch.setattr(shortcuts, "_shell", lambda: shell)
     monkeypatch.setenv("SLA_AGENT_HOME", str(tmp_path / "agent-home"))
@@ -113,3 +125,25 @@ def isolated_agent(tmp_path, monkeypatch):
     fake.shell = shell
     yield fake
     keyring.set_keyring(previous)
+
+
+@pytest.fixture
+def root(request):
+    """A real Tk window, hidden, for the window's tests. While pytest redirects the output file descriptors, Tcl on
+    Windows now and then fails to read its own library files ("couldn't read file .../tk8.6/entry.tcl"), so Tk starts
+    with that redirection paused."""
+    import tkinter as tk
+
+    capture = request.config.pluginmanager.getplugin("capturemanager")
+    try:
+        with capture.global_and_fixture_disabled():
+            made = tk.Tk()
+    except tk.TclError as error:  # a machine without a desktop
+        pytest.skip(f"Tk can't start here: {error}")
+    made.withdraw()
+    yield made
+    made.destroy()
+    # A window's objects point at each other (the App and its screen), so the garbage collector frees them, on
+    # whichever thread happens to run it; Tk refuses calls from another thread when no main loop runs. Free them here,
+    # on this one.
+    gc.collect()

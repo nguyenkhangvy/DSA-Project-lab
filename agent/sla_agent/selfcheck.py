@@ -35,7 +35,11 @@ def https_certificates():
     ssl.create_default_context(cafile=certifi.where())
 
 
-CHECKS = (tk_with_its_files, outlook_link, credential_manager, data_contract, https_certificates)
+def setup_window():
+    import sla_agent.window  # noqa: F401  (the setup pages, the Outlook page and what they share come with it)
+
+
+CHECKS = (tk_with_its_files, outlook_link, credential_manager, data_contract, https_certificates, setup_window)
 
 
 def problems(expected_version, checks=None):

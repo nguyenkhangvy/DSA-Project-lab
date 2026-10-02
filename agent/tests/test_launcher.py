@@ -54,6 +54,7 @@ def test_the_task_the_links_and_the_shortcuts_start_the_app_without_python(isola
     assert mail_link.window_command(APP) == f'"{APP}" window "%1"'
 
     shortcuts.make(APP, tmp_path)
+    shortcuts.add_desktop(APP, tmp_path)
 
     made = sorted((path.name, path.read_text(encoding="utf-8").splitlines()[0])
                   for path in isolated_agent.shell.root.rglob("*.lnk"))

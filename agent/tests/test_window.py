@@ -1,41 +1,14 @@
-"""The School-Life-Assistant window, built for real but hidden, with fakes behind it (accounts_fakes.Fakes). Checks
-run at once instead of on a thread (run_at_once), except where a test holds them to look at the screen meanwhile."""
-
-import logging
-import tkinter as tk
+"""The School-Life-Assistant window's Accounts screen, built for real but hidden, with fakes behind it
+(accounts_fakes.Fakes). The setup pages have their own tests (test_setup_steps.py). Checks run at once instead of on a
+thread (run_at_once)."""
 
 import pytest
 
-from agent.tests.accounts_fakes import (
-    BB_PASSWORD,
-    BB_USER,
-    KEY,
-    ME,
-    PASSWORD,
-    SERVER,
-    STUDENT,
-    Fakes,
-    set_up,
-)
-from sla_agent import __version__, accounts, credentials, launcher, window
-from sla_agent.errors import BadCredentials, OutlookNotSetUp
-from sla_agent.log import setup_logging
+from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, ME, SERVER, STUDENT, Fakes, set_up
+from sla_agent import __version__, accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
+from sla_agent.errors import BadCredentials
+from sla_agent.outlook_reader import MISSING
 from sla_agent.state import save_state
-
-
-@pytest.fixture
-def root(request):
-    # While pytest redirects the output file descriptors, Tcl on Windows now and then fails to read its own library
-    # files ("couldn't read file .../tk8.6/entry.tcl"), so Tk starts with that redirection paused.
-    capture = request.config.pluginmanager.getplugin("capturemanager")
-    try:
-        with capture.global_and_fixture_disabled():
-            root = tk.Tk()
-    except tk.TclError as error:  # a machine without a desktop
-        pytest.skip(f"Tk can't start here: {error}")
-    root.withdraw()
-    yield root
-    root.destroy()
 
 
 @pytest.fixture
@@ -43,114 +16,18 @@ def fakes():
     return Fakes()
 
 
-def open_window(root, fakes, run=window.run_at_once):
+def open_window(root, fakes, run=window_parts.run_at_once):
     return window.App(root, fakes.tools(), run=run)
-
-
-def fill(screen, **values):
-    for name, value in values.items():
-        screen.values[name].set(value)
-
-
-FIRST_TIME = dict(address=SERVER, key=KEY, student_id=STUDENT, password=PASSWORD)
 
 
 def disabled(button):
     return button.instate(["disabled"])
 
 
-# ---- first time -------------------------------------------------------------------
-
-
-def test_a_new_laptop_gets_the_first_time_form(root, fakes):
+def test_a_new_laptop_gets_the_setup_pages(root, fakes):
     app = open_window(root, fakes)
 
-    assert isinstance(app.screen, window.SetupScreen)
-    assert app.screen.values["address"].get() == "http://localhost:5000"
-    assert tuple(app.screen.outlook.box.cget("values")) == (window.NO_OUTLOOK, ME)
-    assert app.screen.values["outlook"].get() == window.NO_OUTLOOK
-
-
-def test_the_first_time_form_saves_and_switches_to_accounts(root, fakes):
-    app = open_window(root, fakes)
-    fill(app.screen, bb_user=BB_USER, bb_password=BB_PASSWORD, outlook=ME, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert isinstance(app.screen, window.AccountsScreen)
-    assert app.screen.notice.get() == window.DONE
-    assert app.screen.values["edusoft"].get() == f"{STUDENT}: on"
-    assert app.screen.values["blackboard"].get() == f"{BB_USER}: on"
-    assert app.screen.values["outlook"].get() == ME
-    assert credentials.load_edusoft(STUDENT) == PASSWORD
-
-
-def test_a_wrong_password_keeps_the_form_filled_in_and_saves_nothing(root, fakes, isolated_agent):
-    fakes.edusoft.login_error = BadCredentials("rejected")
-    app = open_window(root, fakes)
-    fill(app.screen, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert isinstance(app.screen, window.SetupScreen)
-    assert app.screen.answers["site"].get() == "✓ The web app accepted this device key."
-    assert app.screen.answers["edusoft"].get() == "✗ EduSoft rejected the student ID or password. Nothing was saved."
-    assert app.screen.values["password"].get() == PASSWORD
-    assert not disabled(app.screen.save_button)
-    assert isolated_agent.entries == {}
-
-
-def test_a_pasted_key_with_spaces_or_a_line_break_is_trimmed(root, fakes):
-    app = open_window(root, fakes)
-    fill(app.screen, **dict(FIRST_TIME, key=f"  {KEY}\n"))
-
-    app.screen.save()
-
-    assert fakes.servers == [(SERVER, KEY)]
-    assert credentials.load_device_key(SERVER) == KEY
-
-
-def test_while_checking_the_button_is_off_and_a_late_outlook_list_is_ignored(root, fakes):
-    held = []
-    app = open_window(root, fakes, run=lambda work, done: held.append((work, done)))
-    outlook_lookup = held.pop()
-    fill(app.screen, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert disabled(app.screen.save_button)
-    assert app.screen.answers["sync"].get() == window.CHECKING
-    work, done = held.pop()
-    done(window.attempt(work))
-    assert isinstance(app.screen, window.AccountsScreen)
-    work, done = outlook_lookup
-    done(window.attempt(work))  # the form it was for is gone: nothing happens
-    assert isinstance(app.screen, window.AccountsScreen)
-
-
-def test_something_unexpected_is_shown_not_raised(root, fakes):
-    fakes.server.check_error = RuntimeError("a bug")  # not a ServerError: nothing expects it
-    app = open_window(root, fakes)
-    fill(app.screen, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert app.screen.answers["sync"].get() == "✗ Something went wrong (RuntimeError). Nothing was saved."
-    assert not disabled(app.screen.save_button)
-
-
-def test_without_outlook_the_form_says_so_and_refresh_looks_again(root, fakes):
-    fakes.found = OutlookNotSetUp("Classic Outlook isn't set up on this laptop.")
-    app = open_window(root, fakes)
-
-    assert app.screen.outlook.note.get().startswith("Classic Outlook isn't set up on this laptop.")
-    assert tuple(app.screen.outlook.box.cget("values")) == (window.NO_OUTLOOK,)
-
-    fakes.found = [ME]
-    app.screen.outlook.refresh()
-
-    assert tuple(app.screen.outlook.box.cget("values")) == (window.NO_OUTLOOK, ME)
-    assert app.screen.outlook.note.get() == ""
+    assert isinstance(app.screen, setup_steps.SetupSteps)
 
 
 # ---- Accounts ---------------------------------------------------------------------
@@ -218,6 +95,20 @@ def test_outlook_change_picks_from_the_accounts_found(root, fakes):
     assert app.screen.values["outlook"].get() == ME
 
 
+def test_accounts_outlook_set_up_guides_the_install_when_classic_outlook_is_missing(root, fakes):
+    set_up()
+    fakes.outlook = MISSING
+    app = open_window(root, fakes)
+
+    app.screen.open("outlook")
+
+    editor = app.screen.editor
+    assert editor.outlook.lines[0] == outlook_page.MISSING_INTRO
+    assert outlook_page.LATER not in editor.outlook.lines  # Accounts has Cancel, not Skip
+    editor.save()
+    assert app.screen.answers["outlook"].get() == "✗ Choose an account first."
+
+
 def test_repair_turns_sync_on_again(root, fakes, tmp_path):
     set_up()
     fakes.program = str(tmp_path / "moved" / "pythonw.exe")
@@ -233,24 +124,28 @@ def test_repair_turns_sync_on_again(root, fakes, tmp_path):
     assert "sync" not in app.screen.buttons
 
 
-def test_the_window_never_logs_a_password(root, fakes, tmp_path):
-    log_path = setup_logging(tmp_path / "logs")
-    fakes.blackboard.login_error = RuntimeError(f"a bug with {BB_PASSWORD}")
+def test_accounts_offers_the_desktop_icon_and_add_puts_it_there(root, fakes):
+    set_up()
     app = open_window(root, fakes)
-    fill(app.screen, bb_user=BB_USER, bb_password=BB_PASSWORD, **FIRST_TIME)
+    assert app.screen.values["desktop"].get() == "off"
 
-    app.screen.save()
+    app.screen.buttons["desktop"].invoke()
 
-    for handler in logging.getLogger().handlers[:]:
-        if str(tmp_path) in getattr(handler, "baseFilename", ""):
-            handler.flush()
-            logging.getLogger().removeHandler(handler)
-            handler.close()
-    text = log_path.read_text(encoding="utf-8")
-    assert "RuntimeError" in text
-    assert BB_PASSWORD not in text and PASSWORD not in text and KEY not in text
-    assert isinstance(app.screen, window.AccountsScreen)  # EduSoft was saved and sync turned on
-    assert "✗ Something went wrong (RuntimeError)" in app.screen.notice.get()
+    assert "desktop icon" in fakes.done
+    assert app.screen.notice.get() == "✓ " + accounts.DESKTOP_ICON_ADDED
+    assert app.screen.values["desktop"].get() == "on"
+    assert "desktop" not in app.screen.buttons
+
+
+def test_a_desktop_icon_that_cannot_be_added_says_so(root, fakes):
+    set_up()
+    fakes.fail = {"desktop icon": RuntimeError("com_error")}
+    app = open_window(root, fakes)
+
+    app.screen.buttons["desktop"].invoke()
+
+    assert app.screen.notice.get().startswith("✗ Couldn't add the Desktop icon (RuntimeError).")
+    assert app.screen.values["desktop"].get() == "off"
 
 
 # ---- one window at a time -------------------------------------------------------------
@@ -282,25 +177,7 @@ def test_opening_on_a_laptop_set_up_before_the_window_adds_its_link_and_shortcut
     assert opened == [""]
 
 
-def test_the_form_looks_only_at_an_open_outlook_and_refresh_may_start_it(root, fakes):
-    app = open_window(root, fakes)
-
-    assert fakes.looks == ["open"]  # opening the window never starts Outlook or its first-run wizard
-
-    app.screen.outlook.refresh_button.invoke()
-
-    assert fakes.looks == ["open", "start"]
-
-
 # ---- the built app ------------------------------------------------------------------------
-
-
-def test_the_built_app_fills_in_the_website_online(root, fakes, monkeypatch):
-    monkeypatch.setattr(launcher, "frozen", lambda: True)
-
-    app = open_window(root, fakes)
-
-    assert app.screen.values["address"].get() == "https://school-life-assistant.onrender.com"
 
 
 def test_accounts_shows_the_version_and_when_it_last_updated_itself(root, fakes):
@@ -341,25 +218,6 @@ def test_the_built_app_offers_repair_when_the_task_runs_another_copy(root, fakes
 
 
 # ---- the website as an app ---------------------------------------------------------------------
-
-
-def test_after_the_first_setup_the_website_opens_as_an_app(root, fakes):
-    app = open_window(root, fakes)
-    fill(app.screen, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert fakes.opened == [SERVER]
-
-
-def test_a_first_setup_that_saved_nothing_opens_nothing(root, fakes):
-    fakes.edusoft.login_error = BadCredentials("rejected")
-    app = open_window(root, fakes)
-    fill(app.screen, **FIRST_TIME)
-
-    app.screen.save()
-
-    assert fakes.opened == []
 
 
 def test_accounts_has_a_button_that_opens_the_website_as_an_app(root, fakes):

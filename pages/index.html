@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>School-Life-Assistant for Windows</title>
+  <meta name="description" content="Your IU timetable, exams, tuition bills, Blackboard and mail on one calendar.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- The download page (spec 2026-10-02-easy-install-design.md, 2). Both languages say the same things:
+       deploy/tests/test_download_page.py checks it. Without JavaScript the English text shows. -->
+  <nav class="languages" aria-label="Language" hidden>
+    <button type="button" data-show="en">English</button>
+    <button type="button" data-show="vi">Tiếng Việt</button>
+  </nav>
+
+  <main data-lang="en" lang="en">
+    <h1>School-Life-Assistant</h1>
+    <p class="tagline">Your IU timetable, exams, tuition bills, Blackboard and mail on one calendar.</p>
+    <p><a class="download" href="https://github.com/nguyenkhangvy/School-Life-Assistant/releases/latest/download/School-Life-Assistant.exe">Download for Windows</a></p>
+    <p class="muted">Free. Windows 10 and 11. It updates itself.</p>
+
+    <h2>You'll need</h2>
+    <ul>
+      <li>A Windows 10 or 11 laptop.</li>
+      <li>Your EduSoft student ID and password.</li>
+      <li>If you like: your Blackboard login, and Outlook (classic) with your IU email.</li>
+    </ul>
+    <p>The app shows you how to connect it to your School-Life-Assistant account.</p>
+
+    <h2>Install it in three steps</h2>
+    <ol class="steps">
+      <li><strong>If your browser warns about the download, keep it.</strong> In Edge: press <b>…</b> next to the
+        file, then <b>Keep</b>, then <b>Show more</b>, then <b>Keep anyway</b>.</li>
+      <li><strong>Open the downloaded file.</strong> If Windows says “Windows protected your PC”, press
+        <b>More info</b>, then <b>Run anyway</b>. It needs no administrator rights.</li>
+      <li><strong>The School-Life-Assistant window opens</strong> and walks you through the rest: a device key from
+        the website, your EduSoft login, then Blackboard and Outlook if you want them, and an icon on your Desktop if
+        you like.</li>
+    </ol>
+
+    <h2>Questions</h2>
+    <dl class="questions">
+      <dt>Are my passwords safe?</dt>
+      <dd>They stay on your laptop, in Windows Credential Manager: the School-Life-Assistant website never sees them.
+        Your emails are sorted on your laptop, and their text is never sent. The code is public on
+        <a href="https://github.com/nguyenkhangvy/School-Life-Assistant">GitHub</a>.</dd>
+      <dt>Do I need to update it?</dt>
+      <dd>No. It installs new versions by itself.</dd>
+      <dt>On your phone?</dt>
+      <dd>School-Life-Assistant runs on Windows laptops: open this page on your laptop.</dd>
+    </dl>
+  </main>
+
+  <main data-lang="vi" lang="vi" hidden>
+    <h1>School-Life-Assistant</h1>
+    <p class="tagline">Thời khóa biểu, lịch thi, học phí, Blackboard và email IU của bạn trên cùng một lịch.</p>
+    <p><a class="download" href="https://github.com/nguyenkhangvy/School-Life-Assistant/releases/latest/download/School-Life-Assistant.exe">Tải về cho Windows</a></p>
+    <p class="muted">Miễn phí. Windows 10 và 11. Tự cập nhật.</p>
+
+    <h2>Bạn cần có</h2>
+    <ul>
+      <li>Một laptop chạy Windows 10 hoặc 11.</li>
+      <li>Mã số sinh viên và mật khẩu EduSoft của bạn.</li>
+      <li>Nếu muốn: tài khoản Blackboard, và Outlook (classic) với email IU của bạn.</li>
+    </ul>
+    <p>Ứng dụng sẽ hướng dẫn bạn kết nối với tài khoản School-Life-Assistant của mình.</p>
+
+    <h2>Cài đặt trong ba bước</h2>
+    <ol class="steps">
+      <li><strong>Nếu trình duyệt cảnh báo về tệp tải về, hãy giữ lại tệp.</strong> Trong Edge: nhấn <b>…</b> cạnh
+        tên tệp, rồi <b>Keep</b> (Giữ lại), rồi <b>Show more</b>, rồi <b>Keep anyway</b>.</li>
+      <li><strong>Mở tệp vừa tải về.</strong> Nếu Windows báo “Windows protected your PC” (Windows đã bảo vệ PC của
+        bạn), nhấn <b>More info</b> (Thông tin thêm), rồi <b>Run anyway</b> (Vẫn chạy). Không cần quyền quản trị
+        (administrator).</li>
+      <li><strong>Cửa sổ School-Life-Assistant sẽ mở ra</strong> và hướng dẫn bạn phần còn lại: mã thiết bị
+        (device key) từ trang web, tài khoản EduSoft, rồi Blackboard và Outlook nếu bạn muốn, và biểu tượng trên màn
+        hình nền (Desktop) nếu bạn thích.</li>
+    </ol>
+
+    <h2>Câu hỏi thường gặp</h2>
+    <dl class="questions">
+      <dt>Mật khẩu của tôi có an toàn không?</dt>
+      <dd>Mật khẩu chỉ nằm trên laptop của bạn, trong Windows Credential Manager: trang web School-Life-Assistant
+        không bao giờ thấy chúng. Email được phân loại ngay trên laptop, và nội dung email không bao giờ được gửi đi.
+        Mã nguồn công khai trên <a href="https://github.com/nguyenkhangvy/School-Life-Assistant">GitHub</a>.</dd>
+      <dt>Tôi có cần tự cập nhật không?</dt>
+      <dd>Không. Ứng dụng tự cài phiên bản mới.</dd>
+      <dt>Bạn đang dùng điện thoại?</dt>
+      <dd>School-Life-Assistant chạy trên laptop Windows: hãy mở trang này trên laptop của bạn.</dd>
+    </dl>
+  </main>
+
+  <script>
+    // English or Vietnamese: the visitor's last choice, else the browser's language.
+    (function () {
+      var sections = document.querySelectorAll("main[data-lang]");
+      var buttons = document.querySelectorAll("[data-show]");
+
+      function show(lang) {
+        sections.forEach(function (section) { section.hidden = section.dataset.lang !== lang; });
+        buttons.forEach(function (button) {
+          button.setAttribute("aria-pressed", String(button.dataset.show === lang));
+        });
+        document.documentElement.lang = lang;
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem("lang"); } catch (error) { /* storage blocked: nothing remembered */ }
+      var browser = (navigator.language || "").toLowerCase().indexOf("vi") === 0 ? "vi" : "en";
+      show(saved === "en" || saved === "vi" ? saved : browser);
+      document.querySelector(".languages").hidden = false;
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          show(button.dataset.show);
+          try { localStorage.setItem("lang", button.dataset.show); } catch (error) { /* not remembered */ }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

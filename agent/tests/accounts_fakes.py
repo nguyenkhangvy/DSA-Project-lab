@@ -2,10 +2,11 @@
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeServer
 from sla_agent import accounts, credentials
+from sla_agent.outlook_reader import SIGNED_IN
 from sla_agent.state import State, load_state, save_state
 
 SERVER = "https://sla.example.com"
-KEY = "sla_device-key-0123456789"
+KEY = "sla_device-key-0123456789-abcdefghijklmnopqrstu"  # a real key's shape: sla_ and 43 characters
 STUDENT = "ITITIU20001"
 PASSWORD = "s3cret-pass"
 BB_USER = "ititiu20001"
@@ -15,10 +16,12 @@ PYTHONW = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
 
 
 class Fakes:
-    """`found` is Outlook's account list (an exception instance is raised instead); `program` is what the scheduled
-    task starts; `fail` maps a part ("task", "mail link", "window link", "shortcuts") to the error it raises;
-    `done` lists the parts that ran; `looks` lists how Outlook was asked: "open" (only an open Outlook) or "start";
-    `me` is the program this agent is: what turn_on_sync points things at."""
+    """`found` is Outlook's account list (an exception instance is raised instead); `outlook` is what the registry
+    says about Outlook (SIGNED_IN unless a test changes it; an exception instance is raised instead); `program` is
+    what the scheduled task starts; `fail` maps a part ("task", "mail link", "window link", "shortcuts",
+    "desktop icon", "start outlook") to the error it raises; `done` lists the parts that ran; `looks` lists each
+    time Outlook itself was asked ("start"); `me` is the program this agent is: what turn_on_sync points things
+    at."""
 
     def __init__(self):
         self.me = PYTHONW
@@ -27,6 +30,7 @@ class Fakes:
         self.edusoft = FakeEduSoft()
         self.blackboard = FakeBlackboard()
         self.found = [ME]
+        self.outlook = SIGNED_IN
         self.program = None
         self.fail = {}
         self.done = []
@@ -36,10 +40,14 @@ class Fakes:
     def tools(self):
         return accounts.Tools(
             make_server=self._make_server, make_edusoft=lambda: self.edusoft,
-            make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, find_open_outlook_accounts=self._find_open, program=lambda: self.me,
+            make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find,
+            outlook_state=self._outlook_state,
+            start_outlook=self._part("start outlook"), program=lambda: self.me,
             install_task=self._part("task"), task_program=lambda: self.program,
             register_mail_link=self._part("mail link"), register_window_link=self._part("window link"),
-            make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done,
+            make_shortcuts=self._part("shortcuts"), add_desktop_shortcut=self._part("desktop icon"),
+            has_desktop_shortcut=lambda: "desktop icon" in self.done,
+            has_window_link=lambda: "window link" in self.done,
             open_site=self.opened.append)
 
     def _make_server(self, address, key):
@@ -50,9 +58,10 @@ class Fakes:
         self.looks.append("start")
         return self._accounts()
 
-    def _find_open(self):
-        self.looks.append("open")
-        return self._accounts()
+    def _outlook_state(self):
+        if isinstance(self.outlook, Exception):
+            raise self.outlook
+        return self.outlook
 
     def _accounts(self):
         if isinstance(self.found, Exception):

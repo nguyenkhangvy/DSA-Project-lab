@@ -752,14 +752,14 @@ def test_status_warns_when_the_task_points_to_a_python_that_is_gone(world, capsy
 WINDOW_COMMAND = ("HKCU", r"Software\Classes\sla-agent\shell\open\command")
 
 
-def test_setup_adds_the_window_link_type_and_the_shortcuts(world, isolated_agent, capsys):
+def test_setup_adds_the_window_link_type_and_the_start_menu_entries(world, isolated_agent, capsys):
     world.answer_setup()
 
     assert cli.main(["setup"]) == 0
 
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""].endswith('-m sla_agent window "%1"')
     assert sorted(path.name for path in isolated_agent.shell.root.rglob("*.lnk")) == [
-        "School-Life-Assistant Accounts.lnk", "School-Life-Assistant.lnk", "School-Life-Assistant.lnk"]
+        "School-Life-Assistant Accounts.lnk", "School-Life-Assistant.lnk"]
     assert "every minute" in capsys.readouterr().out
 
 
@@ -775,7 +775,7 @@ def test_setup_says_when_the_shortcuts_could_not_be_made_but_keeps_the_rest(worl
     assert cli.main(["setup"]) == 0
 
     out = capsys.readouterr().out
-    assert "Couldn't make the Desktop and Start menu shortcuts" in out
+    assert "Couldn't make the Start menu entries" in out
     assert "The Accounts page on the website opens this window too." in out
     assert "School-Life-Assistant.cmd" not in out
     assert world.tasks == ["installed"]
@@ -802,6 +802,7 @@ def test_forget_removes_the_window_link_type_and_the_shortcuts(world, isolated_a
     configure()
     mail_link.register_window("pythonw.exe")
     shortcuts.make("pythonw.exe", tmp_path)
+    shortcuts.add_desktop("pythonw.exe", tmp_path)
 
     assert cli.main(["forget"]) == 0
 
@@ -866,16 +867,6 @@ def test_a_sync_never_undoes_an_account_changed_while_it_ran(world, monkeypatch)
     assert load_state().paused is None
     assert credentials.load_edusoft(STUDENT) == "new-pass"
     assert load_state().last_result is not None  # the sync's own result is saved too
-
-
-def test_the_windows_own_look_never_starts_outlook(monkeypatch):
-    from sla_agent.errors import OutlookNotSetUp
-
-    monkeypatch.setattr(cli, "running_outlook", lambda: None)
-    monkeypatch.setattr(cli, "open_outlook", never)
-
-    with pytest.raises(OutlookNotSetUp, match="isn't open"):
-        cli.find_open_outlook_accounts()
 
 
 # ---- the built app's updates (update.py) ------------------------------------------------
@@ -994,9 +985,31 @@ def test_the_first_run_of_a_new_version_points_the_links_and_shortcuts_at_this_a
 
     made = sorted((path.name, path.read_text(encoding="utf-8").splitlines()[0])
                   for path in isolated_agent.shell.root.rglob("*.lnk"))
-    assert made == [("School-Life-Assistant Accounts.lnk", f"{APP} window"),
-                    ("School-Life-Assistant.lnk", f"{APP} open"), ("School-Life-Assistant.lnk", f"{APP} open")]
+    assert made == [("School-Life-Assistant Accounts.lnk", f"{APP} window"), ("School-Life-Assistant.lnk", f"{APP} open")]
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""] == f'"{APP}" window "%1"'
+
+
+def test_an_update_points_a_desktop_icon_at_this_app_and_never_brings_back_a_deleted_one(world, built_app,
+                                                                                       isolated_agent, monkeypatch):
+    from sla_agent import shortcuts
+
+    configure()
+    shortcuts.add_desktop(r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe", agent_home())  # the student asked for it
+    desktop = isolated_agent.shell.root / "OneDrive" / "Máy tính" / shortcuts.APP
+    monkeypatch.setattr(launcher, "program", lambda: APP)
+
+    def a_new_version_runs():
+        state = load_state()
+        state.agent_version = "0.1.0"  # what ran before, so this run is a new version's first
+        save_state(state)
+        cli.main(["run"])
+
+    a_new_version_runs()
+    assert desktop.read_text(encoding="utf-8").splitlines()[0] == f"{APP} open"
+
+    desktop.unlink()  # the student deletes the icon
+    a_new_version_runs()
+    assert not desktop.exists()
 
 
 def test_runs_of_the_same_version_leave_the_shortcuts_alone(world, built_app, isolated_agent):

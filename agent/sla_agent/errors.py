@@ -53,6 +53,15 @@ class ServerUnreachable(ServerError):
     pass
 
 
+class UnexpectedAnswer(ServerError):
+    """Our web app answered with an HTTP error or a redirect (`status`): a host's "service suspended" page, or a
+    proxy's 502 while the site restarts. The page itself goes to agent.log, never on screen."""
+
+    def __init__(self, message, status):
+        super().__init__(message)
+        self.status = status
+
+
 class RunInProgress(ServerError):
     pass
 
