@@ -78,7 +78,8 @@ def main():
 
     setup = DIST / f"{NAME}.exe"
     digest = hashlib.sha256(setup.read_bytes()).hexdigest()
-    (DIST / "SHA256SUMS.txt").write_text(f"{digest}  {setup.name}\n", encoding="utf-8")
+    # LF even on Windows: `sha256sum -c` reads a CR as part of the file name.
+    (DIST / "SHA256SUMS.txt").write_text(f"{digest}  {setup.name}\n", encoding="utf-8", newline="\n")
     print(f"Built School-Life-Assistant {__version__} in {DIST}")
 
 
