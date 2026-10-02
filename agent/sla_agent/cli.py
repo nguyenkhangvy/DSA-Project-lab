@@ -45,12 +45,14 @@ from sla_agent.iupay_client import IupayClient
 from sla_agent.log import protect, setup_logging
 from sla_agent.outlook_reader import (
     accounts as outlook_addresses,
+    classic_outlook,
     entry_id_from_link,
     newest_received,
     open_email,
     open_outlook,
     read_outlook,
     running_outlook,
+    start_classic_outlook,
     with_time_limit,
 )
 from sla_agent.parsers import PARSERS
@@ -113,6 +115,7 @@ def tools():
     return accounts.Tools(
         make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
         find_outlook_accounts=find_outlook_accounts, find_open_outlook_accounts=find_open_outlook_accounts,
+        outlook_state=classic_outlook, start_outlook=start_classic_outlook,
         program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,

@@ -12,6 +12,7 @@ pywin32 is imported only when Outlook is really used, so the tests run anywhere 
 
 import hashlib
 import logging
+import os
 import re
 import threading
 import time as clock
@@ -38,6 +39,9 @@ CONNECT_WAIT = timedelta(seconds=30)  # a hidden Outlook needs ~5 s to connect a
 MAX_EMAILS = 2000
 VIETNAM_OFFSET = timedelta(hours=7)
 LINK = re.compile(r"sla-mail:([0-9A-F]{2,512})/?")
+MISSING, NOT_SIGNED_IN, SIGNED_IN = "missing", "not_signed_in", "signed_in"
+OUTLOOK_APPLICATION = r"Outlook.Application\CLSID"  # registered by classic Outlook only, not by the new Outlook app
+OUTLOOK_PROFILES = r"Software\Microsoft\Office\16.0\Outlook\Profiles"  # 16.0: every Office from 2016 on
 
 NOT_SET_UP = "Classic Outlook isn't set up on this laptop."
 BLOCKED = "Outlook didn't let the agent read your mail."
@@ -85,6 +89,39 @@ def running_outlook():
         return win32com.client.GetActiveObject("Outlook.Application")
     except pywintypes.com_error:
         return None
+
+
+def _winreg():
+    import winreg
+
+    return winreg
+
+
+def classic_outlook():
+    """MISSING, NOT_SIGNED_IN or SIGNED_IN (spec 2026-10-02-easy-install-design.md, 4), from the registry only: this
+    never starts Outlook. Signed in means this Windows user has an Outlook profile, which classic Outlook makes the
+    first time someone signs in to it."""
+    try:
+        registry = _winreg()
+    except ImportError:  # not Windows
+        return MISSING
+    try:
+        with registry.OpenKey(registry.HKEY_CLASSES_ROOT, OUTLOOK_APPLICATION):
+            pass
+    except OSError:
+        return MISSING
+    try:
+        with registry.OpenKey(registry.HKEY_CURRENT_USER, OUTLOOK_PROFILES) as profiles:
+            registry.EnumKey(profiles, 0)  # the first profile; OSError when there is none
+    except OSError:
+        return NOT_SIGNED_IN
+    return SIGNED_IN
+
+
+def start_classic_outlook():
+    """Open Outlook (classic) for the student to sign in. Windows finds outlook.exe through App Paths; OSError when it
+    can't."""
+    os.startfile("outlook.exe")
 
 
 def _refused(error):

@@ -7,8 +7,6 @@ be used from its own thread (tests pass `run=run_at_once`). One window at a time
 forward (claim_single_window)."""
 
 import logging
-import queue
-import threading
 import tkinter as tk
 import webbrowser
 from datetime import datetime
@@ -17,7 +15,9 @@ from tkinter import ttk
 from sla_agent import __version__, accounts, launcher
 from sla_agent.accounts import Result, SetupForm
 from sla_agent.log import protect
+from sla_agent.outlook_page import OutlookPage
 from sla_agent.state import load_state
+from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, run_in_background, section
 
 log = logging.getLogger(__name__)
 
@@ -28,8 +28,7 @@ ONLINE_ADDRESS = "https://school-life-assistant.onrender.com"  # the website stu
 NO_OUTLOOK = "Don't read Outlook"
 LOOKING = "Looking for classic Outlook…"
 OUTLOOK_HELP = "Open Outlook (classic), sign in, wait for \"All folders are up to date\", then press Refresh."
-CHECKING = "Checking…"
-DONE = "Done. This laptop checks in every minute; everything syncs every 30 minutes."
+DONE ="Done. This laptop checks in every minute; everything syncs every 30 minutes."
 EDUSOFT_PAUSES = {"bad_credentials": "paused: wrong student ID or password",
                   "extra_verification": "paused: EduSoft asked for extra verification"}
 BLACKBOARD_PAUSES = {"bad_credentials": "paused: wrong username or password",
@@ -39,69 +38,7 @@ SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a p
 SECRETS = ("key", "password", "bb_password")
 
 
-# ---- running checks ---------------------------------------------------------------------
-
-
-def attempt(work):
-    """work(), or a Result saying something went wrong; the details go to agent.log (secrets scrubbed)."""
-    try:
-        return work()
-    except Exception as error:  # anything unexpected is shown on screen, never a crash
-        log.exception("Accounts window: unexpected error")
-        return Result(False, f"Something went wrong ({error.__class__.__name__}). Nothing was saved.")
-
-
-def run_at_once(work, done):
-    done(attempt(work))
-
-
-def run_in_background(root):
-    """A runner that does `work` on a worker thread and calls `done` with its answer on Tk's thread. The thread is
-    not a daemon: closing the window during a check lets the check finish and save."""
-
-    def run(work, done):
-        answers = queue.Queue(maxsize=1)
-        threading.Thread(target=lambda: answers.put(attempt(work)), name="accounts-check").start()
-
-        def collect():
-            try:
-                answer = answers.get_nowait()
-            except queue.Empty:
-                root.after(100, collect)
-                return
-            done(answer)
-
-        root.after(100, collect)
-
-    return run
-
-
 # ---- small pieces --------------------------------------------------------------------------
-
-
-def mark(result):
-    return ("✓ " if result.ok else "✗ ") + "\n".join((result.message, *result.notes))
-
-
-def heading(parent, text, row):
-    ttk.Label(parent, text=text, font=("Segoe UI", 14, "bold")).grid(
-        row=row, column=0, columnspan=3, sticky="w", pady=(0, 8))
-
-
-def section(parent, text, row):
-    ttk.Label(parent, text=text, font=("Segoe UI", 10, "bold")).grid(
-        row=row, column=0, columnspan=3, sticky="w", pady=(12, 2))
-
-
-def field(parent, label, variable, row, secret=False):
-    ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=2)
-    ttk.Entry(parent, textvariable=variable, show="•" if secret else "", width=40).grid(
-        row=row, column=1, sticky="ew", pady=2)
-
-
-def answer_line(parent, variable, row):
-    ttk.Label(parent, textvariable=variable, wraplength=500, justify="left").grid(
-        row=row, column=0, columnspan=3, sticky="w")
 
 
 def local_time(iso):
@@ -361,7 +298,8 @@ class Editor:
             field(self.frame, label, self.values[name], index, secret=secret)
         if row == "outlook":
             self.values["outlook"] = tk.StringVar(self.frame, state.outlook_account or "")
-            OutlookPicker(screen.app, self.frame, self.values["outlook"], 0, allow_none=False)
+            self.outlook = OutlookPage(screen.app, self.frame, self.values["outlook"], skippable=False)
+            self.outlook.frame.grid(row=0, column=0, columnspan=3, sticky="ew")
         buttons = ttk.Frame(self.frame)
         buttons.grid(row=5, column=0, columnspan=3, sticky="e", pady=(4, 0))
         self.save_button = ttk.Button(buttons, text="Check and save", command=self.save)

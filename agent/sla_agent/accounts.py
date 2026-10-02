@@ -42,6 +42,8 @@ class Tools:
     make_blackboard: Callable  # () -> BlackboardClient
     find_outlook_accounts: Callable  # () -> [account address]; raises AgentError
     find_open_outlook_accounts: Callable  # the same, asking only an Outlook that is already open
+    outlook_state: Callable  # () -> outlook_reader.MISSING, NOT_SIGNED_IN or SIGNED_IN, from the registry
+    start_outlook: Callable  # () -> opens Outlook (classic) for the student to sign in; raises OSError
     program: Callable  # () -> what the task, the links and the shortcuts start: the built app or a windowless Python
     install_task: Callable  # (program, user, folder=) ; raises SchedulerError
     task_program: Callable  # () -> the program the scheduled task starts, or None

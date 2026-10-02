@@ -247,3 +247,20 @@ def test_an_outlook_that_does_not_answer_gives_no_time_after_the_limit():
         time.sleep(2)
 
     assert newest_received(ADDRESS, running=stuck, limit=timedelta(milliseconds=200)) is None
+
+
+# ---- is classic Outlook installed, and has anyone signed in? (the setup's Outlook page) ----------------------------
+
+
+def test_classic_outlook_reads_only_the_registry(isolated_agent):
+    registry = isolated_agent.registry
+    assert outlook_reader.classic_outlook() == outlook_reader.MISSING  # no Outlook.Application: not installed
+
+    registry.CreateKey(registry.HKEY_CLASSES_ROOT, outlook_reader.OUTLOOK_APPLICATION)
+    assert outlook_reader.classic_outlook() == outlook_reader.NOT_SIGNED_IN
+
+    registry.CreateKey(registry.HKEY_CURRENT_USER, outlook_reader.OUTLOOK_PROFILES)
+    assert outlook_reader.classic_outlook() == outlook_reader.NOT_SIGNED_IN  # the key, but no profile in it
+
+    registry.CreateKey(registry.HKEY_CURRENT_USER, outlook_reader.OUTLOOK_PROFILES + r"\Outlook")
+    assert outlook_reader.classic_outlook() == outlook_reader.SIGNED_IN

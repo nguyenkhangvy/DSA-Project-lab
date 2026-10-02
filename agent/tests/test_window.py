@@ -2,7 +2,6 @@
 run at once instead of on a thread (run_at_once), except where a test holds them to look at the screen meanwhile."""
 
 import logging
-import tkinter as tk
 
 import pytest
 
@@ -17,25 +16,11 @@ from agent.tests.accounts_fakes import (
     Fakes,
     set_up,
 )
-from sla_agent import __version__, accounts, credentials, launcher, window
+from sla_agent import __version__, accounts, credentials, launcher, outlook_page, window, window_parts
 from sla_agent.errors import BadCredentials, OutlookNotSetUp
+from sla_agent.outlook_reader import MISSING
 from sla_agent.log import setup_logging
 from sla_agent.state import save_state
-
-
-@pytest.fixture
-def root(request):
-    # While pytest redirects the output file descriptors, Tcl on Windows now and then fails to read its own library
-    # files ("couldn't read file .../tk8.6/entry.tcl"), so Tk starts with that redirection paused.
-    capture = request.config.pluginmanager.getplugin("capturemanager")
-    try:
-        with capture.global_and_fixture_disabled():
-            root = tk.Tk()
-    except tk.TclError as error:  # a machine without a desktop
-        pytest.skip(f"Tk can't start here: {error}")
-    root.withdraw()
-    yield root
-    root.destroy()
 
 
 @pytest.fixture
@@ -43,7 +28,7 @@ def fakes():
     return Fakes()
 
 
-def open_window(root, fakes, run=window.run_at_once):
+def open_window(root, fakes, run=window_parts.run_at_once):
     return window.App(root, fakes.tools(), run=run)
 
 
@@ -121,10 +106,10 @@ def test_while_checking_the_button_is_off_and_a_late_outlook_list_is_ignored(roo
     assert disabled(app.screen.save_button)
     assert app.screen.answers["sync"].get() == window.CHECKING
     work, done = held.pop()
-    done(window.attempt(work))
+    done(window_parts.attempt(work))
     assert isinstance(app.screen, window.AccountsScreen)
     work, done = outlook_lookup
-    done(window.attempt(work))  # the form it was for is gone: nothing happens
+    done(window_parts.attempt(work))  # the form it was for is gone: nothing happens
     assert isinstance(app.screen, window.AccountsScreen)
 
 
@@ -216,6 +201,20 @@ def test_outlook_change_picks_from_the_accounts_found(root, fakes):
     app.screen.editor.save()
 
     assert app.screen.values["outlook"].get() == ME
+
+
+def test_accounts_outlook_set_up_guides_the_install_when_classic_outlook_is_missing(root, fakes):
+    set_up()
+    fakes.outlook = MISSING
+    app = open_window(root, fakes)
+
+    app.screen.open("outlook")
+
+    editor = app.screen.editor
+    assert editor.outlook.lines[0] == outlook_page.MISSING_INTRO
+    assert outlook_page.LATER not in editor.outlook.lines  # Accounts has Cancel, not Skip
+    editor.save()
+    assert app.screen.answers["outlook"].get() == "✗ Choose an account first."
 
 
 def test_repair_turns_sync_on_again(root, fakes, tmp_path):
