@@ -12,8 +12,10 @@ DESCRIPTION = "Enter and change your School-Life-Assistant accounts"
 
 
 def _shell():
+    import pythoncom
     import win32com.client
 
+    pythoncom.CoInitialize()  # COM is per thread, and Repair and the first-time form run on a worker thread
     return win32com.client.Dispatch("WScript.Shell")
 
 

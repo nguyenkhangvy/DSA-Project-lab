@@ -94,8 +94,10 @@ def install_task(program, user, folder, runner=subprocess.run):
 
 def _task_scheduler():
     """Task Scheduler's own COM interface (through pywin32), connected."""
+    import pythoncom
     import win32com.client
 
+    pythoncom.CoInitialize()  # COM is per thread: this may run on any of the window's threads
     service = win32com.client.Dispatch("Schedule.Service")
     service.Connect()
     return service
