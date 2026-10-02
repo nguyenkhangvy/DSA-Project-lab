@@ -64,7 +64,8 @@ class AccountsPageTest {
         String html = main(page());
 
         assertThat(html).contains("href=\"sla-agent:accounts\"", "Open Accounts on this laptop", "My laptop",
-                "Start menu", "School-Life-Assistant.cmd");
+                "Start menu", "Devices");
+        assertThat(html).doesNotContain("School-Life-Assistant.cmd");
         assertThat(html).doesNotContain("type=\"password\"").doesNotContain("<form").doesNotContain("<input");
     }
 
@@ -90,7 +91,8 @@ class AccountsPageTest {
     void withoutALaptopThePageSaysWhereToStart() throws Exception {
         String html = main(page());
 
-        assertThat(html).contains("Devices", "School-Life-Assistant.cmd").doesNotContain("sla-agent:accounts");
+        assertThat(html).contains("Devices", "download School-Life-Assistant")
+                .doesNotContain("School-Life-Assistant.cmd").doesNotContain("sla-agent:accounts");
     }
 
     @Test
