@@ -16,7 +16,7 @@ from agent.tests.accounts_fakes import (
     set_up,
 )
 from sla_agent import accounts, credentials, launcher
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp
+from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp, UnexpectedAnswer
 from sla_agent.log import setup_logging
 from sla_agent.scheduler import SchedulerError
 from sla_agent.state import State, load_state, save_state
@@ -32,6 +32,16 @@ def fakes():
 
 def test_check_site_says_when_the_website_accepts_the_key(fakes):
     assert accounts.check_site(SERVER, KEY, fakes.tools()) == accounts.Result(True, accounts.SITE_ACCEPTED)
+
+
+def test_a_website_that_answers_with_an_error_page_gets_one_plain_sentence(fakes):
+    fakes.server.check_error = UnexpectedAnswer(
+        "The web app answered HTTP 503: <!DOCTYPE html><html><body>Service Suspended</body></html>", 503)
+
+    result = accounts.check_site(SERVER, KEY, fakes.tools())
+
+    assert result == accounts.Result(False, "The website at https://sla.example.com isn't working right now "
+                                            "(HTTP 503). Try again later. Nothing was saved.")
 
 
 def test_check_site_refuses_a_plain_http_address_without_contacting_it(fakes):

@@ -6,7 +6,7 @@ import requests
 from sla_contract.schema import CheckResult, FinishResult, StartResult, StartRun
 
 from sla_agent.edusoft_client import USER_AGENT
-from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable, UpdateRequired
+from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerUnreachable, UnexpectedAnswer, UpdateRequired
 from sla_agent.log import protect
 
 LOCAL_HOSTS = ("localhost", "127.0.0.1")
@@ -49,7 +49,8 @@ class ServerClient:
         if response.status_code == 426:
             raise UpdateRequired(TOO_OLD)
         if response.is_redirect or response.status_code >= 400:
-            raise ServerError(f"The web app answered HTTP {response.status_code}: {response.text[:300]}")
+            raise UnexpectedAnswer(f"The web app answered HTTP {response.status_code}: {response.text[:300]}",
+                                   response.status_code)
         return response.json()
 
     def check(self):

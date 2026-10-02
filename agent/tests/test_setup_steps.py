@@ -8,7 +8,7 @@ import pytest
 
 from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, PASSWORD, SERVER, STUDENT, Fakes
 from sla_agent import accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ServerUnreachable
+from sla_agent.errors import BadCredentials, DeviceKeyRejected, ServerUnreachable, UnexpectedAnswer
 from sla_agent.log import setup_logging
 from sla_agent.outlook_reader import MISSING
 from sla_agent.scheduler import SchedulerError
@@ -152,6 +152,18 @@ def test_a_website_that_cant_be_reached_says_so_and_saves_nothing(root, fakes, i
                                        "(ConnectionError). Nothing was saved.")
     assert disabled(steps.page.next_button)
     assert isolated_agent.entries == {}
+
+
+def test_a_website_that_answers_with_an_error_page_says_so_in_one_sentence(root, fakes):  # Review Focus 1
+    fakes.server.check_error = UnexpectedAnswer(
+        "The web app answered HTTP 503: <!DOCTYPE html><html><body>Service Suspended</body></html>", 503)
+    _, steps = start(root, fakes)
+
+    steps.values["key"].set(KEY)
+
+    assert steps.page.answer.get() == ("✗ The website at https://sla.example.com isn't working right now "
+                                       "(HTTP 503). Try again later. Nothing was saved.")
+    assert disabled(steps.page.next_button)
 
 
 def test_paste_takes_a_copied_key(root, fakes, clipboard):  # Review Focus 2

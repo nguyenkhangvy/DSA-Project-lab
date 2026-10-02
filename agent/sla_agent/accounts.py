@@ -13,7 +13,14 @@ from pathlib import Path
 from typing import Callable
 
 from sla_agent import credentials, launcher
-from sla_agent.errors import AgentError, BadCredentials, DeviceKeyRejected, ExtraVerification, ServerError
+from sla_agent.errors import (
+    AgentError,
+    BadCredentials,
+    DeviceKeyRejected,
+    ExtraVerification,
+    ServerError,
+    UnexpectedAnswer,
+)
 from sla_agent.log import protect
 from sla_agent.scheduler import SchedulerError, current_user
 from sla_agent.server_client import check_server_url
@@ -81,6 +88,10 @@ def check_site(address, key, tools):
     except DeviceKeyRejected:
         return Result(False, "The web app rejected this device key. Create a new one on the Devices page. "
                              "Nothing was saved.")
+    except UnexpectedAnswer as error:  # e.g. a host's "service suspended" page: its HTML goes to the log only
+        log.warning("Checking the device key: %s", error)
+        return Result(False, f"The website at {address} isn't working right now (HTTP {error.status}). "
+                             "Try again later. Nothing was saved.")
     except ServerError as error:
         return Result(False, f"Couldn't reach the web app: {error} Nothing was saved.")
     return Result(True, SITE_ACCEPTED)
