@@ -5,7 +5,7 @@ import pytest
 from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
-from sla_agent import __version__, cli, credentials, launcher, update
+from sla_agent import __version__, app_window, cli, credentials, launcher, update
 from sla_agent.errors import (
     BadCredentials,
     DeviceKeyRejected,
@@ -1005,3 +1005,26 @@ def test_runs_of_the_same_version_leave_the_shortcuts_alone(world, built_app, is
     cli.main(["run"])
 
     assert list(isolated_agent.shell.root.rglob("*.lnk")) == []
+
+
+# ---- open: the School-Life-Assistant icon ------------------------------------------------------
+
+
+def test_open_shows_the_website_as_an_app_once_this_laptop_is_set_up(world, monkeypatch):
+    configure()
+    opened = []
+    monkeypatch.setattr(app_window, "open_app", opened.append)
+
+    assert cli.main(["open"]) == 0
+
+    assert opened == [SERVER]
+
+
+def test_open_shows_the_first_time_form_before_setup(world, monkeypatch):
+    windows = []
+    monkeypatch.setitem(cli.COMMANDS, "window", lambda args: windows.append(args.link) or 0)
+    monkeypatch.setattr(app_window, "open_app", lambda address: pytest.fail("opened the website"))
+
+    assert cli.main(["open"]) == 0
+
+    assert windows == [None]

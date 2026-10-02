@@ -32,10 +32,10 @@ def test_self_check_answers_with_its_exit_code(monkeypatch):
     assert cli.main(["self-check", "9.9.9"]) == 1
 
 
-def test_the_app_double_clicked_opens_the_window(monkeypatch):
+def test_the_app_double_clicked_opens_school_life_assistant(monkeypatch):
     opened = []
-    monkeypatch.setitem(cli.COMMANDS, "window", lambda args: opened.append(args.link) or 0)
+    monkeypatch.setitem(cli.COMMANDS, "open", lambda args: opened.append(args.command) or 0)
     monkeypatch.setattr(launcher, "frozen", lambda: True)
 
     assert cli.main([]) == 0
-    assert opened == [None]
+    assert opened == ["open"]
