@@ -16,8 +16,7 @@ from agent.tests.accounts_fakes import (
     set_up,
 )
 from sla_agent import accounts, credentials, launcher
-from sla_agent.accounts import SetupForm
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp, ServerError
+from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp
 from sla_agent.log import setup_logging
 from sla_agent.scheduler import SchedulerError
 from sla_agent.state import State, load_state, save_state
@@ -28,76 +27,84 @@ def fakes():
     return Fakes()
 
 
-def form(**changes):
-    values = dict(address=SERVER, key=KEY, student_id=STUDENT, password=PASSWORD)
-    values.update(changes)
-    return SetupForm(**values)
+# ---- the website and the device key --------------------------------------------------
 
 
-EVERYTHING = dict(bb_user=BB_USER, bb_password=BB_PASSWORD, outlook=ME)
+def test_check_site_says_when_the_website_accepts_the_key(fakes):
+    assert accounts.check_site(SERVER, KEY, fakes.tools()) == accounts.Result(True, accounts.SITE_ACCEPTED)
 
 
-# ---- first setup ------------------------------------------------------------------
+def test_check_site_refuses_a_plain_http_address_without_contacting_it(fakes):
+    result = accounts.check_site("http://sla.example.com", KEY, fakes.tools())
+
+    assert not result.ok
+    assert "https://" in result.message
+    assert fakes.servers == []
 
 
-def test_a_first_setup_checks_then_saves_everything_and_turns_on_sync(fakes):
-    results = accounts.first_setup(State(), form(**EVERYTHING), fakes.tools())
+@pytest.mark.parametrize("text, shaped", [
+    (KEY, True), (f"  {KEY}\r\n", True), ("sla_short", False), ("My laptop", False), ("", False), (None, False),
+    (KEY + "x", False), ("SLA_" + KEY[4:], False), (KEY[:-1] + "!", False),
+])
+def test_is_device_key_takes_only_a_keys_exact_shape(text, shaped):
+    assert accounts.is_device_key(text) is shaped
 
-    assert list(results) == ["site", "edusoft", "blackboard", "outlook", "sync"]
-    assert all(result.ok for result in results.values())
-    assert results["edusoft"].message == accounts.SAVED
+
+# ---- the setup's step 2 -------------------------------------------------------------
+
+
+def test_step_2_checks_edusoft_then_saves_the_key_and_edusoft_and_turns_on_sync(fakes):
+    results = accounts.save_and_turn_on_sync(State(), SERVER, KEY, STUDENT, PASSWORD, fakes.tools())
+
+    assert list(results) == ["edusoft", "sync"]
+    assert results["edusoft"] == accounts.Result(True, accounts.SAVED)
+    assert results["sync"].ok
     assert credentials.load_device_key(SERVER) == KEY
     assert credentials.load_edusoft(STUDENT) == PASSWORD
-    assert credentials.load_blackboard(BB_USER) == BB_PASSWORD
-    state = load_state()
-    assert (state.server_url, state.student_id, state.blackboard_username, state.outlook_account) == (
-        SERVER, STUDENT, BB_USER, ME)
+    assert (load_state().server_url, load_state().student_id) == (SERVER, STUDENT)
     assert {"task", "mail link", "window link", "shortcuts"} <= set(fakes.done)
+    assert "desktop icon" not in fakes.done
 
 
-@pytest.mark.parametrize("break_it, step", [
-    (lambda fakes: setattr(fakes.server, "check_error", DeviceKeyRejected("rejected")), "site"),
-    (lambda fakes: setattr(fakes.server, "check_error", ServerError("down")), "site"),
-    (lambda fakes: setattr(fakes.edusoft, "login_error", BadCredentials("rejected")), "edusoft"),
-    (lambda fakes: setattr(fakes.edusoft, "login_error", ExtraVerification("captcha")), "edusoft"),
-], ids=["key-rejected", "site-down", "wrong-password", "captcha"])
-def test_a_first_setup_saves_nothing_unless_the_site_and_edusoft_pass(fakes, isolated_agent, break_it, step):
-    break_it(fakes)
+@pytest.mark.parametrize("error", [BadCredentials("rejected"), ExtraVerification("captcha")],
+                         ids=["wrong-password", "captcha"])
+def test_step_2_saves_nothing_when_edusoft_refuses(fakes, isolated_agent, error):
+    fakes.edusoft.login_error = error
 
-    results = accounts.first_setup(State(), form(**EVERYTHING), fakes.tools())
+    results = accounts.save_and_turn_on_sync(State(), SERVER, KEY, STUDENT, PASSWORD, fakes.tools())
 
-    assert list(results)[-1] == step
-    assert not results[step].ok
-    assert "Nothing was saved" in results[step].message
+    assert list(results) == ["edusoft"]
+    assert "Nothing was saved" in results["edusoft"].message
     assert isolated_agent.entries == {}
     assert load_state() == State()
     assert fakes.done == []
 
 
-def test_a_first_setup_refuses_a_plain_http_address_without_contacting_it(fakes):
-    results = accounts.first_setup(State(), form(address="http://sla.example.com"), fakes.tools())
+def test_step_2_keeps_edusoft_saved_when_sync_cannot_be_turned_on(fakes):
+    fakes.fail = {"task": SchedulerError("Couldn't create the scheduled task: Access is denied.")}
 
-    assert not results["site"].ok
-    assert "https://" in results["site"].message
-    assert fakes.servers == []
-
-
-def test_a_rejected_blackboard_login_keeps_edusoft_saved(fakes):
-    fakes.blackboard.login_error = BadCredentials("rejected")
-
-    results = accounts.first_setup(State(), form(bb_user=BB_USER, bb_password="wrong"), fakes.tools())
+    results = accounts.save_and_turn_on_sync(State(), SERVER, KEY, STUDENT, PASSWORD, fakes.tools())
 
     assert results["edusoft"].ok
-    assert results["blackboard"].message == "Blackboard rejected the username or password. Nothing was saved."
+    assert not results["sync"].ok
+    assert "Access is denied" in results["sync"].message
     assert credentials.load_edusoft(STUDENT) == PASSWORD
-    assert load_state().blackboard_username is None
-    assert results["sync"].ok
+
+
+def test_an_unexpected_error_after_saving_stops_only_turning_on_sync(fakes):
+    fakes.fail = {"task": RuntimeError("a bug")}
+
+    results = accounts.save_and_turn_on_sync(State(), SERVER, KEY, STUDENT, PASSWORD, fakes.tools())
+
+    assert results["edusoft"].ok
+    assert results["sync"].message.startswith("Something went wrong (RuntimeError)")
+    assert credentials.load_edusoft(STUDENT) == PASSWORD
 
 
 def test_half_a_blackboard_login_is_refused(fakes):
-    results = accounts.first_setup(State(), form(bb_user=BB_USER), fakes.tools())
+    result = accounts.change_blackboard(set_up(), BB_USER, "", fakes.tools())
 
-    assert results["blackboard"].message == "Blackboard username and password are both needed. Nothing was saved."
+    assert result.message == "Blackboard username and password are both needed. Nothing was saved."
     assert fakes.blackboard.logins == []
 
 
@@ -272,9 +279,9 @@ def test_sync_task_state(fakes, tmp_path):
 
 def test_no_password_or_key_reaches_the_log_file(fakes, tmp_path):
     log_path = setup_logging(tmp_path / "logs")
-    fakes.fail = {"shortcuts": RuntimeError(f"failed for {PASSWORD} {BB_PASSWORD} {KEY}")}
+    fakes.fail = {"shortcuts": RuntimeError(f"failed for {PASSWORD} {KEY}")}
 
-    accounts.first_setup(State(), form(**EVERYTHING), fakes.tools())
+    accounts.save_and_turn_on_sync(State(), SERVER, KEY, STUDENT, PASSWORD, fakes.tools())
 
     for handler in logging.getLogger().handlers[:]:
         if str(tmp_path) in getattr(handler, "baseFilename", ""):
@@ -283,19 +290,7 @@ def test_no_password_or_key_reaches_the_log_file(fakes, tmp_path):
             handler.close()
     text = log_path.read_text(encoding="utf-8")
     assert "***" in text
-    assert PASSWORD not in text and BB_PASSWORD not in text and KEY not in text
-
-
-def test_an_unexpected_error_after_saving_stops_only_that_step(fakes):
-    fakes.blackboard.login_error = RuntimeError("a bug")
-
-    results = accounts.first_setup(State(), form(**EVERYTHING), fakes.tools())
-
-    assert results["edusoft"].ok
-    assert not results["blackboard"].ok
-    assert results["blackboard"].message.startswith("Something went wrong (RuntimeError)")
-    assert results["outlook"].ok and results["sync"].ok
-    assert "task" in fakes.done
+    assert PASSWORD not in text and KEY not in text
 
 
 # ---- a laptop set up before the window existed ------------------------------------------
@@ -346,13 +341,6 @@ def test_a_change_keeps_what_a_sync_saved_while_it_was_being_checked(fakes):
     assert saved.blackboard_paused == "bad_credentials"
     assert saved.paused is None
     assert state == saved
-
-
-def test_outlook_accounts_can_ask_only_an_outlook_that_is_already_open(fakes):
-    assert accounts.outlook_accounts(fakes.tools(), start=False) == ([ME], None)
-    assert accounts.outlook_accounts(fakes.tools()) == ([ME], None)
-
-    assert fakes.looks == ["open", "start"]
 
 
 def test_the_built_app_sees_a_task_that_runs_another_copy(fakes, tmp_path, monkeypatch):

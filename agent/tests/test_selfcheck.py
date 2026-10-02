@@ -22,7 +22,12 @@ def test_each_failing_check_is_named():
 
 def test_the_checks_cover_what_the_built_app_needs():
     assert [check.__name__ for check in selfcheck.CHECKS] == [
-        "tk_with_its_files", "outlook_link", "credential_manager", "data_contract", "https_certificates"]
+        "tk_with_its_files", "outlook_link", "credential_manager", "data_contract", "https_certificates",
+        "setup_window"]
+
+
+def test_the_window_and_its_pages_load():
+    selfcheck.setup_window()  # what the built app does: a module PyInstaller missed would fail here
 
 
 def test_self_check_answers_with_its_exit_code(monkeypatch):

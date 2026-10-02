@@ -7,6 +7,7 @@ is checked once before it is saved, and one that fails changes nothing. Password
 Windows Credential Manager (credentials.py)."""
 
 import logging
+import re
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Callable
@@ -24,6 +25,8 @@ SAVED = "Saved. Your password is in Windows Credential Manager, not in any file.
 BLACKBOARD_SAVED = "Blackboard saved. Its password is in Windows Credential Manager too."
 SYNC_ON = "Automatic sync is on: this laptop checks in every minute while you're logged in."
 DESKTOP_ICON_ADDED = "The School-Life-Assistant icon is on your Desktop."
+SITE_ACCEPTED = "The website accepted this key."
+DEVICE_KEY = re.compile(r"sla_[A-Za-z0-9_-]{43}")  # the website's keys: sla_ and 32 random bytes, URL-safe Base64
 
 
 @dataclass(frozen=True)
@@ -41,7 +44,6 @@ class Tools:
     make_edusoft: Callable  # () -> EduSoftClient
     make_blackboard: Callable  # () -> BlackboardClient
     find_outlook_accounts: Callable  # () -> [account address]; raises AgentError
-    find_open_outlook_accounts: Callable  # the same, asking only an Outlook that is already open
     outlook_state: Callable  # () -> outlook_reader.MISSING, NOT_SIGNED_IN or SIGNED_IN, from the registry
     start_outlook: Callable  # () -> opens Outlook (classic) for the student to sign in; raises OSError
     program: Callable  # () -> what the task, the links and the shortcuts start: the built app or a windowless Python
@@ -54,19 +56,6 @@ class Tools:
     has_desktop_shortcut: Callable  # () -> whether the Desktop icon is there
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
     open_site: Callable  # (address) -> opens the website as an app (app_window.open_app)
-
-
-@dataclass(frozen=True)
-class SetupForm:
-    """The first-time form. Blackboard and Outlook are optional: empty means skipped."""
-
-    address: str
-    key: str
-    student_id: str
-    password: str
-    bb_user: str = ""
-    bb_password: str = ""
-    outlook: str = ""
 
 
 def _clean(address):
@@ -94,7 +83,13 @@ def check_site(address, key, tools):
                              "Nothing was saved.")
     except ServerError as error:
         return Result(False, f"Couldn't reach the web app: {error} Nothing was saved.")
-    return Result(True, "The web app accepted this device key.")
+    return Result(True, SITE_ACCEPTED)
+
+
+def is_device_key(text):
+    """Whether `text`, without the spaces or line break around it, has a device key's exact shape (the website's
+    DeviceKeys.java). Text of any other shape is never sent to the website."""
+    return bool(DEVICE_KEY.fullmatch((text or "").strip()))
 
 
 def check_edusoft(student_id, password, tools):
@@ -200,11 +195,11 @@ def change_blackboard(state, username, password, tools):
     return Result(True, BLACKBOARD_SAVED)
 
 
-def outlook_accounts(tools, start=True):
-    """(the accounts in classic Outlook, None), or ([], what's wrong). start=False asks only an Outlook that is
-    already open, so it never starts Outlook (or its first-run wizard where classic Outlook was never set up)."""
+def outlook_accounts(tools):
+    """(the accounts in classic Outlook, None), or ([], what's wrong). It may start a hidden Outlook for a moment, so
+    the Outlook page asks it only once someone has signed in to Outlook (outlook_reader.classic_outlook)."""
     try:
-        found = tools.find_outlook_accounts() if start else tools.find_open_outlook_accounts()
+        found = tools.find_outlook_accounts()
     except AgentError as error:
         return [], str(error)
     if not found:
@@ -319,7 +314,7 @@ def sync_task_state(tools):
     return "on"
 
 
-# ---- the first-time form ---------------------------------------------------------------
+# ---- the setup pages ---------------------------------------------------------------
 
 
 def _after_saving(work):
@@ -333,20 +328,15 @@ def _after_saving(work):
                              "The details are in agent.log.")
 
 
-def first_setup(state, form, tools):
-    """Check and save a first setup in the order of spec 3.1: the website and EduSoft, saved together only when
-    both pass; then Blackboard and Outlook when filled in; then automatic sync. Returns {step: Result} for the steps
-    that ran, in order: site, edusoft, blackboard, outlook, sync."""
-    results = {"site": check_site(form.address, form.key, tools)}
-    if not results["site"].ok:
-        return results
-    results["edusoft"] = check_edusoft(form.student_id, form.password, tools)
-    if not results["edusoft"].ok:
-        return results
-    results["edusoft"] = save_site_and_edusoft(state, form.address, form.key, form.student_id, form.password)
-    if form.bb_user or form.bb_password:
-        results["blackboard"] = _after_saving(lambda: change_blackboard(state, form.bb_user, form.bb_password, tools))
-    if form.outlook:
-        results["outlook"] = _after_saving(lambda: choose_outlook(state, form.outlook, tools))
-    results["sync"] = _after_saving(lambda: turn_on_sync(tools))
-    return results
+def save_and_turn_on_sync(state, address, key, student_id, password, tools):
+    """The setup's step 2 (spec 2026-10-02-easy-install-design.md, 3): one EduSoft login attempt; when it passes, the
+    website's address and device key (accepted on step 1) and EduSoft are saved together, then automatic sync is
+    turned on. Returns {"edusoft": Result} when the login failed and nothing was saved, else {"edusoft": Result,
+    "sync": Result}."""
+    protect(key)
+    protect(password)
+    checked = check_edusoft(student_id, password, tools)
+    if not checked.ok:
+        return {"edusoft": checked}
+    saved = save_site_and_edusoft(state, address, key, student_id, password)
+    return {"edusoft": saved, "sync": _after_saving(lambda: turn_on_sync(tools))}

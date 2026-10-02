@@ -1,61 +1,44 @@
-"""The School-Life-Assistant window (spec 2026-10-01-accounts-window-design.md, 3): set up this laptop the first
-time, then see and change its accounts, with no terminal.
+"""The School-Life-Assistant window (spec 2026-10-01-accounts-window-design.md, 3; spec
+2026-10-02-easy-install-design.md): the setup pages while this laptop isn't set up (setup_steps.py), then Accounts,
+to see and change its accounts, with no terminal.
 
-The screens only collect what the student types and show the answers; accounts.py checks and saves. Each check runs
-on a worker thread so the window never freezes, and its answer comes back through Tk's event loop, since Tk may only
-be used from its own thread (tests pass `run=run_at_once`). One window at a time: a second start brings the open one
-forward (claim_single_window)."""
+The screens only collect what the student types and show the answers; accounts.py checks and saves, each check on a
+worker thread (window_parts.py). One window at a time: a second start brings the open one forward
+(claim_single_window)."""
 
 import logging
 import tkinter as tk
-import webbrowser
 from datetime import datetime
 from tkinter import ttk
 
-from sla_agent import __version__, accounts, launcher
-from sla_agent.accounts import Result, SetupForm
+from sla_agent import __version__, accounts
 from sla_agent.log import protect
 from sla_agent.outlook_page import OutlookPage
+from sla_agent.setup_steps import SetupSteps
 from sla_agent.state import load_state
-from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, run_in_background, section
+from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, run_in_background
 
 log = logging.getLogger(__name__)
 
 TITLE = "School-Life-Assistant"
 MUTEX = "SchoolLifeAssistant-Window"
-LOCAL_ADDRESS = "http://localhost:5000"  # a developer's own site, running from source
-ONLINE_ADDRESS = "https://school-life-assistant.onrender.com"  # the website students use
-NO_OUTLOOK = "Don't read Outlook"
-LOOKING = "Looking for classic Outlook…"
-OUTLOOK_HELP = "Open Outlook (classic), sign in, wait for \"All folders are up to date\", then press Refresh."
-DONE ="Done. This laptop checks in every minute; everything syncs every 30 minutes."
 EDUSOFT_PAUSES = {"bad_credentials": "paused: wrong student ID or password",
                   "extra_verification": "paused: EduSoft asked for extra verification"}
 BLACKBOARD_PAUSES = {"bad_credentials": "paused: wrong username or password",
                      "extra_verification": "paused: Blackboard asked for extra verification"}
 SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a program that no longer exists",
                "elsewhere": "runs another copy of School-Life-Assistant"}
-SECRETS = ("key", "password", "bb_password")
-
-
-# ---- small pieces --------------------------------------------------------------------------
 
 
 def local_time(iso):
     return datetime.fromisoformat(iso).astimezone().strftime("%d/%m %H:%M")
 
 
-def default_address():
-    """The address the first-time form starts with: the website online for the built app, a developer's own site
-    from source."""
-    return ONLINE_ADDRESS if launcher.frozen() else LOCAL_ADDRESS
-
-
 # ---- the window ----------------------------------------------------------------------------
 
 
 class App:
-    """The window: the first-time form (SetupScreen) or Accounts (AccountsScreen), rebuilt after each save."""
+    """The window: the setup pages (setup_steps.SetupSteps) or Accounts (AccountsScreen), rebuilt after each save."""
 
     def __init__(self, root, tools, run=None, notice=""):
         self.root, self.tools = root, tools
@@ -77,117 +60,12 @@ class App:
         if state.server_url and state.student_id:
             self.screen = AccountsScreen(self, state, notice)
         else:
-            self.screen = SetupScreen(self, state)
-
-
-class OutlookPicker:
-    """A dropdown of the accounts in classic Outlook, looked for in the background, with Refresh. The first look
-    asks only an Outlook that is already open: opening the window never starts Outlook (or, where classic Outlook was
-    never set up, its first-run wizard). Refresh, the student's choice, may start it."""
-
-    def __init__(self, app, frame, variable, row, allow_none):
-        self.app, self.variable, self.allow_none = app, variable, allow_none
-        ttk.Label(frame, text="Account").grid(row=row, column=0, sticky="w", padx=(0, 8))
-        self.box = ttk.Combobox(frame, textvariable=variable, state="readonly", width=38)
-        self.box.grid(row=row, column=1, sticky="ew")
-        self.refresh_button = ttk.Button(frame, text="Refresh", command=self.refresh)
-        self.refresh_button.grid(row=row, column=2, padx=(8, 0))
-        self.note = tk.StringVar(frame)
-        answer_line(frame, self.note, row + 1)
-        self.refresh(start=False)
-
-    def refresh(self, start=True):
-        self.note.set(LOOKING)
-        self.refresh_button.state(["disabled"])
-        self.app.run(lambda: accounts.outlook_accounts(self.app.tools, start=start), self.found)
-
-    def found(self, answer):
-        if not self.box.winfo_exists():  # the form was saved and replaced meanwhile
-            return
-        self.refresh_button.state(["!disabled"])
-        found, problem = ([], answer.message) if isinstance(answer, Result) else answer
-        choices = ([NO_OUTLOOK] if self.allow_none else []) + found
-        self.box["values"] = choices
-        if self.variable.get() not in choices:
-            self.variable.set(choices[0] if choices else "")
-        self.note.set(f"{problem} {OUTLOOK_HELP}" if problem else "")
-
-
-class SetupScreen:
-    """First time: one form for the website, EduSoft, Blackboard (optional) and Outlook (optional) (spec 3.1)."""
-
-    def __init__(self, app, state):
-        self.app = app
-        frame = app.body
-        names = ("address", "key", "student_id", "password", "bb_user", "bb_password", "outlook")
-        self.values = {name: tk.StringVar(frame) for name in names}
-        self.values["address"].set(state.server_url or default_address())
-        self.values["student_id"].set(state.student_id or "")
-        self.values["outlook"].set(NO_OUTLOOK)
-        self.answers = {name: tk.StringVar(frame) for name in ("site", "edusoft", "blackboard", "outlook", "sync")}
-
-        heading(frame, "Set up this laptop", 0)
-        section(frame, "Website", 1)
-        field(frame, "Address", self.values["address"], 2)
-        field(frame, "Device key", self.values["key"], 3, secret=True)
-        ttk.Button(frame, text="Get a key", command=self.get_key).grid(row=3, column=2, padx=(8, 0))
-        answer_line(frame, self.answers["site"], 4)
-        section(frame, "EduSoft", 5)
-        field(frame, "Student ID", self.values["student_id"], 6)
-        field(frame, "Password", self.values["password"], 7, secret=True)
-        answer_line(frame, self.answers["edusoft"], 8)
-        section(frame, "Blackboard (optional)", 9)
-        field(frame, "Username", self.values["bb_user"], 10)
-        field(frame, "Password", self.values["bb_password"], 11, secret=True)
-        answer_line(frame, self.answers["blackboard"], 12)
-        section(frame, "Outlook (optional)", 13)
-        self.outlook = OutlookPicker(app, frame, self.values["outlook"], 14, allow_none=True)
-        answer_line(frame, self.answers["outlook"], 16)
-        self.save_button = ttk.Button(frame, text="Check and save", command=self.save)
-        self.save_button.grid(row=17, column=0, columnspan=3, sticky="e", pady=(16, 0))
-        answer_line(frame, self.answers["sync"], 18)
-
-    def get_key(self):
-        webbrowser.open(self.values["address"].get().strip().rstrip("/") + "/school/devices")
-
-    def form(self):
-        value = {name: variable.get() for name, variable in self.values.items()}
-        for secret in SECRETS:
-            protect(value[secret])
-        outlook = "" if value["outlook"] == NO_OUTLOOK else value["outlook"]
-        return SetupForm(address=value["address"].strip(), key=value["key"].strip(),
-                         student_id=value["student_id"].strip(), password=value["password"],
-                         bb_user=value["bb_user"].strip(), bb_password=value["bb_password"], outlook=outlook)
-
-    def save(self):
-        form = self.form()
-        for answer in self.answers.values():
-            answer.set("")
-        self.answers["sync"].set(CHECKING)
-        self.save_button.state(["disabled"])
-        self.app.run(lambda: accounts.first_setup(load_state(), form, self.app.tools), self.saved)
-
-    def saved(self, results):
-        self.save_button.state(["!disabled"])
-        if isinstance(results, Result):  # something unexpected went wrong
-            self.answers["sync"].set(mark(results))
-            return
-        self.answers["sync"].set("")
-        for step, result in results.items():
-            self.answers[step].set(mark(result))
-        if not results.get("edusoft", Result(False, "")).ok:
-            return  # nothing saved: the form stays filled in to correct
-        for secret in SECRETS:
-            self.values[secret].set("")
-        lines = [DONE] if results["sync"].ok else []
-        lines += [mark(result) for step, result in results.items()
-                  if step in ("blackboard", "outlook", "sync") and (not result.ok or result.notes)]
-        self.app.show(notice="\n".join(lines))
-        self.app.tools.open_site(load_state().server_url)  # set up: now School-Life-Assistant itself
+            self.screen = SetupSteps(self, state)
 
 
 class AccountsScreen:
-    """Set up: one row per account with Change (spec 3.2); Change opens that account's fields under its row."""
+    """Set up: one row per account with Change (spec 3.2); Change opens that account's fields under its row. Repair
+    and the Desktop icon's Add work at one press."""
 
     ROWS = ("site", "edusoft", "blackboard", "outlook", "sync", "desktop", "version")
     NAMES = {"site": "Website", "edusoft": "EduSoft", "blackboard": "Blackboard", "outlook": "Outlook",
@@ -275,7 +153,7 @@ class AccountsScreen:
 
 
 class Editor:
-    """One account's fields under its row, with Check and save and Cancel."""
+    """One account's fields under its row, with Check and save and Cancel; Outlook's is the Outlook page."""
 
     FIELDS = {
         "site": (("Address", "address", False), ("Device key", "key", True)),

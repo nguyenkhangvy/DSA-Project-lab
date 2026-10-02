@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 
 import keyring
@@ -142,3 +143,7 @@ def root(request):
     made.withdraw()
     yield made
     made.destroy()
+    # A window's objects point at each other (the App and its screen), so the garbage collector frees them, on
+    # whichever thread happens to run it; Tk refuses calls from another thread when no main loop runs. Free them here,
+    # on this one.
+    gc.collect()

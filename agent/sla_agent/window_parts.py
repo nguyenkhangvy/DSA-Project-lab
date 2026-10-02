@@ -60,11 +60,6 @@ def heading(parent, text, row):
         row=row, column=0, columnspan=3, sticky="w", pady=(0, 8))
 
 
-def section(parent, text, row):
-    ttk.Label(parent, text=text, font=("Segoe UI", 10, "bold")).grid(
-        row=row, column=0, columnspan=3, sticky="w", pady=(12, 2))
-
-
 def field(parent, label, variable, row, secret=False):
     """A label and its box; returns the box."""
     ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=2)

@@ -869,16 +869,6 @@ def test_a_sync_never_undoes_an_account_changed_while_it_ran(world, monkeypatch)
     assert load_state().last_result is not None  # the sync's own result is saved too
 
 
-def test_the_windows_own_look_never_starts_outlook(monkeypatch):
-    from sla_agent.errors import OutlookNotSetUp
-
-    monkeypatch.setattr(cli, "running_outlook", lambda: None)
-    monkeypatch.setattr(cli, "open_outlook", never)
-
-    with pytest.raises(OutlookNotSetUp, match="isn't open"):
-        cli.find_open_outlook_accounts()
-
-
 # ---- the built app's updates (update.py) ------------------------------------------------
 
 
