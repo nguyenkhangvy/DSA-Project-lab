@@ -215,3 +215,26 @@ def test_after_a_refusal_a_check_already_due_stays_due():
     update.check_soon(state, NOW)
 
     assert update.due(state, NOW)
+
+
+# ---- an unreadable check time (review M2) --------------------------------------------------------
+
+
+@pytest.mark.parametrize("unreadable", ["not a time", "2026-10-05T07:00:00"])  # the second has no time zone
+@responses.activate
+def test_an_unreadable_check_time_counts_as_due_and_never_stops_the_sync(state, unreadable):
+    state.update_checked_at = unreadable  # as if state.json had been edited by hand
+    save_state(state)
+    responses.get(update.LATEST, json=release(tag=f"v{__version__}"))
+
+    assert not update.check_and_start(state, NOW, start=Starts())
+
+    assert load_state().update_checked_at == NOW.isoformat()
+
+
+def test_after_a_refusal_an_unreadable_check_time_is_simply_due():
+    state = State(update_checked_at="not a time")
+
+    update.check_soon(state, NOW)
+
+    assert update.due(state, NOW)

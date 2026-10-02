@@ -45,10 +45,12 @@ def downloads():
 
 
 def due(state, now):
-    """Whether a day has passed since the last check (or the clock was moved back before it)."""
-    if not state.update_checked_at:
+    """Whether a day has passed since the last check, or the clock was moved back before it, or there is no
+    readable check time (never checked, or a value this agent didn't write)."""
+    try:
+        return not timedelta(0) <= now - datetime.fromisoformat(state.update_checked_at) < EVERY
+    except (TypeError, ValueError):
         return True
-    return not timedelta(0) <= now - datetime.fromisoformat(state.update_checked_at) < EVERY
 
 
 def check_soon(state, now):
@@ -63,12 +65,12 @@ def check_and_start(state, now, session=None, start=None):
     """Once a day: when GitHub has a newer release, download and check its setup and start it. True when the setup
     was started, and this run should end without syncing. The time of the check is saved first, so a failed check
     also waits a day."""
-    if not due(state, now):
-        return False
-    before = copy.deepcopy(state)
-    state.update_checked_at = now.isoformat()
-    save_state(state, before)
     try:
+        if not due(state, now):
+            return False
+        before = copy.deepcopy(state)
+        state.update_checked_at = now.isoformat()
+        save_state(state, before)
         setup = _download_newer(session or requests.Session())
         if setup is None:
             return False
