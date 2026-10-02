@@ -3,7 +3,7 @@
 **Date:** 2026-10-02
 **Scope:** a public download page (GitHub Pages, English and Vietnamese); the first-time form becomes step-by-step pages with a device-key guide, an Outlook (classic) check with install and sign-in guides, and a question about the Desktop icon at the end; updates stop bringing back a Desktop icon the student deleted or declined
 **Owner:** Nguyen Khang Vy
-**Status:** Draft, waiting for review
+**Status:** Built (see docs/superpowers/plans/2026-10-02-easy-install.md)
 **Builds on:** [Accounts window](2026-10-01-accounts-window-design.md), [the agent as one .exe](2026-10-02-agent-exe-design.md), [Outlook mailbox](2026-09-28-outlook-mailbox-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
