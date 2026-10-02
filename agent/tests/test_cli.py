@@ -969,3 +969,36 @@ def test_the_built_app_otherwise_answers_like_sla_agent(monkeypatch):
     monkeypatch.setitem(cli.COMMANDS, "status", lambda args: 0)
 
     assert cli.app_main(["status"]) == 0
+
+
+# ---- after an update, the links and shortcuts point at the app again ---------------------------
+
+APP = r"C:\Users\Nguyễn Văn An\AppData\Local\SchoolLifeAssistant\app\School-Life-Assistant.exe"
+
+
+def test_the_first_run_of_a_new_version_points_the_links_and_shortcuts_at_this_app(world, built_app,
+                                                                                   isolated_agent, monkeypatch):
+    """0.2.0's Repair couldn't make the shortcuts, and a laptop set up from source had them start its Python."""
+    configure()
+    state = load_state()
+    state.agent_version = "0.1.0"
+    save_state(state)
+    monkeypatch.setattr(launcher, "program", lambda: APP)
+
+    cli.main(["run"])
+
+    made = list(isolated_agent.shell.root.rglob("*.lnk"))
+    assert len(made) == 2
+    assert all(path.read_text(encoding="utf-8").startswith(f"{APP} window\n") for path in made)
+    assert isolated_agent.registry.keys[WINDOW_COMMAND][""] == f'"{APP}" window "%1"'
+
+
+def test_runs_of_the_same_version_leave_the_shortcuts_alone(world, built_app, isolated_agent):
+    configure()
+    state = load_state()
+    state.agent_version = __version__
+    save_state(state)
+
+    cli.main(["run"])
+
+    assert list(isolated_agent.shell.root.rglob("*.lnk")) == []

@@ -269,6 +269,13 @@ def add_window_links(tools):
     return _links_and_shortcuts(tools, tools.program())
 
 
+def point_links_and_shortcuts_here(tools):
+    """The built app's first run of a new version (cli._updating): the sla-agent: and sla-mail: link types and the
+    shortcuts point at this app again, so a laptop gets them where 0.2.0 couldn't make the shortcuts, or where they
+    still start a Python set up from source. Returns a note for each part that failed."""
+    return _links_and_shortcuts(tools, tools.program())
+
+
 def sync_task_state(tools):
     """"on", "off" (no task), "nowhere" (the task starts a program that no longer exists: the folder moved) or
     "elsewhere" (this is the built app, but the task starts another copy, such as a Python set up from source)."""
