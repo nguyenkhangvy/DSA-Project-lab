@@ -16,7 +16,7 @@ PYTHONW = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
 
 class Fakes:
     """`found` is Outlook's account list (an exception instance is raised instead); `program` is what the scheduled
-    task starts; `fail` maps a part ("task", "mail link", "window link", "shortcuts") to the error it raises;
+    task starts; `fail` maps a part ("task", "mail link", "window link", "shortcuts", "desktop icon") to the error it raises;
     `done` lists the parts that ran; `looks` lists how Outlook was asked: "open" (only an open Outlook) or "start";
     `me` is the program this agent is: what turn_on_sync points things at."""
 
@@ -39,7 +39,9 @@ class Fakes:
             make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, find_open_outlook_accounts=self._find_open, program=lambda: self.me,
             install_task=self._part("task"), task_program=lambda: self.program,
             register_mail_link=self._part("mail link"), register_window_link=self._part("window link"),
-            make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done,
+            make_shortcuts=self._part("shortcuts"), add_desktop_shortcut=self._part("desktop icon"),
+            has_desktop_shortcut=lambda: "desktop icon" in self.done,
+            has_window_link=lambda: "window link" in self.done,
             open_site=self.opened.append)
 
     def _make_server(self, address, key):

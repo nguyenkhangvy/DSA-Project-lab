@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 SAVED = "Saved. Your password is in Windows Credential Manager, not in any file."
 BLACKBOARD_SAVED = "Blackboard saved. Its password is in Windows Credential Manager too."
 SYNC_ON = "Automatic sync is on: this laptop checks in every minute while you're logged in."
+DESKTOP_ICON_ADDED = "The School-Life-Assistant icon is on your Desktop."
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,9 @@ class Tools:
     task_program: Callable  # () -> the program the scheduled task starts, or None
     register_mail_link: Callable  # (program)
     register_window_link: Callable  # (program)
-    make_shortcuts: Callable  # (program, folder)
+    make_shortcuts: Callable  # (program, folder): the Start menu entries; points a Desktop icon that is there too
+    add_desktop_shortcut: Callable  # (program, folder): the Desktop icon, when the student asks for it
+    has_desktop_shortcut: Callable  # () -> whether the Desktop icon is there
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
     open_site: Callable  # (address) -> opens the website as an app (app_window.open_app)
 
@@ -240,7 +243,7 @@ def _links_and_shortcuts(tools, program):
         tools.make_shortcuts(program, agent_home())
     except Exception as error:  # pywin32 raises its own com_error, not an OSError
         log.warning("Couldn't make the shortcuts: %s", error)
-        notes.append(f"Couldn't make the Desktop and Start menu shortcuts ({error.__class__.__name__}). "
+        notes.append(f"Couldn't make the Start menu entries ({error.__class__.__name__}). "
                      "The Accounts page on the website opens this window too.")
     return notes
 
@@ -275,6 +278,30 @@ def point_links_and_shortcuts_here(tools):
     shortcuts point at this app again, so a laptop gets them where 0.2.0 couldn't make the shortcuts, or where they
     still start a Python set up from source. Returns a note for each part that failed."""
     return _links_and_shortcuts(tools, tools.program())
+
+
+# ---- the Desktop icon -------------------------------------------------------------------
+
+
+def add_desktop_icon(tools):
+    """The School-Life-Assistant icon on the Desktop, which only the student asks for (spec
+    2026-10-02-easy-install-design.md, 5): the setup's last page, or Accounts' Add."""
+    try:
+        tools.add_desktop_shortcut(tools.program(), agent_home())
+    except Exception as error:  # pywin32 raises its own com_error, not an OSError
+        log.warning("Couldn't add the Desktop icon: %s", error)
+        return Result(False, f"Couldn't add the Desktop icon ({error.__class__.__name__}). "
+                             "School-Life-Assistant is in the Start menu.")
+    return Result(True, DESKTOP_ICON_ADDED)
+
+
+def desktop_icon_on(tools):
+    """Whether the School-Life-Assistant icon is on the Desktop; False when Windows can't say."""
+    try:
+        return bool(tools.has_desktop_shortcut())
+    except Exception as error:  # pywin32's com_error, or not Windows
+        log.debug("Couldn't look for the Desktop icon (%s)", error.__class__.__name__)
+        return False
 
 
 def sync_task_state(tools):

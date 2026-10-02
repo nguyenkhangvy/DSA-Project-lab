@@ -233,6 +233,30 @@ def test_repair_turns_sync_on_again(root, fakes, tmp_path):
     assert "sync" not in app.screen.buttons
 
 
+def test_accounts_offers_the_desktop_icon_and_add_puts_it_there(root, fakes):
+    set_up()
+    app = open_window(root, fakes)
+    assert app.screen.values["desktop"].get() == "off"
+
+    app.screen.buttons["desktop"].invoke()
+
+    assert "desktop icon" in fakes.done
+    assert app.screen.notice.get() == "✓ " + accounts.DESKTOP_ICON_ADDED
+    assert app.screen.values["desktop"].get() == "on"
+    assert "desktop" not in app.screen.buttons
+
+
+def test_a_desktop_icon_that_cannot_be_added_says_so(root, fakes):
+    set_up()
+    fakes.fail = {"desktop icon": RuntimeError("com_error")}
+    app = open_window(root, fakes)
+
+    app.screen.buttons["desktop"].invoke()
+
+    assert app.screen.notice.get().startswith("✗ Couldn't add the Desktop icon (RuntimeError).")
+    assert app.screen.values["desktop"].get() == "off"
+
+
 def test_the_window_never_logs_a_password(root, fakes, tmp_path):
     log_path = setup_logging(tmp_path / "logs")
     fakes.blackboard.login_error = RuntimeError(f"a bug with {BB_PASSWORD}")

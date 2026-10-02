@@ -220,6 +220,44 @@ def test_turn_on_sync_fails_when_the_task_cannot_be_made(fakes):
     assert {"mail link", "window link", "shortcuts"} <= set(fakes.done)
 
 
+def test_turn_on_sync_makes_the_start_menu_entries_but_no_desktop_icon(fakes):
+    assert accounts.turn_on_sync(fakes.tools()).ok
+
+    assert "shortcuts" in fakes.done
+    assert "desktop icon" not in fakes.done
+
+
+# ---- the Desktop icon ---------------------------------------------------------------
+
+
+def test_the_desktop_icon_is_added_when_asked(fakes):
+    assert not accounts.desktop_icon_on(fakes.tools())
+
+    assert accounts.add_desktop_icon(fakes.tools()) == accounts.Result(True, accounts.DESKTOP_ICON_ADDED)
+
+    assert accounts.desktop_icon_on(fakes.tools())
+
+
+def test_a_desktop_icon_that_cannot_be_added_says_where_the_app_is(fakes):
+    fakes.fail = {"desktop icon": RuntimeError("com_error")}
+
+    result = accounts.add_desktop_icon(fakes.tools())
+
+    assert not result.ok
+    assert result.message == ("Couldn't add the Desktop icon (RuntimeError). School-Life-Assistant is in the Start "
+                              "menu.")
+
+
+def test_the_desktop_icon_counts_as_off_when_windows_cannot_say(fakes):
+    def broken():
+        raise RuntimeError("com_error")
+
+    tools = fakes.tools()
+    tools.has_desktop_shortcut = broken
+
+    assert accounts.desktop_icon_on(tools) is False
+
+
 def test_sync_task_state(fakes, tmp_path):
     assert accounts.sync_task_state(fakes.tools()) == "off"
     fakes.program = str(tmp_path / "moved" / "pythonw.exe")
@@ -288,7 +326,7 @@ def test_a_link_or_shortcut_that_fails_is_reported(fakes):
 
     notes = accounts.add_window_links(fakes.tools())
 
-    assert len(notes) == 1 and "shortcuts" in notes[0]
+    assert len(notes) == 1 and "Start menu entries" in notes[0]
 
 
 # ---- saving while a sync runs -------------------------------------------------------------

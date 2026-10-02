@@ -116,6 +116,7 @@ def tools():
         program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
+        add_desktop_shortcut=shortcuts.add_desktop, has_desktop_shortcut=shortcuts.on_desktop,
         has_window_link=mail_link.window_registered, open_site=app_window.open_app)
 
 

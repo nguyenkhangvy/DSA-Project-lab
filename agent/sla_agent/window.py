@@ -252,13 +252,14 @@ class SetupScreen:
 class AccountsScreen:
     """Set up: one row per account with Change (spec 3.2); Change opens that account's fields under its row."""
 
-    ROWS = ("site", "edusoft", "blackboard", "outlook", "sync", "version")
+    ROWS = ("site", "edusoft", "blackboard", "outlook", "sync", "desktop", "version")
     NAMES = {"site": "Website", "edusoft": "EduSoft", "blackboard": "Blackboard", "outlook": "Outlook",
-             "sync": "Automatic sync", "version": "Version"}
+             "sync": "Automatic sync", "desktop": "Desktop icon", "version": "Version"}
 
     def __init__(self, app, state, notice=""):
         self.app, self.state = app, state
         self.sync_state = accounts.sync_task_state(app.tools)
+        self.desktop = accounts.desktop_icon_on(app.tools)
         frame = app.body
         heading(frame, "Accounts", 0)
         self.open_button = ttk.Button(frame, text="Open School-Life-Assistant",
@@ -303,6 +304,8 @@ class AccountsScreen:
             return state.outlook_account or "not set up"
         if row == "version":
             return __version__ + (f", updated by itself on {local_time(state.updated_at)}" if state.updated_at else "")
+        if row == "desktop":
+            return "on" if self.desktop else "off"
         return SYNC_STATES[self.sync_state]
 
     def button_label(self, row):
@@ -310,17 +313,19 @@ class AccountsScreen:
             return None
         if row == "sync":
             return None if self.sync_state == "on" else "Repair"
+        if row == "desktop":
+            return None if self.desktop else "Add"
         if (row == "blackboard" and not self.state.blackboard_username) or (
                 row == "outlook" and not self.state.outlook_account):
             return "Set up"
         return "Change"
 
     def open(self, row):
-        if row == "sync":
-            self.buttons["sync"].state(["disabled"])
-            self.answers["sync"].set(CHECKING)
-            self.app.run(lambda: accounts.turn_on_sync(self.app.tools),
-                         lambda result: self.app.show(notice=mark(result)))
+        if row in ("sync", "desktop"):  # Repair and Add: one press, no fields
+            action = accounts.turn_on_sync if row == "sync" else accounts.add_desktop_icon
+            self.buttons[row].state(["disabled"])
+            self.answers[row].set(CHECKING)
+            self.app.run(lambda: action(self.app.tools), lambda result: self.app.show(notice=mark(result)))
             return
         for button in self.buttons.values():
             button.state(["disabled"])
