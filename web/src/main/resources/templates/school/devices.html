@@ -13,8 +13,9 @@
   <th:block th:if="${newKey != null}">
     <section class="card key-card">
       <h2>Your new device key</h2>
-      <p><strong>Copy it now. It won't be shown again.</strong> Then open School-Life-Assistant on the laptop
-         (from the Start menu, or by double-clicking the file you downloaded) and paste it when asked.</p>
+      <p><strong>Copy it now. It won't be shown again.</strong> Press <strong>Copy</strong>,
+         then go back to the School-Life-Assistant window on your laptop: the key is filled in by itself
+         (or press <strong>Paste</strong>).</p>
       <div class="key-row">
         <code id="new-key" class="key" th:text="${newKey}">sla_…</code>
         <button type="button" class="button" id="copy-key">Copy</button>
@@ -32,7 +33,8 @@
 
   <section class="card">
     <h2>Install on your laptop</h2>
-    <p><a class="button" href="https://github.com/nguyenkhangvy/School-Life-Assistant/releases/latest/download/School-Life-Assistant.exe">Download School-Life-Assistant for Windows</a></p>
+    <p><a class="button" href="https://github.com/nguyenkhangvy/School-Life-Assistant/releases/latest/download/School-Life-Assistant.exe">Download School-Life-Assistant for Windows</a>
+       <a href="https://nguyenkhangvy.github.io/School-Life-Assistant/">Step-by-step guide</a></p>
     <p class="muted">Double-click the downloaded file. If Windows says “Windows protected your PC”, press
       <strong>More info</strong>, then <strong>Run anyway</strong>. It needs no administrator rights and installs
       new versions by itself.</p>

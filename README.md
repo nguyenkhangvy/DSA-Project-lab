@@ -10,11 +10,19 @@ Stack: Java 17 and Spring Boot with Thymeleaf pages, MySQL 8, a little JavaScrip
 
 ## Install on your laptop (students)
 
-1. On the website, open School → Devices and press **Download School-Life-Assistant for Windows**.
-2. Double-click the downloaded `School-Life-Assistant.exe`. If Windows says “Windows protected your PC”, press **More info**, then **Run anyway**. It needs no administrator rights.
-3. The School-Life-Assistant window opens with the website's address filled in. On School → Devices, add your laptop and copy its key, paste it in the window, enter your EduSoft student ID and password (and, if you like, your Blackboard login and Outlook account), then press **Check and save**. School-Life-Assistant then opens as an app.
+1. Open the download page, https://nguyenkhangvy.github.io/School-Life-Assistant/ (English or Tiếng Việt), and press **Download for Windows**. School → Devices on the website has the same button.
+2. Open the downloaded `School-Life-Assistant.exe`. If the browser warns about it, keep it; if Windows says “Windows protected your PC”, press **More info**, then **Run anyway**. It needs no administrator rights.
+3. The School-Life-Assistant window walks you through four steps:
+   1. Connect to the website. It shows how to get a device key from School → Devices, and fills the key in when you copy it.
+   2. EduSoft.
+   3. Blackboard, if you want it.
+   4. Outlook (classic), if you want it. If Outlook (classic) isn't on your laptop, it shows how to install it.
 
-That's all. It syncs by itself every minute, and it installs new versions by itself within a day of their release. **School-Life-Assistant** on the Desktop or in the Start menu opens it again (the website, in its own window); **School-Life-Assistant Accounts** in the Start menu changes your accounts.
+   At the end it asks whether to put an icon on your Desktop, then opens School-Life-Assistant as an app.
+
+That's all. It syncs by itself every minute, and it installs new versions by itself within a day of their release.
+- **School-Life-Assistant**, in the Start menu (and on the Desktop if you chose the icon), opens it again: the website, in its own window.
+- **School-Life-Assistant Accounts**, in the Start menu, changes your accounts. It can also add the Desktop icon later.
 
 ---
 
@@ -142,6 +150,10 @@ A release puts a new `School-Life-Assistant.exe` on GitHub's Releases page. Scho
 3. Before telling classmates, upload `School-Life-Assistant.exe` to virustotal.com. If Microsoft Defender flags it, report it as a false positive at microsoft.com/wdsi/filesubmission; that usually clears in a day or two.
 
 To build on your own laptop: `pip install -r agent/packaging/requirements.txt`, then `python agent/packaging/build.py`. `agent/packaging/smoke-test.ps1` starts what it built.
+
+### The download page
+
+`pages/` is the download page, https://nguyenkhangvy.github.io/School-Life-Assistant/, in English and Vietnamese. GitHub Actions (`download page`) publishes it whenever a merge to `main` changes `pages/`, or when started by hand from the Actions tab. Once, before the first publish: on GitHub, **Settings → Pages → Source: GitHub Actions**. Until then the workflow fails and says Pages isn't enabled. Screenshots go in `pages/img/`; `pytest` checks that every image the page shows is there and that both languages say the same things.
 
 ---
 

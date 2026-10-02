@@ -45,6 +45,7 @@ class DevicesPageTest {
     static final Pattern KEY = Pattern.compile("sla_[A-Za-z0-9_\\-]{40,}");
     static final String DOWNLOAD =
             "https://github.com/nguyenkhangvy/School-Life-Assistant/releases/latest/download/School-Life-Assistant.exe";
+    static final String GUIDE = "https://nguyenkhangvy.github.io/School-Life-Assistant/";
 
     @Autowired
     MockMvc mvc;
@@ -99,16 +100,16 @@ class DevicesPageTest {
         String key = keyIn(html);
 
         assertThat(key).isNotNull();
-        assertThat(html).contains("open School-Life-Assistant on the laptop", "Start menu")
+        assertThat(html).contains("go back to the School-Life-Assistant window on your laptop", "Paste")
                 .doesNotContain("School-Life-Assistant.cmd");
         check(key).andExpect(status().isOk());
         assertThat(devicesPage()).doesNotContain(key);
     }
 
     @Test
-    void thePageOffersTheNewestWindowsDownloadAndSaysWhatWindowsWillAsk() throws Exception {
+    void thePageOffersTheNewestWindowsDownloadItsGuideAndSaysWhatWindowsWillAsk() throws Exception {
         assertThat(devicesPage()).contains("href=\"" + DOWNLOAD + "\"", "Download School-Life-Assistant for Windows",
-                "Windows protected your PC", "More info", "Run anyway");
+                "href=\"" + GUIDE + "\"", "Step-by-step guide", "Windows protected your PC", "More info", "Run anyway");
     }
 
     @Test
