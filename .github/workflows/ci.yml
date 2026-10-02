@@ -7,7 +7,8 @@ on:
 
 jobs:
   agent:
-    # The laptop sync agent and the data format it uploads (Python). The website is the web job below.
+    # The laptop sync agent and the data format it uploads (Python), and the Oracle VM's scripts (deploy/). The
+    # website is the web job below.
     runs-on: ubuntu-latest
 
     steps:

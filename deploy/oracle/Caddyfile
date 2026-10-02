@@ -1,0 +1,6 @@
+# HTTPS for the site (compose.yaml): Caddy gets and renews the certificate for SITE_ADDRESS by itself, through
+# ports 80 and 443, compresses pages so they load faster, and passes each request on to the site.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy web:5000
+}

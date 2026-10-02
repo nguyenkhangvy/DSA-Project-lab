@@ -1,0 +1,44 @@
+# The website on an Oracle Cloud Always Free VM, where it never sleeps (README, "Always on: Oracle Cloud").
+# Settings come from .env next to this file (copy .env.example). Caddy answers on ports 80 and 443 with HTTPS and
+# passes each request on to the site, which nothing else can reach.
+name: school-life-assistant
+
+x-logging: &logging
+  # Docker keeps everything a container prints unless told otherwise; this keeps the last 30 MB.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  web:
+    build: ../../web
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Put the database's address in deploy/oracle/.env}
+      # Caddy handles https; this lets the site's redirects use https too.
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+    # web/Dockerfile gives Java 60% of the memory it sees: 600 MB here, not 60% of the whole VM.
+    mem_limit: 1g
+    logging: *logging
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Put the site's address in deploy/oracle/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # The HTTPS certificate, kept across restarts.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+    logging: *logging
+
+volumes:
+  caddy-data:
+  caddy-config:

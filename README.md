@@ -78,6 +78,52 @@ Online, the site runs on Render's free plan from `web/Dockerfile`, with its data
 
 **Free plan limits.** After 15 minutes without visits the site sleeps, and the next visit waits about a minute while it wakes up. A restart or a new version logs everyone out.
 
+### Always on: Oracle Cloud
+
+Render's free plan sleeps; an Oracle Cloud *Always Free* VM doesn't, so the site opens at once. The same site runs there from `web/Dockerfile` (settings in `deploy/oracle`), next to Render and on the same Aiven database: both show the same data, and a laptop can sync to either address. This is done once, in about an hour.
+
+1. **The account.** Sign up at oracle.com/cloud/free and choose **Singapore** as the home region: free VMs can only be made there, and it can't be changed later. The card is only checked: nothing is charged as long as you never press **Upgrade** and only make things marked *Always Free-eligible*.
+2. **The VM.** In the console, **Compute → Instances → Create instance**. Image: **Canonical Ubuntu 24.04**. Shape: **Ampere → VM.Standard.A1.Flex** with **1 OCPU and 3 GB** of memory (see "Oracle's limits" below). Under *Add SSH keys*, choose **Generate a key pair for me** and save the private key. If it says *Out of capacity*, pick another availability domain, or try again later. Once it's running, note its **Public IP address**.
+3. **Open the web ports.** On the VM's page, open its subnet, then the *Default Security List*, and **Add Ingress Rules**: source CIDR `0.0.0.0/0`, IP protocol TCP, destination port `80`; then the same with `443`. Connect from your laptop with `ssh -i <the private key> ubuntu@<public IP>` and open them in the VM's own firewall too, before installing Docker (so the saved rules don't include Docker's own):
+
+   ```bash
+   sudo iptables -I INPUT 6 -m state --state NEW -p tcp -m multiport --dports 80,443 -j ACCEPT
+   sudo netfilter-persistent save
+   ```
+
+4. **The address.** On duckdns.org, sign in, add a subdomain (for example `sla-yourname`) and set its IP to the VM's public IP. The site will be at `https://sla-yourname.duckdns.org`.
+5. **Docker and the code.** On the VM:
+
+   ```bash
+   curl -fsSL https://get.docker.com | sudo sh
+   sudo usermod -aG docker ubuntu
+   exit
+   ```
+
+   Connect again (so `docker` works without `sudo`), then:
+
+   ```bash
+   git clone https://github.com/nguyenkhangvy/School-Life-Assistant.git
+   cd School-Life-Assistant/deploy/oracle
+   cp .env.example .env
+   nano .env
+   ```
+
+   Put the DuckDNS address in `SITE_ADDRESS` and the `DATABASE_URL` Render uses (Aiven's Service URI) in `DATABASE_URL`, then save with Ctrl+O, Enter, Ctrl+X.
+6. **Start it.** `docker compose up -d --build`. The first build takes about 10 minutes; then the address opens the site, with the same accounts as on Render. If it doesn't, `docker compose logs caddy` (the HTTPS certificate: usually a port that isn't open, or DuckDNS pointing elsewhere) and `docker compose logs web` (the site) say why.
+7. **Your laptop.** On the new site, create a device key in School → Devices; then in School-Life-Assistant's Accounts, press **Change** next to Website and enter the new address and the key.
+8. **Backups.** Run `crontab -e` (choose nano if asked) and add this line. Every night at 02:00 in Vietnam (19:00 on the VM's UTC clock) it saves the database in `~/sla-backups`, keeping the last 14:
+
+   ```
+   0 19 * * * bash ~/School-Life-Assistant/deploy/oracle/backup.sh >> ~/sla-backups.log 2>&1
+   ```
+
+   Run `bash ~/School-Life-Assistant/deploy/oracle/backup.sh` once now: it should end with `Saved …`. The top of `backup.sh` says how to restore one.
+
+**New versions** don't go online here by themselves: once a merge to `main` has passed GitHub's tests, run `bash ~/School-Life-Assistant/deploy/oracle/update.sh` on the VM. It builds the new version while the old one keeps running, then restarts the site, which logs everyone out.
+
+**Oracle's limits.** Oracle may reclaim an Always Free VM that stays under 20% of its CPU, network and memory for a week. With the site running, the VM uses more than 20% of 3 GB of memory, which is why it's that small. If Oracle stops it anyway, start it again in the console: the data is on Aiven, not on the VM.
+
 ## Making a release
 
 A release puts a new `School-Life-Assistant.exe` on GitHub's Releases page. School → Devices downloads it, and every installed laptop updates itself to it within a day.
