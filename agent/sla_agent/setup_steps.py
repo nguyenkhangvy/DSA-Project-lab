@@ -1,7 +1,7 @@
 """The setup pages (spec 2026-10-02-easy-install-design.md, 3): a laptop that isn't set up gets one page per step,
 each with its own guide, instead of one long form. Step 1 connects to the website with a device key and saves
-nothing; step 2 checks EduSoft, then saves both and turns on automatic sync; the last page asks about the Desktop
-icon and opens School-Life-Assistant.
+nothing; step 2 checks EduSoft, then saves both and turns on automatic sync; steps 3 and 4 add Blackboard and
+Outlook, or skip them; the last page asks about the Desktop icon and opens School-Life-Assistant.
 
 The pages only collect what the student types and show the answers; accounts.py checks and saves, each check on a
 worker thread (app.run), as Accounts does."""
@@ -13,6 +13,7 @@ from tkinter import ttk
 from sla_agent import accounts, launcher
 from sla_agent.accounts import Result
 from sla_agent.log import protect
+from sla_agent.outlook_page import OutlookPage
 from sla_agent.state import load_state
 from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, text_line
 
@@ -28,6 +29,7 @@ SITE_STEPS = (
 )
 NOT_A_KEY = "This isn't a device key. Press Copy on the Devices page, then Paste."
 EDUSOFT_HINT = "The student ID and password you use on edusoftweb.hcmiu.edu.vn."
+BLACKBOARD_HINT = "The username and password you use on blackboard.hcmiu.edu.vn."
 ALL_SET = "✓ All set! This laptop checks in every minute, and everything syncs every 30 minutes."
 SYNC_REPAIR = "Automatic sync isn't on yet: press Repair next to it in Accounts."
 SKIPPED = "skipped: set it up later in Accounts"
@@ -270,6 +272,78 @@ class EdusoftPage(Page):
         self.steps.show(self.steps.after(EdusoftPage))
 
 
+class BlackboardPage(Page):
+    """Step 3 (optional): one Blackboard login attempt, saved when it passes; or Skip."""
+
+    title = "Blackboard (optional)"
+
+    def __init__(self, steps):
+        super().__init__(steps)
+        self.add_line(BLACKBOARD_HINT)
+        self.add_field("Username", "bb_user")
+        self.add_field("Password", "bb_password", secret=True)
+        self.add_answer()
+        self.skip_button, self.next_button = self.add_bar(
+            ("Skip", lambda: steps.show(steps.after(BlackboardPage))), ("Next →", self.save))
+
+    def save(self):
+        username = self.steps.values["bb_user"].get().strip()
+        password = self.steps.values["bb_password"].get()
+        protect(password)
+        self.busy(self.skip_button, self.next_button)
+        self.app.run(lambda: accounts.change_blackboard(load_state(), username, password, self.app.tools),
+                     self.saved)
+
+    def saved(self, result):
+        if not self.current():
+            return
+        if not result.ok:
+            self.answer.set(mark(result))
+            self.free(self.skip_button, self.next_button)
+            return
+        self.steps.values["bb_password"].set("")
+        self.steps.results["blackboard"] = result
+        self.steps.show(self.steps.after(BlackboardPage))
+
+
+class OutlookStep(Page):
+    """Step 4 (optional): the Outlook page (outlook_page.py) with Skip. Next, on only once an account is chosen,
+    saves it (accounts.choose_outlook)."""
+
+    title = "Outlook (optional)"
+
+    def __init__(self, steps):
+        super().__init__(steps)
+        self.next_button = None  # the Outlook page says it changed while it is being made
+        self.outlook = OutlookPage(self.app, self.frame, steps.values["outlook"], skippable=True,
+                                   changed=self.changed)
+        self.outlook.frame.grid(row=self.next_row(), column=0, columnspan=3, sticky="ew")
+        self.add_answer()
+        self.skip_button, self.next_button = self.add_bar(
+            ("Skip", lambda: steps.show(steps.after(OutlookStep))), ("Next →", self.save))
+        self.changed()
+
+    def changed(self):
+        if self.next_button is not None:
+            self.next_button.state(["!disabled" if self.outlook.ready else "disabled"])
+
+    def save(self):
+        address = self.steps.values["outlook"].get()
+        self.busy(self.skip_button, self.next_button)
+        self.app.run(lambda: accounts.choose_outlook(load_state(), address, self.app.tools), self.saved)
+
+    def saved(self, result):
+        if not self.current():
+            return
+        if not result.ok:
+            self.answer.set(mark(result))
+            self.free(self.skip_button)
+            self.changed()
+            return
+        self.steps.results["outlook"] = result
+        self.steps.show(self.steps.after(OutlookStep))
+
+
 class DonePage(Page):
     """The last page: what is on, then the Desktop icon question. Either answer shows Accounts and opens
     School-Life-Assistant (the website as an app); closing the window instead adds no icon."""
@@ -312,4 +386,4 @@ class DonePage(Page):
         self.app.tools.open_site(load_state().server_url)
 
 
-STEPS = (SitePage, EdusoftPage)
+STEPS = (SitePage, EdusoftPage, BlackboardPage, OutlookStep)

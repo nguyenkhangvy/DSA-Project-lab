@@ -6,10 +6,11 @@ import logging
 
 import pytest
 
-from agent.tests.accounts_fakes import KEY, PASSWORD, SERVER, STUDENT, Fakes
-from sla_agent import accounts, credentials, launcher, setup_steps, window, window_parts
+from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, PASSWORD, SERVER, STUDENT, Fakes
+from sla_agent import accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ServerUnreachable
 from sla_agent.log import setup_logging
+from sla_agent.outlook_reader import MISSING
 from sla_agent.scheduler import SchedulerError
 from sla_agent.state import load_state
 
@@ -60,6 +61,8 @@ def through_step_2(steps, password=PASSWORD):
 def to_the_end(steps):
     """Through every step, skipping what can be skipped: on to the last page."""
     through_step_2(steps)
+    steps.page.skip_button.invoke()  # Blackboard
+    steps.page.skip_button.invoke()  # Outlook
 
 
 def logged(log_path, tmp_path):
@@ -78,7 +81,7 @@ def test_a_new_laptop_starts_at_step_1_with_its_guide(root, fakes):
     steps = window.App(root, fakes.tools(), run=window_parts.run_at_once).screen
 
     assert isinstance(steps.page, setup_steps.SitePage)
-    assert steps.page.header() == "Step 1 of 2 · Connect to the website"
+    assert steps.page.header() == "Step 1 of 4 · Connect to the website"
     assert steps.values["address"].get() == setup_steps.LOCAL_ADDRESS  # from source; the built app: online
     assert disabled(steps.page.next_button)
 
@@ -383,3 +386,108 @@ def test_the_setup_pages_never_log_a_password_or_the_key(root, fakes, tmp_path):
     text = logged(log_path, tmp_path)
     assert "Couldn't make the shortcuts" in text
     assert PASSWORD not in text and KEY not in text
+
+
+# ---- steps 3 and 4: Blackboard and Outlook ------------------------------------------------
+
+
+def test_after_edusoft_comes_blackboard_and_skip_saves_nothing(root, fakes):
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+
+    assert isinstance(steps.page, setup_steps.BlackboardPage)
+    assert steps.page.header() == "Step 3 of 4 · Blackboard (optional)"
+
+    steps.page.skip_button.invoke()
+
+    assert isinstance(steps.page, setup_steps.OutlookStep)
+    assert fakes.blackboard.logins == []
+    assert load_state().blackboard_username is None
+
+
+def test_a_blackboard_login_is_checked_and_saved(root, fakes):
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+    steps.values["bb_user"].set(BB_USER)
+    steps.values["bb_password"].set(BB_PASSWORD)
+
+    steps.page.next_button.invoke()
+
+    assert credentials.load_blackboard(BB_USER) == BB_PASSWORD
+    assert steps.values["bb_password"].get() == ""
+    assert isinstance(steps.page, setup_steps.OutlookStep)
+
+
+def test_a_wrong_blackboard_password_stays_on_the_page(root, fakes):
+    fakes.blackboard.login_error = BadCredentials("rejected")
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+    steps.values["bb_user"].set(BB_USER)
+    steps.values["bb_password"].set("wrong")
+
+    steps.page.next_button.invoke()
+
+    assert isinstance(steps.page, setup_steps.BlackboardPage)
+    assert steps.page.answer.get() == "✗ Blackboard rejected the username or password. Nothing was saved."
+    assert not disabled(steps.page.skip_button) and not disabled(steps.page.next_button)
+
+
+def test_the_outlook_step_chooses_the_iu_account_and_next_saves_it(root, fakes):
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+    steps.page.skip_button.invoke()  # Blackboard
+
+    assert steps.page.header() == "Step 4 of 4 · Outlook (optional)"
+    assert steps.values["outlook"].get() == ME
+    assert not disabled(steps.page.next_button)
+
+    steps.page.next_button.invoke()
+
+    assert load_state().outlook_account == ME
+    assert isinstance(steps.page, setup_steps.DonePage)
+    assert f"✓ Outlook: {ME}" in steps.page.lines
+
+
+def test_without_classic_outlook_next_is_off_and_skip_goes_on(root, fakes):
+    fakes.outlook = MISSING
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+    steps.page.skip_button.invoke()  # Blackboard
+
+    assert steps.page.outlook.lines[0] == outlook_page.MISSING_INTRO
+    assert outlook_page.LATER in steps.page.outlook.lines
+    assert disabled(steps.page.next_button)
+
+    steps.page.skip_button.invoke()
+
+    assert isinstance(steps.page, setup_steps.DonePage)
+    assert "– Outlook: skipped: set it up later in Accounts" in steps.page.lines
+
+
+def test_skip_works_while_outlook_is_still_being_looked_for(root, fakes):  # Review Focus 4
+    held = []
+    app, steps = start(root, fakes)
+    through_step_2(steps)
+    app.run = lambda work, done: held.append((work, done))
+
+    steps.page.skip_button.invoke()  # Blackboard: the Outlook step starts looking
+
+    assert steps.page.outlook.lines == [outlook_page.LOOKING]
+    assert disabled(steps.page.next_button) and not disabled(steps.page.skip_button)
+    steps.page.skip_button.invoke()
+    work, done = held.pop()
+    done(window_parts.attempt(work))  # Outlook answers after the student moved on
+
+    assert isinstance(steps.page, setup_steps.DonePage)
+
+
+def test_the_last_page_lists_blackboard_and_outlook_once_set_up(root, fakes):
+    _, steps = start(root, fakes)
+    through_step_2(steps)
+    steps.values["bb_user"].set(BB_USER)
+    steps.values["bb_password"].set(BB_PASSWORD)
+    steps.page.next_button.invoke()
+    steps.page.next_button.invoke()  # Outlook: the IU account
+
+    assert steps.page.lines == [setup_steps.ALL_SET, f"✓ EduSoft: {STUDENT}", f"✓ Blackboard: {BB_USER}",
+                                f"✓ Outlook: {ME}"]
