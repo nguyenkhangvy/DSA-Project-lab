@@ -14,7 +14,7 @@ import webbrowser
 from datetime import datetime
 from tkinter import ttk
 
-from sla_agent import accounts
+from sla_agent import __version__, accounts, launcher
 from sla_agent.accounts import Result, SetupForm
 from sla_agent.log import protect
 from sla_agent.state import load_state
@@ -23,7 +23,8 @@ log = logging.getLogger(__name__)
 
 TITLE = "School-Life-Assistant"
 MUTEX = "SchoolLifeAssistant-Window"
-DEFAULT_ADDRESS = "http://localhost:5000"
+LOCAL_ADDRESS = "http://localhost:5000"  # a developer's own site, running from source
+ONLINE_ADDRESS = "https://school-life-assistant.onrender.com"  # the website students use
 NO_OUTLOOK = "Don't read Outlook"
 LOOKING = "Looking for classic Outlook…"
 OUTLOOK_HELP = "Open Outlook (classic), sign in, wait for \"All folders are up to date\", then press Refresh."
@@ -33,7 +34,8 @@ EDUSOFT_PAUSES = {"bad_credentials": "paused: wrong student ID or password",
                   "extra_verification": "paused: EduSoft asked for extra verification"}
 BLACKBOARD_PAUSES = {"bad_credentials": "paused: wrong username or password",
                      "extra_verification": "paused: Blackboard asked for extra verification"}
-SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a Python that no longer exists"}
+SYNC_STATES = {"on": "on: every minute", "off": "off", "nowhere": "points to a Python that no longer exists",
+               "elsewhere": "runs another copy of School-Life-Assistant"}
 SECRETS = ("key", "password", "bb_password")
 
 
@@ -106,6 +108,12 @@ def local_time(iso):
     return datetime.fromisoformat(iso).astimezone().strftime("%d/%m %H:%M")
 
 
+def default_address():
+    """The address the first-time form starts with: the website online for the built app, a developer's own site
+    from source."""
+    return ONLINE_ADDRESS if launcher.frozen() else LOCAL_ADDRESS
+
+
 # ---- the window ----------------------------------------------------------------------------
 
 
@@ -176,7 +184,7 @@ class SetupScreen:
         frame = app.body
         names = ("address", "key", "student_id", "password", "bb_user", "bb_password", "outlook")
         self.values = {name: tk.StringVar(frame) for name in names}
-        self.values["address"].set(state.server_url or DEFAULT_ADDRESS)
+        self.values["address"].set(state.server_url or default_address())
         self.values["student_id"].set(state.student_id or "")
         self.values["outlook"].set(NO_OUTLOOK)
         self.answers = {name: tk.StringVar(frame) for name in ("site", "edusoft", "blackboard", "outlook", "sync")}
@@ -243,9 +251,9 @@ class SetupScreen:
 class AccountsScreen:
     """Set up: one row per account with Change (spec 3.2); Change opens that account's fields under its row."""
 
-    ROWS = ("site", "edusoft", "blackboard", "outlook", "sync")
+    ROWS = ("site", "edusoft", "blackboard", "outlook", "sync", "version")
     NAMES = {"site": "Website", "edusoft": "EduSoft", "blackboard": "Blackboard", "outlook": "Outlook",
-             "sync": "Automatic sync"}
+             "sync": "Automatic sync", "version": "Version"}
 
     def __init__(self, app, state, notice=""):
         self.app, self.state = app, state
@@ -289,9 +297,13 @@ class AccountsScreen:
                 BLACKBOARD_PAUSES.get(paused, f"paused ({paused})") if paused else "on")
         if row == "outlook":
             return state.outlook_account or "not set up"
+        if row == "version":
+            return __version__ + (f", updated by itself on {local_time(state.updated_at)}" if state.updated_at else "")
         return SYNC_STATES[self.sync_state]
 
     def button_label(self, row):
+        if row == "version":
+            return None
         if row == "sync":
             return None if self.sync_state == "on" else "Repair"
         if (row == "blackboard" and not self.state.blackboard_username) or (

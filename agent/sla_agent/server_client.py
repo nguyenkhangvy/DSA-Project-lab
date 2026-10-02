@@ -6,12 +6,13 @@ import requests
 from sla_contract.schema import CheckResult, FinishResult, StartResult, StartRun
 
 from sla_agent.edusoft_client import USER_AGENT
-from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable
+from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerError, ServerUnreachable, UpdateRequired
 from sla_agent.log import protect
 
 LOCAL_HOSTS = ("localhost", "127.0.0.1")
 # The free host can take about a minute to wake up, so allow a long read.
 TIMEOUT = (10, 90)
+TOO_OLD = "This version of School-Life-Assistant is too old; it is updating itself."
 
 
 def check_server_url(url):
@@ -45,6 +46,8 @@ class ServerClient:
             )
         if response.status_code == 409:
             raise RunInProgress("The web app says a sync is already running.")
+        if response.status_code == 426:
+            raise UpdateRequired(TOO_OLD)
         if response.is_redirect or response.status_code >= 400:
             raise ServerError(f"The web app answered HTTP {response.status_code}: {response.text[:300]}")
         return response.json()

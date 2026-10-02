@@ -8,6 +8,14 @@ Design: [the website](docs/superpowers/specs/2026-09-26-java-website-design.md) 
 
 Stack: Java 17 and Spring Boot with Thymeleaf pages, MySQL 8, a little JavaScript. The laptop sync agent for the School module is written in Python.
 
+## Install on your laptop (students)
+
+1. On the website, open School → Devices and press **Download School-Life-Assistant for Windows**.
+2. Double-click the downloaded `School-Life-Assistant.exe`. If Windows says “Windows protected your PC”, press **More info**, then **Run anyway**. It needs no administrator rights.
+3. The School-Life-Assistant window opens with the website's address filled in. On School → Devices, add your laptop and copy its key, paste it in the window, enter your EduSoft student ID and password (and, if you like, your Blackboard login and Outlook account), then press **Check and save**.
+
+That's all. It syncs by itself every minute, and it installs new versions by itself within a day of their release. To open it again, choose School-Life-Assistant in the Start menu.
+
 ---
 
 ## First-time setup (Windows)
@@ -64,17 +72,36 @@ Online, the site runs on Render's free plan from `web/Dockerfile`, with its data
 
 1. **The database.** On aiven.io, create a free MySQL service (a region near Singapore), wait until it says *Running*, and copy its **Service URI** (`mysql://avnadmin:…@…/defaultdb?ssl-mode=REQUIRED`). If the password in it has an `@`, write it as `%40`.
 2. **The site.** On render.com, sign in with GitHub, choose **New → Blueprint**, and pick this repository and the `main` branch. Render reads `render.yaml` and asks for `DATABASE_URL`: paste the Service URI. The first build takes about 10 minutes; Render then shows the site's address (`https://….onrender.com`). On the empty database the site creates every table.
-3. **The laptops.** Each student creates an account on the online site and gets a device key in School → Devices. In the School-Life-Assistant window, put the online address and that key in the first-time form, or, on a laptop already set up, press **Change** next to Website in Accounts.
+3. **The laptops.** Each student creates an account on the online site and installs School-Life-Assistant from School → Devices (see "Install on your laptop"). A laptop that runs the agent from source puts the online address and a device key from School → Devices in the window's first-time form, or, when already set up, presses **Change** next to Website in Accounts.
 
 **New versions** go online by themselves: merge a pull request into `main`, and once GitHub's tests pass, Render builds the new version and switches to it (about 10 minutes). Table changes are applied when it starts, and everyone gets the new version the next time they load a page.
 
 **Free plan limits.** After 15 minutes without visits the site sleeps, and the next visit waits about a minute while it wakes up. A restart or a new version logs everyone out.
 
+## Making a release
+
+A release puts a new `School-Life-Assistant.exe` on GitHub's Releases page. School → Devices downloads it, and every installed laptop updates itself to it within a day.
+
+1. In a pull request, raise `__version__` in `agent/sla_agent/__init__.py` (for example to `0.3.0`), and merge it.
+2. Tag the merge on `main` and push the tag to origin (only origin builds releases):
+
+   ```powershell
+   git switch main
+   git pull
+   git tag v0.3.0
+   git push origin v0.3.0
+   ```
+
+   GitHub Actions (`release`) builds the app and the setup, starts them, and publishes `School-Life-Assistant.exe` and `SHA256SUMS.txt`. If the tag isn't `v` plus `__version__`, nothing is published.
+3. Before telling classmates, upload `School-Life-Assistant.exe` to virustotal.com. If Microsoft Defender flags it, report it as a false positive at microsoft.com/wdsi/filesubmission; that usually clears in a day or two.
+
+To build on your own laptop: `pip install -r agent/packaging/requirements.txt`, then `python agent/packaging/build.py`. `agent/packaging/smoke-test.ps1` starts what it built.
+
 ---
 
-## The laptop agent (School sync)
+## The laptop agent from source (developers)
 
-Only needed to sync your own EduSoft and Blackboard into the School pages. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. It checks every minute: new mail in an open Outlook reaches Mailbox within about a minute, and everything else syncs every 30 minutes. After moving the project folder, run `sla-agent schedule` once. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
+Students install the agent from School → Devices (see "Install on your laptop"); this section runs it from the source code, to work on it. It runs on your laptop, keeps your passwords in Windows Credential Manager, reads EduSoft and Blackboard there, and uploads only your timetable, exams, IUPay tuition bills and Blackboard courses to the site, with a device key. It checks every minute: new mail in an open Outlook reaches Mailbox within about a minute, and everything else syncs every 30 minutes. After moving the project folder, run `sla-agent schedule` once. IUPay needs only your student ID: the agent makes the same requests as IUPay's search page and keeps only the bills.
 
 1. **Install it** (Python 3.12), in the project folder:
 

@@ -11,16 +11,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * The sync API at /api/school/sync/** is for the laptop agent, not a browser: no login page, no session
- * and no CSRF token. Instead {@link DeviceKeyInterceptor} checks the device key on every request.
+ * and no CSRF token. Instead {@link AgentVersionInterceptor} turns away agents too old for the format, then
+ * {@link DeviceKeyInterceptor} checks the device key on every request.
  */
 @Configuration
 public class SyncApiConfig implements WebMvcConfigurer {
 
     static final String PATHS = "/api/school/sync/**";
 
+    private final AgentVersionInterceptor agentVersionInterceptor;
     private final DeviceKeyInterceptor deviceKeyInterceptor;
 
-    public SyncApiConfig(DeviceKeyInterceptor deviceKeyInterceptor) {
+    public SyncApiConfig(AgentVersionInterceptor agentVersionInterceptor, DeviceKeyInterceptor deviceKeyInterceptor) {
+        this.agentVersionInterceptor = agentVersionInterceptor;
         this.deviceKeyInterceptor = deviceKeyInterceptor;
     }
 
@@ -38,6 +41,8 @@ public class SyncApiConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // In this order: an agent too old for the format is told so before its key is even looked at.
+        registry.addInterceptor(agentVersionInterceptor).addPathPatterns(PATHS);
         registry.addInterceptor(deviceKeyInterceptor).addPathPatterns(PATHS);
     }
 }

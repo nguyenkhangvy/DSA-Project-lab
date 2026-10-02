@@ -13,6 +13,10 @@ venv/
 .coverage
 htmlcov/
 
+# Built by agent/packaging/build.py
+/build/
+/dist/
+
 # Local databases and instance files
 instance/
 *.db

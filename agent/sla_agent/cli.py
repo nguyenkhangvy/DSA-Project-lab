@@ -10,6 +10,7 @@
     sla-agent import FOLDER          read pages saved by `fetch` (or your browser) and upload them
     sla-agent forget                 delete the saved secrets and the scheduled task
     sla-agent open-mail LINK         what Mailbox's "Open in Outlook" button runs: shows one email
+    sla-agent self-check VERSION     whether this built app has everything it needs (exit code 0 or 1)
 """
 
 import argparse
@@ -23,7 +24,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import accounts, credentials, mail_link, shortcuts
+from sla_agent import accounts, credentials, launcher, mail_link, selfcheck, shortcuts, update
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -37,6 +38,7 @@ from sla_agent.errors import (
     ParseError,
     RunInProgress,
     ServerError,
+    UpdateRequired,
 )
 from sla_agent.iupay_client import IupayClient
 from sla_agent.log import protect, setup_logging
@@ -56,7 +58,6 @@ from sla_agent.scheduler import (
     install_task,
     remove_task,
     task_program,
-    windowless_python,
 )
 from sla_agent.server_client import ServerClient, check_server_url
 from sla_agent.state import agent_home, load_state, save_state
@@ -111,7 +112,7 @@ def tools():
     return accounts.Tools(
         make_server=make_server, make_edusoft=make_edusoft, make_blackboard=make_blackboard,
         find_outlook_accounts=find_outlook_accounts, find_open_outlook_accounts=find_open_outlook_accounts,
-        python=windowless_python, install_task=install_task,
+        program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
         has_window_link=mail_link.window_registered)
@@ -297,15 +298,40 @@ def _mail_sync(state, server, seen):
     return 0
 
 
+def _updating(state):
+    """The built app's update step (update.py): note a new version, tidy the downloads, and once a day look for a
+    newer release. True when a new setup was started."""
+    before = copy.deepcopy(state)
+    if update.note_new_version(state, _now()):
+        save_state(state, before)
+    update.clean_downloads()
+    return update.check_and_start(state, _now())
+
+
+def _too_old(state, error):
+    """The website refused this version (HTTP 426): look for an update within the hour, and say why nothing
+    syncs."""
+    before = copy.deepcopy(state)
+    update.check_soon(state, _now())
+    state.last_result = {"at": _now().isoformat(), "status": "failed", "message": str(error)}
+    save_state(state, before)
+    log.warning("%s", error)
+
+
 def cmd_run(args):
     loaded = _load()
     if loaded is None:
         say(NOT_SET_UP)
         return 1
     state, password, key = loaded
+    if launcher.frozen() and _updating(state):
+        return 0  # the setup swaps the app; the next minute's run is the new version
     server = make_server(state.server_url, key)
     try:
         decision = server.check()  # also tells the web app this laptop is alive
+    except UpdateRequired as error:
+        _too_old(state, error)
+        return 1
     except ServerError as error:
         log.warning("Check-in failed: %s", error)
         return 1
@@ -465,7 +491,7 @@ def cmd_schedule(args):
     if not sync.ok:
         say(sync.message)
         return 1
-    say(f"The sync task now runs {windowless_python()} every minute.")
+    say(f"The sync task now runs {launcher.program()} every minute.")
     return 0
 
 
@@ -478,6 +504,17 @@ def cmd_window(args):
         say("This Python has no Tkinter. Use `sla-agent setup` in the terminal instead.")
         return 1
     return window.main(tools(), link=args.link)
+
+
+def cmd_self_check(args):
+    """The setup, CI and the release ask the built app whether it has everything it needs: exit code 0 or 1."""
+    problems = selfcheck.problems(args.version)
+    for problem in problems:
+        log.error("Self-check: %s", problem)
+        say(f"Problem: {problem}")
+    if not problems:
+        say(f"School-Life-Assistant {args.version} has everything it needs.")
+    return 1 if problems else 0
 
 
 # ---- status / forget ----------------------------------------------------------------
@@ -561,10 +598,15 @@ COMMANDS = {
     "import": cmd_import,
     "forget": cmd_forget,
     "open-mail": cmd_open_mail,
+    "self-check": cmd_self_check,
 }
 
 
 def main(argv=None):
+    launcher.hold_app_folder()  # the built app's folder can't be swapped while this runs
+    argv = sys.argv[1:] if argv is None else argv
+    if not argv and launcher.frozen():
+        argv = ["window"]  # the app's School-Life-Assistant.exe double-clicked
     parser = argparse.ArgumentParser(prog="sla-agent", description="School-Life-Assistant laptop sync agent.")
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("setup", help="enter your details once; schedules automatic sync")
@@ -585,6 +627,8 @@ def main(argv=None):
     commands.add_parser("forget", help="delete saved secrets and the scheduled task")
     open_mail = commands.add_parser("open-mail", help="show one email in Outlook (run by Mailbox's links)")
     open_mail.add_argument("link")
+    check = commands.add_parser("self-check", help="check that this built app has everything it needs (exit code)")
+    check.add_argument("version")
 
     args = parser.parse_args(argv)
     # Output piped or redirected on Windows uses cp1252; never crash on Vietnamese text.
@@ -593,3 +637,13 @@ def main(argv=None):
             stream.reconfigure(errors="replace")
     setup_logging()
     return COMMANDS[args.command](args)
+
+
+def app_main(argv=None):
+    """The built app's entry point (agent/packaging/app_entry.py): main, but an unexpected error goes to agent.log
+    instead of PyInstaller's error box, which would block the every-minute run until someone closed it."""
+    try:
+        return main(argv)
+    except Exception:  # SystemExit (argparse) still ends the program normally
+        log.exception("Unexpected error")
+        return 1

@@ -15,7 +15,7 @@ from agent.tests.accounts_fakes import (
     Fakes,
     set_up,
 )
-from sla_agent import accounts, credentials
+from sla_agent import accounts, credentials, launcher
 from sla_agent.accounts import SetupForm
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp, ServerError
 from sla_agent.log import setup_logging
@@ -315,3 +315,16 @@ def test_outlook_accounts_can_ask_only_an_outlook_that_is_already_open(fakes):
     assert accounts.outlook_accounts(fakes.tools()) == ([ME], None)
 
     assert fakes.looks == ["open", "start"]
+
+
+def test_the_built_app_sees_a_task_that_runs_another_copy(fakes, tmp_path, monkeypatch):
+    monkeypatch.setattr(launcher, "frozen", lambda: True)
+    (tmp_path / "pythonw.exe").write_text("")
+    (tmp_path / "School-Life-Assistant.exe").write_text("")
+    fakes.program = str(tmp_path / "pythonw.exe")  # set up from source before
+    fakes.me = str(tmp_path / "School-Life-Assistant.exe")
+
+    assert accounts.sync_task_state(fakes.tools()) == "elsewhere"
+
+    fakes.program = fakes.me
+    assert accounts.sync_task_state(fakes.tools()) == "on"

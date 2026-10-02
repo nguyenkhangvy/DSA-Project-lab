@@ -1,8 +1,10 @@
 import subprocess
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 
 import pytest
 
+from sla_agent import scheduler
 from sla_agent.scheduler import TASK_NAME, SchedulerError, install_task, remove_task, task_program, task_xml
 
 NS = {"t": "http://schemas.microsoft.com/windows/2004/02/mit/task"}
@@ -93,15 +95,47 @@ class Answer:
         self.returncode, self.stdout, self.stderr = returncode, stdout, ""
 
 
-def test_the_tasks_program_is_read_from_windows():
-    xml = '<?xml version="1.0" encoding="UTF-16"?><Task><Actions><Exec><Command>' + PYTHONW + '</Command></Exec>'
-    xml += "</Actions></Task>"
+class FakeTaskScheduler:
+    """Stands in for Task Scheduler's COM interface (Schedule.Service); `program` is what the task starts, None when
+    there is no task."""
 
-    assert task_program(runner=lambda *a, **k: Answer(0, xml)) == PYTHONW
+    def __init__(self, program=None):
+        self.program = program
+        self.asked = []
+
+    def GetFolder(self, path):
+        self.asked.append(("folder", path))
+        return self
+
+    def GetTask(self, path):
+        self.asked.append(("task", path))
+        if self.program is None:
+            raise OSError("The system cannot find the file specified.")  # pywin32 raises its com_error here
+        action = SimpleNamespace(Path=self.program)
+        return SimpleNamespace(Definition=SimpleNamespace(Actions=SimpleNamespace(
+            Item=lambda number: action if number == 1 else None)))
+
+
+def test_the_tasks_program_is_read_from_task_scheduler_with_vietnamese_letters_intact():
+    """schtasks /Query prints in the console's code page, which turns "Nguyễn Văn" into "Nguy?n V?n" (review I2)."""
+    program = r"C:\Users\Nguyễn Văn An\AppData\Local\SchoolLifeAssistant\app\School-Life-Assistant.exe"
+    task_scheduler = FakeTaskScheduler(program)
+
+    assert task_program(service=task_scheduler) == program
+    assert task_scheduler.asked == [("folder", "\\"), ("task", TASK_NAME)]
 
 
 def test_no_program_when_the_task_is_missing():
-    assert task_program(runner=lambda *a, **k: Answer(1, "ERROR: The system cannot find the file specified.")) is None
+    assert task_program(service=FakeTaskScheduler(None)) is None
+
+
+def test_no_program_where_task_scheduler_cannot_be_reached(monkeypatch):
+    def unreachable():
+        raise ImportError("No module named 'win32com'")
+
+    monkeypatch.setattr(scheduler, "_task_scheduler", unreachable)
+
+    assert task_program() is None
 
 
 def test_schtasks_never_opens_a_console_window(tmp_path):
@@ -113,7 +147,6 @@ def test_schtasks_never_opens_a_console_window(tmp_path):
         return Answer(0, "")
 
     install_task(PYTHONW, USER, folder=tmp_path, runner=runner)
-    task_program(runner=runner)
     remove_task(runner=runner)
 
-    assert flags == [getattr(subprocess, "CREATE_NO_WINDOW", 0)] * 3
+    assert flags == [getattr(subprocess, "CREATE_NO_WINDOW", 0)] * 2

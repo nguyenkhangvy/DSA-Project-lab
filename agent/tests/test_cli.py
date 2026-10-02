@@ -5,8 +5,16 @@ import pytest
 from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
-from sla_agent import cli, credentials
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookBlocked, RunInProgress
+from sla_agent import __version__, cli, credentials, launcher, update
+from sla_agent.errors import (
+    BadCredentials,
+    DeviceKeyRejected,
+    ExtraVerification,
+    OutlookBlocked,
+    RunInProgress,
+    UpdateRequired,
+)
+from sla_agent.server_client import TOO_OLD
 from sla_agent.state import State, agent_home, load_state, save_state
 
 SERVER = "https://sla.example.com"
@@ -722,7 +730,7 @@ def test_a_full_sync_never_moves_the_newest_time_back(world, monkeypatch):
 
 def test_schedule_reinstalls_the_task_with_this_python(world, capsys, monkeypatch):
     configure()
-    monkeypatch.setattr(cli, "windowless_python", lambda: r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe")
+    monkeypatch.setattr(launcher, "program", lambda: r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe")
 
     assert cli.main(["schedule"]) == 0
 
@@ -772,7 +780,7 @@ def test_setup_says_when_the_shortcuts_could_not_be_made_but_keeps_the_rest(worl
 def test_schedule_also_points_the_links_and_shortcuts_at_this_python(world, isolated_agent, monkeypatch):
     configure()
     python = r"C:\IU_SCHOOL\p\.venv\Scripts\pythonw.exe"
-    monkeypatch.setattr(cli, "windowless_python", lambda: python)
+    monkeypatch.setattr(launcher, "program", lambda: python)
 
     assert cli.main(["schedule"]) == 0
 
@@ -863,3 +871,101 @@ def test_the_windows_own_look_never_starts_outlook(monkeypatch):
 
     with pytest.raises(OutlookNotSetUp, match="isn't open"):
         cli.find_open_outlook_accounts()
+
+
+# ---- the built app's updates (update.py) ------------------------------------------------
+
+
+@pytest.fixture
+def built_app(monkeypatch):
+    """`run` as the built app does it, with GitHub left out: the list holds the time of each update check."""
+    checks = []
+    monkeypatch.setattr(launcher, "frozen", lambda: True)
+    monkeypatch.setattr(update, "check_and_start", lambda state, now: checks.append(now) or False)
+    return checks
+
+
+def test_the_built_app_looks_for_an_update_then_syncs(world, built_app):
+    configure()
+
+    assert cli.main(["run"]) == 0
+
+    assert len(built_app) == 1
+    assert world.server.starts == ["scheduled"]
+
+
+def test_when_a_new_setup_was_started_the_run_ends_without_syncing(world, monkeypatch):
+    configure()
+    monkeypatch.setattr(launcher, "frozen", lambda: True)
+    monkeypatch.setattr(update, "check_and_start", lambda state, now: True)
+
+    assert cli.main(["run"]) == 0
+
+    assert world.server.checks == 0
+    assert world.server.starts == []
+
+
+def test_from_source_run_never_looks_for_an_update(world, monkeypatch):
+    configure()
+    monkeypatch.setattr(update, "check_and_start", lambda state, now: pytest.fail("looked for an update"))
+
+    assert cli.main(["run"]) == 0
+
+
+def test_the_first_run_of_a_new_version_remembers_when_it_updated_itself(world, built_app):
+    configure()
+    state = load_state()
+    state.agent_version = "0.1.0"
+    save_state(state)
+
+    cli.main(["run"])
+
+    state = load_state()
+    assert state.agent_version == __version__
+    assert state.updated_at is not None
+
+
+def test_downloaded_setups_are_tidied_at_a_later_run(world, built_app):
+    configure()
+    update.downloads().mkdir(parents=True)
+    (update.downloads() / "School-Life-Assistant-0.2.0.exe").write_bytes(b"MZ")
+
+    cli.main(["run"])
+
+    assert list(update.downloads().iterdir()) == []
+
+
+def test_a_version_the_website_refuses_looks_for_an_update_within_the_hour_not_every_minute(world):
+    configure()
+    now = datetime.now(timezone.utc)
+    state = load_state()
+    state.update_checked_at = (now - timedelta(hours=2)).isoformat()
+    save_state(state)
+    world.server.check_error = UpdateRequired(TOO_OLD)
+
+    assert cli.main(["run"]) == 1
+
+    state = load_state()
+    assert not update.due(state, now + timedelta(minutes=1))
+    assert update.due(state, now + timedelta(minutes=61))
+    assert state.last_result["message"] == TOO_OLD
+    assert world.server.starts == []
+
+
+# ---- the built app never shows PyInstaller's error box (review I3) -----------------------------
+
+
+def test_the_built_app_logs_an_unexpected_error_instead_of_showing_a_box(monkeypatch):
+    def broken(args):
+        raise RuntimeError("the website changed its answer")
+
+    monkeypatch.setitem(cli.COMMANDS, "run", broken)
+
+    assert cli.app_main(["run"]) == 1
+    assert "the website changed its answer" in (agent_home() / "agent.log").read_text(encoding="utf-8")
+
+
+def test_the_built_app_otherwise_answers_like_sla_agent(monkeypatch):
+    monkeypatch.setitem(cli.COMMANDS, "status", lambda args: 0)
+
+    assert cli.app_main(["status"]) == 0

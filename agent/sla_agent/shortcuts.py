@@ -5,8 +5,9 @@ Made with Windows' own WScript.Shell (through pywin32), for this Windows user on
 
 from pathlib import Path
 
+from sla_agent.launcher import arguments
+
 NAME = "School-Life-Assistant.lnk"
-ARGUMENTS = "-m sla_agent window"
 DESCRIPTION = "Enter and change your School-Life-Assistant accounts"
 
 
@@ -21,13 +22,13 @@ def _places(shell):
     return [Path(shell.SpecialFolders("Desktop")), Path(shell.SpecialFolders("Programs"))]
 
 
-def make(python_exe, folder):
-    """Make, or replace, both shortcuts: `python_exe -m sla_agent window`, started in `folder`."""
+def make(program, folder):
+    """Make, or replace, both shortcuts: `program` opening the window (launcher.arguments), started in `folder`."""
     shell = _shell()
     for place in _places(shell):
         shortcut = shell.CreateShortcut(str(place / NAME))
-        shortcut.TargetPath = str(python_exe)
-        shortcut.Arguments = ARGUMENTS
+        shortcut.TargetPath = str(program)
+        shortcut.Arguments = arguments(program, "window")
         shortcut.WorkingDirectory = str(folder)
         shortcut.Description = DESCRIPTION
         shortcut.Save()

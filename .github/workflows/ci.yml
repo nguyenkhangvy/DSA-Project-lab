@@ -73,3 +73,28 @@ jobs:
 
       - name: Build the online site
         run: docker build web
+
+  exe:
+    # The app and the setup exactly as the release builds them (agent/packaging/build.py, PyInstaller's launcher
+    # compiled here), then started (agent/packaging/smoke-test.ps1): a change that breaks them shows on the pull
+    # request, not on release day.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install, with PyInstaller's launcher compiled here (fewer antivirus false alarms)
+        env:
+          PYINSTALLER_COMPILE_BOOTLOADER: "1"
+        run: pip install -r requirements-dev.txt --no-binary=pyinstaller -r agent/packaging/requirements.txt
+
+      - name: Build the app and the setup
+        run: python agent/packaging/build.py
+
+      - name: Start them
+        run: ./agent/packaging/smoke-test.ps1
