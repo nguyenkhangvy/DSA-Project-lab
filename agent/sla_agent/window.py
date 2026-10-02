@@ -246,6 +246,7 @@ class SetupScreen:
         lines += [mark(result) for step, result in results.items()
                   if step in ("blackboard", "outlook", "sync") and (not result.ok or result.notes)]
         self.app.show(notice="\n".join(lines))
+        self.app.tools.open_site(load_state().server_url)  # set up: now School-Life-Assistant itself
 
 
 class AccountsScreen:
@@ -260,6 +261,9 @@ class AccountsScreen:
         self.sync_state = accounts.sync_task_state(app.tools)
         frame = app.body
         heading(frame, "Accounts", 0)
+        self.open_button = ttk.Button(frame, text="Open School-Life-Assistant",
+                                      command=lambda: app.tools.open_site(state.server_url))
+        self.open_button.grid(row=0, column=2, sticky="ne")
         self.notice = tk.StringVar(frame, notice)
         answer_line(frame, self.notice, 1)
         self.values, self.answers, self.buttons, self.boxes = {}, {}, {}, {}

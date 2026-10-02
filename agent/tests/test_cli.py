@@ -5,7 +5,7 @@ import pytest
 from sla_contract.schema import Exams, MailItem, Outlook, Timetable
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeIupay, FakeServer
-from sla_agent import __version__, cli, credentials, launcher, update
+from sla_agent import __version__, app_window, cli, credentials, launcher, update
 from sla_agent.errors import (
     BadCredentials,
     DeviceKeyRejected,
@@ -758,7 +758,8 @@ def test_setup_adds_the_window_link_type_and_the_shortcuts(world, isolated_agent
     assert cli.main(["setup"]) == 0
 
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""].endswith('-m sla_agent window "%1"')
-    assert [path.name for path in isolated_agent.shell.root.rglob("*.lnk")] == ["School-Life-Assistant.lnk"] * 2
+    assert sorted(path.name for path in isolated_agent.shell.root.rglob("*.lnk")) == [
+        "School-Life-Assistant Accounts.lnk", "School-Life-Assistant.lnk", "School-Life-Assistant.lnk"]
     assert "every minute" in capsys.readouterr().out
 
 
@@ -790,8 +791,9 @@ def test_schedule_also_points_the_links_and_shortcuts_at_this_python(world, isol
     keys = isolated_agent.registry.keys
     assert keys[WINDOW_COMMAND][""] == f'"{python}" -m sla_agent window "%1"'
     assert keys[("HKCU", r"Software\Classes\sla-mail\shell\open\command")][""] == f'"{python}" -m sla_agent open-mail "%1"'
-    assert all(path.read_text(encoding="utf-8").startswith(f"{python} -m sla_agent window")
-               for path in isolated_agent.shell.root.rglob("*.lnk"))
+    assert all(path.read_text(encoding="utf-8").startswith(
+        f"{python} -m sla_agent {'window' if 'Accounts' in path.name else 'open'}\n")
+        for path in isolated_agent.shell.root.rglob("*.lnk"))
 
 
 def test_forget_removes_the_window_link_type_and_the_shortcuts(world, isolated_agent, tmp_path):
@@ -990,9 +992,10 @@ def test_the_first_run_of_a_new_version_points_the_links_and_shortcuts_at_this_a
 
     cli.main(["run"])
 
-    made = list(isolated_agent.shell.root.rglob("*.lnk"))
-    assert len(made) == 2
-    assert all(path.read_text(encoding="utf-8").startswith(f"{APP} window\n") for path in made)
+    made = sorted((path.name, path.read_text(encoding="utf-8").splitlines()[0])
+                  for path in isolated_agent.shell.root.rglob("*.lnk"))
+    assert made == [("School-Life-Assistant Accounts.lnk", f"{APP} window"),
+                    ("School-Life-Assistant.lnk", f"{APP} open"), ("School-Life-Assistant.lnk", f"{APP} open")]
     assert isolated_agent.registry.keys[WINDOW_COMMAND][""] == f'"{APP}" window "%1"'
 
 
@@ -1005,3 +1008,26 @@ def test_runs_of_the_same_version_leave_the_shortcuts_alone(world, built_app, is
     cli.main(["run"])
 
     assert list(isolated_agent.shell.root.rglob("*.lnk")) == []
+
+
+# ---- open: the School-Life-Assistant icon ------------------------------------------------------
+
+
+def test_open_shows_the_website_as_an_app_once_this_laptop_is_set_up(world, monkeypatch):
+    configure()
+    opened = []
+    monkeypatch.setattr(app_window, "open_app", opened.append)
+
+    assert cli.main(["open"]) == 0
+
+    assert opened == [SERVER]
+
+
+def test_open_shows_the_first_time_form_before_setup(world, monkeypatch):
+    windows = []
+    monkeypatch.setitem(cli.COMMANDS, "window", lambda args: windows.append(args.link) or 0)
+    monkeypatch.setattr(app_window, "open_app", lambda address: pytest.fail("opened the website"))
+
+    assert cli.main(["open"]) == 0
+
+    assert windows == [None]

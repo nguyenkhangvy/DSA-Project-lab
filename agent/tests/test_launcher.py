@@ -55,9 +55,10 @@ def test_the_task_the_links_and_the_shortcuts_start_the_app_without_python(isola
 
     shortcuts.make(APP, tmp_path)
 
-    made = list(isolated_agent.shell.root.rglob("*.lnk"))
-    assert len(made) == 2
-    assert all(path.read_text(encoding="utf-8").startswith(f"{APP} window\n") for path in made)
+    made = sorted((path.name, path.read_text(encoding="utf-8").splitlines()[0])
+                  for path in isolated_agent.shell.root.rglob("*.lnk"))
+    assert made == [("School-Life-Assistant Accounts.lnk", f"{APP} window"),
+                    ("School-Life-Assistant.lnk", f"{APP} open"), ("School-Life-Assistant.lnk", f"{APP} open")]
 
 
 # ---- the built app holds its own folder (review C1) -------------------------------------------

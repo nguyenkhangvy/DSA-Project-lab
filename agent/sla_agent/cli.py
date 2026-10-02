@@ -2,6 +2,7 @@
 
     sla-agent setup                  enter your details once; schedules automatic sync
     sla-agent setup --outlook        read your Inbox through classic Outlook at each sync
+    sla-agent open                   open School-Life-Assistant: the website as an app (once set up)
     sla-agent window                 open the School-Life-Assistant window: set up or change your accounts
     sla-agent run                    what the scheduled task calls every minute
     sla-agent sync-now               sync right away
@@ -24,7 +25,7 @@ from pathlib import Path
 
 from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 
-from sla_agent import accounts, credentials, launcher, mail_link, selfcheck, shortcuts, update
+from sla_agent import accounts, app_window, credentials, launcher, mail_link, selfcheck, shortcuts, update
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
 from sla_agent.edusoft_client import EduSoftClient
@@ -115,7 +116,7 @@ def tools():
         program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
-        has_window_link=mail_link.window_registered)
+        has_window_link=mail_link.window_registered, open_site=app_window.open_app)
 
 
 def say(message):
@@ -508,6 +509,16 @@ def cmd_window(args):
     return window.main(tools(), link=args.link)
 
 
+def cmd_open(args):
+    """The School-Life-Assistant icon: the website as an app once this laptop is set up; until then, the window's
+    first-time form."""
+    state = load_state()
+    if state.server_url and state.student_id:
+        app_window.open_app(state.server_url)
+        return 0
+    return COMMANDS["window"](argparse.Namespace(link=None))
+
+
 def cmd_self_check(args):
     """The setup, CI and the release ask the built app whether it has everything it needs: exit code 0 or 1."""
     problems = selfcheck.problems(args.version)
@@ -601,6 +612,7 @@ COMMANDS = {
     "forget": cmd_forget,
     "open-mail": cmd_open_mail,
     "self-check": cmd_self_check,
+    "open": cmd_open,
 }
 
 
@@ -608,7 +620,7 @@ def main(argv=None):
     launcher.hold_app_folder()  # the built app's folder can't be swapped while this runs
     argv = sys.argv[1:] if argv is None else argv
     if not argv and launcher.frozen():
-        argv = ["window"]  # the app's School-Life-Assistant.exe double-clicked
+        argv = ["open"]  # the app's School-Life-Assistant.exe double-clicked
     parser = argparse.ArgumentParser(prog="sla-agent", description="School-Life-Assistant laptop sync agent.")
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("setup", help="enter your details once; schedules automatic sync")
@@ -629,6 +641,8 @@ def main(argv=None):
     commands.add_parser("forget", help="delete saved secrets and the scheduled task")
     open_mail = commands.add_parser("open-mail", help="show one email in Outlook (run by Mailbox's links)")
     open_mail.add_argument("link")
+    commands.add_parser("open", help="open School-Life-Assistant: the website as an app (the first-time form until "
+                                     "this laptop is set up)")
     check = commands.add_parser("self-check", help="check that this built app has everything it needs (exit code)")
     check.add_argument("version")
 

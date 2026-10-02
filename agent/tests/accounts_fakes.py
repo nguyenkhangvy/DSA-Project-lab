@@ -22,6 +22,7 @@ class Fakes:
 
     def __init__(self):
         self.me = PYTHONW
+        self.opened = []  # the addresses opened as an app
         self.server = FakeServer()
         self.edusoft = FakeEduSoft()
         self.blackboard = FakeBlackboard()
@@ -38,7 +39,8 @@ class Fakes:
             make_blackboard=lambda: self.blackboard, find_outlook_accounts=self._find, find_open_outlook_accounts=self._find_open, program=lambda: self.me,
             install_task=self._part("task"), task_program=lambda: self.program,
             register_mail_link=self._part("mail link"), register_window_link=self._part("window link"),
-            make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done)
+            make_shortcuts=self._part("shortcuts"), has_window_link=lambda: "window link" in self.done,
+            open_site=self.opened.append)
 
     def _make_server(self, address, key):
         self.servers.append((address, key))
