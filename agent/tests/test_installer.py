@@ -66,7 +66,8 @@ def leftovers(home):
 
 
 def window(home):
-    return [str(home / "app" / installer.EXE), "window"]
+    """What the setup starts when it is done: School-Life-Assistant (`open`: the first-time form until set up)."""
+    return [str(home / "app" / installer.EXE), "open"]
 
 
 @pytest.fixture

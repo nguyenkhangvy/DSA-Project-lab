@@ -3,7 +3,7 @@
 It carries the app (app.zip, a folder build that starts without unpacking anything) and installs it into
 %LOCALAPPDATA%\\SchoolLifeAssistant\\app:
 
-    School-Life-Assistant.exe                  double-clicked: install, then open the window
+    School-Life-Assistant.exe                  double-clicked: install, then open School-Life-Assistant
     School-Life-Assistant.exe --update PID     started by the agent's update (update.py): wait for that process
                                                to end, then install with no window and no messages
 
@@ -79,7 +79,7 @@ def install(home, version, machine, update_of=None):
     app, new, old = home / APP, home / NEW, home / OLD
     quiet = update_of is not None
     if not quiet and _keep_installed(app, version, machine):
-        machine.start([str(app / EXE), "window"])
+        machine.start([str(app / EXE), "open"])
         return 0
     for leftover in (new, old):
         shutil.rmtree(leftover, ignore_errors=True)
@@ -95,7 +95,7 @@ def install(home, version, machine, update_of=None):
     shutil.rmtree(old, ignore_errors=True)
     log.info("Installed %s", version)
     if not quiet:
-        machine.start([str(app / EXE), "window"])
+        machine.start([str(app / EXE), "open"])
     return 0
 
 
