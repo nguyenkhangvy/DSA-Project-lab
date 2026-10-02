@@ -13,14 +13,16 @@ class FakeMachine:
     """`version` is the app this setup carries; `failing` names folders whose app fails its self-check; `busy` is how
     many times renaming app\\ fails as "in use" before it works; `broken` names a folder that never renames."""
 
-    def __init__(self, version="0.2.0", failing=(), busy=0, broken=None):
+    def __init__(self, version="0.2.0", failing=(), busy=0, broken=None, claimed=True):
         self.version, self.failing, self.busy, self.broken = version, set(failing), busy, broken
+        self.claimed = claimed  # False: another setup is already running
         self.started, self.told, self.waited, self.checked = [], [], [], []
         self.now = 0.0
 
     def machine(self):
         return installer.Machine(unpack=self.unpack, self_check=self.self_check, wait_for_exit=self.wait_for_exit,
-                                 start=self.started.append, tell=self.told.append, sleep=self.sleep,
+                                 start=self.started.append, tell=self.told.append, claim=lambda: self.claimed,
+                                 sleep=self.sleep,
                                  rename=self.rename, clock=lambda: self.now)
 
     def unpack(self, folder):
@@ -257,3 +259,26 @@ def test_an_unexpected_error_is_logged_and_shown(monkeypatch, tmp_path):
 
     assert fake.told == [installer.WENT_WRONG]
     assert "No space left on device" in (agent_home() / "setup.log").read_text(encoding="utf-8")
+
+
+# ---- one setup at a time (review I4) -----------------------------------------------------------
+
+
+def test_a_second_setup_started_meanwhile_says_so_and_changes_nothing(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    fake = FakeMachine(version=__version__, claimed=False)
+
+    assert installer.main([], machine=fake.machine()) == 1
+
+    assert fake.told == [installer.BUSY]
+    assert not (agent_home() / "app").exists()
+
+
+def test_an_update_while_another_setup_runs_gives_up_quietly(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    fake = FakeMachine(version=__version__, claimed=False)
+
+    assert installer.main(["--update", "4321"], machine=fake.machine()) == 1
+
+    assert fake.told == []
+    assert fake.waited == []

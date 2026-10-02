@@ -37,6 +37,10 @@ UPDATE_WAIT = 600  # an update waits longer: a full sync can take a few minutes
 RETRY_EVERY = 5
 SELF_CHECK_SECONDS = 120
 TITLE = "School-Life-Assistant"
+MUTEX = "SchoolLifeAssistant-Setup"  # one setup at a time
+ERROR_ALREADY_EXISTS = 183
+BUSY = ("School-Life-Assistant is being installed or updated right now. Wait a minute, then run this file again "
+        "if its window hasn't opened.")
 DID_NOT_START = ("The new School-Life-Assistant didn't start correctly, so nothing was changed. "
                  "Download it again from School → Devices on the website.")
 STILL_RUNNING = "School-Life-Assistant is still running. Close its window, then run this file again."
@@ -53,6 +57,7 @@ class Machine:
     wait_for_exit: Callable  # (process id, seconds)
     start: Callable  # ([program, argument, ...]): start it and don't wait
     tell: Callable  # (message): a message box
+    claim: Callable  # () -> whether no other setup is running; this one then stays the only one until it ends
     sleep: Callable = time.sleep
     rename: Callable = os.rename
     clock: Callable = time.monotonic
@@ -179,8 +184,25 @@ def _tell(message):
     ctypes.windll.user32.MessageBoxW(None, message, TITLE, 0x30)  # MB_ICONWARNING
 
 
+_claimed = []  # the named mutex, held until this setup ends
+
+
+def _claim():
+    """Whether no other setup is running (a second double-click while this one works, or an update meanwhile)."""
+    import ctypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateMutexW.restype = ctypes.c_void_p
+    handle = kernel32.CreateMutexW(None, False, MUTEX)
+    if handle and ctypes.get_last_error() == ERROR_ALREADY_EXISTS:
+        return False
+    _claimed.append(handle)
+    return True
+
+
 def windows():
-    return Machine(unpack=_unpack, self_check=_self_check, wait_for_exit=_wait_for_exit, start=_start, tell=_tell)
+    return Machine(unpack=_unpack, self_check=_self_check, wait_for_exit=_wait_for_exit, start=_start, tell=_tell,
+                   claim=_claim)
 
 
 def main(argv=None, machine=None):
@@ -198,6 +220,11 @@ def main(argv=None, machine=None):
     try:
         log.info("Setup %s: %s", __version__,
                  "install" if update_of is None else f"update after process {update_of} ends")
+        if not machine.claim():
+            log.info("Another setup is running; this one stops")
+            if update_of is None:
+                machine.tell(BUSY)
+            return 1
         return install(home, __version__, machine, update_of)
     except Exception:  # anything unexpected: the old app stays, and setup.log says why
         log.exception("Setup failed")
