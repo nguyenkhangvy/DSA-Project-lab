@@ -116,7 +116,7 @@ def tools():
         program=launcher.program, install_task=install_task,
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
-        has_window_link=mail_link.window_registered)
+        has_window_link=mail_link.window_registered, open_site=app_window.open_app)
 
 
 def say(message):

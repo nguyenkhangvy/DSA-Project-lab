@@ -48,6 +48,7 @@ class Tools:
     register_window_link: Callable  # (program)
     make_shortcuts: Callable  # (program, folder)
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
+    open_site: Callable  # (address) -> opens the website as an app (app_window.open_app)
 
 
 @dataclass(frozen=True)

@@ -338,3 +338,34 @@ def test_the_built_app_offers_repair_when_the_task_runs_another_copy(root, fakes
 
     assert "task" in fakes.done
     assert app.screen.values["sync"].get() == "on: every minute"
+
+
+# ---- the website as an app ---------------------------------------------------------------------
+
+
+def test_after_the_first_setup_the_website_opens_as_an_app(root, fakes):
+    app = open_window(root, fakes)
+    fill(app.screen, **FIRST_TIME)
+
+    app.screen.save()
+
+    assert fakes.opened == [SERVER]
+
+
+def test_a_first_setup_that_saved_nothing_opens_nothing(root, fakes):
+    fakes.edusoft.login_error = BadCredentials("rejected")
+    app = open_window(root, fakes)
+    fill(app.screen, **FIRST_TIME)
+
+    app.screen.save()
+
+    assert fakes.opened == []
+
+
+def test_accounts_has_a_button_that_opens_the_website_as_an_app(root, fakes):
+    set_up()
+    app = open_window(root, fakes)
+
+    app.screen.open_button.invoke()
+
+    assert fakes.opened == [SERVER]
