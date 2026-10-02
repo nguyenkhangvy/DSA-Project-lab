@@ -12,9 +12,9 @@ Stack: Java 17 and Spring Boot with Thymeleaf pages, MySQL 8, a little JavaScrip
 
 1. On the website, open School → Devices and press **Download School-Life-Assistant for Windows**.
 2. Double-click the downloaded `School-Life-Assistant.exe`. If Windows says “Windows protected your PC”, press **More info**, then **Run anyway**. It needs no administrator rights.
-3. The School-Life-Assistant window opens with the website's address filled in. On School → Devices, add your laptop and copy its key, paste it in the window, enter your EduSoft student ID and password (and, if you like, your Blackboard login and Outlook account), then press **Check and save**.
+3. The School-Life-Assistant window opens with the website's address filled in. On School → Devices, add your laptop and copy its key, paste it in the window, enter your EduSoft student ID and password (and, if you like, your Blackboard login and Outlook account), then press **Check and save**. School-Life-Assistant then opens as an app.
 
-That's all. It syncs by itself every minute, and it installs new versions by itself within a day of their release. To open it again, choose School-Life-Assistant in the Start menu.
+That's all. It syncs by itself every minute, and it installs new versions by itself within a day of their release. **School-Life-Assistant** on the Desktop or in the Start menu opens it again (the website, in its own window); **School-Life-Assistant Accounts** in the Start menu changes your accounts.
 
 ---
 
