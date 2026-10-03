@@ -67,7 +67,8 @@ def main():
         shutil.rmtree(folder, ignore_errors=True)
     WORK.mkdir(parents=True)
 
-    pyinstaller("app_entry.py", "app", "--onedir", "--version-file",
+    # win32timezone: pywin32 imports it from C for every COM date (each email's received time), unseen by PyInstaller.
+    pyinstaller("app_entry.py", "app", "--onedir", "--hidden-import", "win32timezone", "--version-file",
                 str(version_file("app", "School-Life-Assistant: syncs EduSoft, Blackboard, IUPay and Outlook")))
     app = DIST / NAME
     (app / "version.txt").write_text(__version__, encoding="utf-8")
