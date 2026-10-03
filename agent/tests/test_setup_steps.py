@@ -101,7 +101,7 @@ def test_the_built_app_starts_with_the_website_online(root, fakes, monkeypatch):
 
     steps = window.App(root, fakes.tools(), run=window_parts.run_at_once).screen
 
-    assert steps.values["address"].get() == "https://school-life-assistant.onrender.com"
+    assert steps.values["address"].get() == "https://school-life-assistant.duckdns.org"
 
 
 def test_open_the_website_opens_the_devices_page(root, fakes, browser):
