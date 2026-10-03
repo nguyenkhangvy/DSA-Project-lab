@@ -155,6 +155,21 @@ def test_one_unreadable_email_is_skipped(caplog):
 
     assert [e.subject for e in read(outlook).emails] == ["Fine"]
     assert "Skipped 1 emails" in caplog.text
+    assert "ComError: COM error -2147221233" in caplog.text  # why, said once
+
+
+def test_an_inbox_where_no_email_can_be_read_fails_and_the_mailbox_keeps_its_mail():
+    # The 0.2.0-0.2.2 apps lacked win32timezone: every email failed, and an empty upload emptied the Mailbox.
+    broken = ModuleNotFoundError("No module named 'win32timezone'")
+    outlook = FakeOutlook(FakeAccount(ME, [FakeMail("A", at(25), broken=broken, entry_id="00D3"),
+                                           FakeMail("B", at(24), broken=broken, entry_id="00D4")]))
+
+    with pytest.raises(OutlookBlocked, match="none of your 2 emails"):
+        read(outlook)
+
+
+def test_an_empty_inbox_is_read_as_empty():
+    assert read(FakeOutlook(FakeAccount(ME))).emails == []
 
 
 def test_an_outlook_that_does_not_answer_is_given_up_after_the_time_limit():
