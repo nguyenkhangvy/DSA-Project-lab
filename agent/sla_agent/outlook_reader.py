@@ -46,6 +46,7 @@ OUTLOOK_PROFILES = r"Software\Microsoft\Office\16.0\Outlook\Profiles"  # 16.0: e
 NOT_SET_UP = "Classic Outlook isn't set up on this laptop."
 BLOCKED = "Outlook didn't let the agent read your mail."
 TOO_SLOW = "Outlook didn't answer within 3 minutes (a security prompt may be waiting)."
+UNREADABLE = "The agent could read none of your {} emails, so Mailbox keeps the mail it has."
 
 
 def semester_start(term_code, today):
@@ -217,6 +218,8 @@ def read_emails(inbox, since):
         except Exception as error:
             if _refused(error):
                 raise OutlookBlocked(BLOCKED) from error
+            if not skipped:
+                log.warning("Couldn't read an email: %s: %s", error.__class__.__name__, error)
             skipped += 1
         item = items.GetNext()
     return emails, skipped
@@ -262,7 +265,9 @@ def read_outlook(address, since, context, *, open_outlook=open_outlook, sleep=cl
     connected, emails, skipped = with_time_limit(work, limit)
     if skipped:
         log.warning("Skipped %d emails Outlook couldn't read", skipped)
-    items = [mail_rules.sort_email(email, context) for email in emails[:MAX_EMAILS]]
+        if not emails:  # not an empty Inbox: uploaded, it would empty the student's Mailbox
+            raise OutlookBlocked(UNREADABLE.format(skipped))
+    items =[mail_rules.sort_email(email, context) for email in emails[:MAX_EMAILS]]
     return Outlook(since=since, connected=connected, emails=items)
 
 
