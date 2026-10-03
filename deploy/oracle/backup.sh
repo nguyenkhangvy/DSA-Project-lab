@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Saves the site's database in ~/sla-backups (or $BACKUP_DIR), named by the time in UTC, and keeps the newest 14.
-# Cron runs it every night on the Oracle VM (README, "Always on: Oracle Cloud"). The database is the one DATABASE_URL
+# Cron runs it every night on the server (README, "Always on: AWS Lightsail"). The database is the one DATABASE_URL
 # in the .env next to this file names; mysqldump comes from Docker's mysql image, so nothing needs installing.
 #
 # To restore one into a database (this replaces the tables it holds):

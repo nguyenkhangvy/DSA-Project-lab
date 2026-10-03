@@ -3,7 +3,7 @@
 **Date:** 2026-10-02
 **Scope:** students install the laptop agent by downloading one `School-Life-Assistant.exe` and double-clicking it (no Python, venv or `pip install`), and the agent updates itself when a new version is released
 **Owner:** Nguyen Khang Vy
-**Status:** Draft, waiting for review
+**Status:** Built (see docs/superpowers/plans/2026-10-02-agent-exe.md)
 **Builds on:** [Accounts window](2026-10-01-accounts-window-design.md), [Live sync](2026-10-01-live-sync-design.md), [Java website, §9 (going online)](2026-09-26-java-website-design.md). Everything there stays the same unless this document says otherwise.
 
 ---

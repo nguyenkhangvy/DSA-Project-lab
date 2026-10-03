@@ -18,7 +18,7 @@ from sla_agent.state import load_state
 from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, text_line
 
 LOCAL_ADDRESS = "http://localhost:5000"  # a developer's own site, running from source
-ONLINE_ADDRESS = "https://school-life-assistant.onrender.com"  # the website students use
+ONLINE_ADDRESS = "https://school-life-assistant.duckdns.org"  # the website students use
 SITE_STEPS = (
     "1. Press Open the website.",
     "2. Log in, or create an account.",

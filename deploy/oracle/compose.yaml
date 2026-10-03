@@ -1,4 +1,4 @@
-# The website on an Oracle Cloud Always Free VM, where it never sleeps (README, "Always on: Oracle Cloud").
+# The website on a server of its own, where it never sleeps (README, "Always on: AWS Lightsail").
 # Settings come from .env next to this file (copy .env.example). Caddy answers on ports 80 and 443 with HTTPS and
 # passes each request on to the site, which nothing else can reach.
 name: school-life-assistant

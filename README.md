@@ -76,31 +76,21 @@ Git Bash works too: `cd web && ./mvnw spring-boot:run`. GitHub runs the website'
 
 ## Putting the site online
 
-Online, the site runs on Render's free plan from `web/Dockerfile`, with its database on Aiven's free MySQL; `render.yaml` holds Render's settings. Students then only need the link: no Java, no MySQL. This is done once.
+Online, the site is https://school-life-assistant.duckdns.org. It runs from `web/Dockerfile` on an AWS Lightsail server, with its database on Aiven's free MySQL. Students then only need the link: no Java, no MySQL. This is done once.
 
-1. **The database.** On aiven.io, create a free MySQL service (a region near Singapore), wait until it says *Running*, and copy its **Service URI** (`mysql://avnadmin:…@…/defaultdb?ssl-mode=REQUIRED`). If the password in it has an `@`, write it as `%40`.
-2. **The site.** On render.com, sign in with GitHub, choose **New → Blueprint**, and pick this repository and the `main` branch. Render reads `render.yaml` and asks for `DATABASE_URL`: paste the Service URI. The first build takes about 10 minutes; Render then shows the site's address (`https://….onrender.com`). On the empty database the site creates every table.
+1. **The database.** On aiven.io, create a MySQL service on the **Free** plan (it only lets you pick an area: choose **Asia Pacific**), wait until it says *Running*, and copy its **Service URI** (`mysql://avnadmin:…@…/defaultdb?ssl-mode=REQUIRED`). Don't pick a paid plan: it only runs while Aiven's trial credit lasts. If the password itself has an `@`, write that one as `%40`; the `@` before the server's name stays.
+2. **The site.** On an AWS Lightsail server, as in "Always on: AWS Lightsail" below. Render runs the same site for free with no server to look after, but it sleeps ("Or for free: Render").
 3. **The laptops.** Each student creates an account on the online site and installs School-Life-Assistant from School → Devices (see "Install on your laptop"). A laptop that runs the agent from source enters the online address (**Change** on the setup's first page) and a device key from School → Devices, or, when already set up, presses **Change** next to Website in Accounts.
 
-**New versions** go online by themselves: merge a pull request into `main`, and once GitHub's tests pass, Render builds the new version and switches to it (about 10 minutes). Table changes are applied when it starts, and everyone gets the new version the next time they load a page.
+### Always on: AWS Lightsail
 
-**Free plan limits.** After 15 minutes without visits the site sleeps, and the next visit waits about a minute while it wakes up. A restart or a new version logs everyone out.
+A Lightsail server never sleeps, so the site opens at once. Caddy gives it HTTPS, at a free DuckDNS address. The settings are in `deploy/oracle`, named after Oracle Cloud, which was tried first: nothing in it is Oracle's, and it runs on any Ubuntu server. This is done once, in about an hour.
 
-### Always on: Oracle Cloud
-
-Render's free plan sleeps; an Oracle Cloud *Always Free* VM doesn't, so the site opens at once. The same site runs there from `web/Dockerfile` (settings in `deploy/oracle`), next to Render and on the same Aiven database: both show the same data, and a laptop can sync to either address. This is done once, in about an hour.
-
-1. **The account.** Sign up at oracle.com/cloud/free and choose **Singapore** as the home region: free VMs can only be made there, and it can't be changed later. The card is only checked: nothing is charged as long as you never press **Upgrade** and only make things marked *Always Free-eligible*.
-2. **The VM.** In the console, **Compute → Instances → Create instance**. Image: **Canonical Ubuntu 24.04**. Shape: **Ampere → VM.Standard.A1.Flex** with **1 OCPU and 3 GB** of memory (see "Oracle's limits" below). Under *Add SSH keys*, choose **Generate a key pair for me** and save the private key. If it says *Out of capacity*, pick another availability domain, or try again later. Once it's running, note its **Public IP address**.
-3. **Open the web ports.** On the VM's page, open its subnet, then the *Default Security List*, and **Add Ingress Rules**: source CIDR `0.0.0.0/0`, IP protocol TCP, destination port `80`; then the same with `443`. Connect from your laptop with `ssh -i <the private key> ubuntu@<public IP>` and open them in the VM's own firewall too, before installing Docker (so the saved rules don't include Docker's own):
-
-   ```bash
-   sudo iptables -I INPUT 6 -m state --state NEW -p tcp -m multiport --dports 80,443 -j ACCEPT
-   sudo netfilter-persistent save
-   ```
-
-4. **The address.** On duckdns.org, sign in, add a subdomain (for example `sla-yourname`) and set its IP to the VM's public IP. The site will be at `https://sla-yourname.duckdns.org`.
-5. **Docker and the code.** On the VM:
+1. **The account.** Sign up at aws.amazon.com and choose the **Free plan**: AWS gives $100–200 of credit and doesn't charge the card, but closes the account after 6 months (see "AWS's limits" below). The card must be a Visa or Mastercard that allows international online payments; AWS takes $1 to check it and gives it back.
+2. **The server.** Open Lightsail, check that the region at the top says **Singapore** (near Aiven's database), and **Create instance**: **Linux/Unix**, **OS Only → Ubuntu 24.04 LTS**, network **Dual-stack**, size **$12** (2 GB of memory). Leave automatic snapshots off: the data is on Aiven, not on the server.
+3. **A fixed IP and the HTTPS port.** On the instance's **Networking** tab, create a **static IP** and attach it to the instance (free while attached); without one, the IP changes when the server restarts. Under the IPv4 firewall, **Add rule**: application **HTTPS**, from any IP address. SSH and HTTP are open already; Caddy needs both 80 and 443.
+4. **The address.** On duckdns.org, sign in, add a subdomain (this site's is `school-life-assistant`), type the static IP in its **current ip** box and press **update ip**. DuckDNS fills in the IP of the computer you're on, not the server's: `nslookup <name>.duckdns.org` should answer with the static IP.
+5. **Docker and the code.** On the instance's page, **Connect using SSH** opens a terminal on the server. Paste one line at a time: several lines pasted at once can arrive garbled.
 
    ```bash
    curl -fsSL https://get.docker.com | sudo sh
@@ -111,16 +101,16 @@ Render's free plan sleeps; an Oracle Cloud *Always Free* VM doesn't, so the site
    Connect again (so `docker` works without `sudo`), then:
 
    ```bash
-   git clone https://github.com/nguyenkhangvy/School-Life-Assistant.git
+   git clone --branch main https://github.com/nguyenkhangvy/School-Life-Assistant.git
    cd School-Life-Assistant/deploy/oracle
    cp .env.example .env
    nano .env
    ```
 
-   Put the DuckDNS address in `SITE_ADDRESS` and the `DATABASE_URL` Render uses (Aiven's Service URI) in `DATABASE_URL`, then save with Ctrl+O, Enter, Ctrl+X.
-6. **Start it.** `docker compose up -d --build`. The first build takes about 10 minutes; then the address opens the site, with the same accounts as on Render. If it doesn't, `docker compose logs caddy` (the HTTPS certificate: usually a port that isn't open, or DuckDNS pointing elsewhere) and `docker compose logs web` (the site) say why.
+   (`--branch main`: GitHub's default branch for this repository isn't `main`.) Write the DuckDNS address after `SITE_ADDRESS=` and the Service URI after `DATABASE_URL=`, keeping both names and their `=`, then save with Ctrl+O, Enter, Ctrl+X. `cat .env` should show the two lines.
+6. **Start it.** `docker compose up -d --build`. The build takes a few minutes; then the address opens the site. For the first minute Caddy answers *502* while the site starts. If it stays like that, `docker compose logs caddy` (the HTTPS certificate: usually port 443 not open, or DuckDNS pointing elsewhere) and `docker compose logs web` (the site: usually a wrong `DATABASE_URL`) say why.
 7. **Your laptop.** On the new site, create a device key in School → Devices; then in School-Life-Assistant's Accounts, press **Change** next to Website and enter the new address and the key.
-8. **Backups.** Run `crontab -e` (choose nano if asked) and add this line. Every night at 02:00 in Vietnam (19:00 on the VM's UTC clock) it saves the database in `~/sla-backups`, keeping the last 14:
+8. **Backups.** Run `crontab -e` (choose nano if asked) and add this line. Every night at 02:00 in Vietnam (19:00 on the server's UTC clock) it saves the database in `~/sla-backups`, keeping the last 14:
 
    ```
    0 19 * * * bash ~/School-Life-Assistant/deploy/oracle/backup.sh >> ~/sla-backups.log 2>&1
@@ -128,9 +118,17 @@ Render's free plan sleeps; an Oracle Cloud *Always Free* VM doesn't, so the site
 
    Run `bash ~/School-Life-Assistant/deploy/oracle/backup.sh` once now: it should end with `Saved …`. The top of `backup.sh` says how to restore one.
 
-**New versions** don't go online here by themselves: once a merge to `main` has passed GitHub's tests, run `bash ~/School-Life-Assistant/deploy/oracle/update.sh` on the VM. It builds the new version while the old one keeps running, then restarts the site, which logs everyone out.
+**New versions** don't go online here by themselves: once a merge to `main` has passed GitHub's tests, run `bash ~/School-Life-Assistant/deploy/oracle/update.sh` on the server. It builds the new version while the old one keeps running, then restarts the site, which logs everyone out.
 
-**Oracle's limits.** Oracle may reclaim an Always Free VM that stays under 20% of its CPU, network and memory for a week. With the site running, the VM uses more than 20% of 3 GB of memory, which is why it's that small. If Oracle stops it anyway, start it again in the console: the data is on Aiven, not on the VM.
+**AWS's limits.** The Free plan ends 6 months after the account was opened, or sooner if the credit runs out. AWS then closes the account and the site goes offline; it keeps everything for 90 days in case you switch to the paid plan, then deletes it. On the paid plan this server costs $12 a month. Lightsail charges for a server as long as it exists, even when stopped (only deleting it stops that), and for a static IP that isn't attached. The data is on Aiven either way.
+
+### Or for free: Render
+
+Render's free plan runs the same site from `web/Dockerfile`, with no server to look after; `render.yaml` holds its settings. On render.com, sign in with GitHub, choose **New → Blueprint**, and pick this repository and the `main` branch. Render reads `render.yaml` and asks for `DATABASE_URL`: paste the Service URI. The first build takes about 10 minutes; Render then shows the site's address (`https://….onrender.com`). On the empty database the site creates every table.
+
+**New versions** go online by themselves: merge a pull request into `main`, and once GitHub's tests pass, Render builds the new version and switches to it (about 10 minutes). Table changes are applied when it starts, and everyone gets the new version the next time they load a page.
+
+**Free plan limits.** After 15 minutes without visits the site sleeps, and the next visit waits about a minute while it wakes up. A restart or a new version logs everyone out.
 
 ## Making a release
 

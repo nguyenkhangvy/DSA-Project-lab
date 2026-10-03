@@ -1,4 +1,4 @@
-"""The Oracle VM's scripts (deploy/oracle; README, "Always on: Oracle Cloud"), run by bash with git and docker
+"""The server's scripts (deploy/oracle; README, "Always on: AWS Lightsail"), run by bash with git and docker
 replaced by fakes that write down each call."""
 
 import gzip
