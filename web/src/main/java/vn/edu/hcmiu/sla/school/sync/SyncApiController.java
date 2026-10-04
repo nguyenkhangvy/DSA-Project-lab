@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,12 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncDevice;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRun;
 import vn.edu.hcmiu.sla.school.model.SchoolSyncRunRepository;
+import vn.edu.hcmiu.sla.school.sync.SyncContract.ConnectRequest;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.StartRun;
 
 /**
- * The three addresses the laptop agent calls (JSON; the device key instead of a login):
- * "is a sync due?", "I'm starting a sync", and "here is the data, or what went wrong".
+ * The addresses the laptop agent calls (JSON; the device key instead of a login): "is a sync due?", "I'm starting a
+ * sync", and "here is the data, or what went wrong"; and, before the laptop has a key, Connect's trade-in of a
+ * one-time code for one (spec 2026-10-04-connect-button-design.md, 3).
  */
 @RestController
 @RequestMapping("/api/school/sync")
@@ -35,12 +39,17 @@ public class SyncApiController {
     private final SyncRuns syncRuns;
     private final SchoolSyncRunRepository runs;
     private final Ingest ingest;
+    private final ConnectCodes connectCodes;
+    private final DeviceKeys deviceKeys;
 
-    public SyncApiController(SyncJson json, SyncRuns syncRuns, SchoolSyncRunRepository runs, Ingest ingest) {
+    public SyncApiController(SyncJson json, SyncRuns syncRuns, SchoolSyncRunRepository runs, Ingest ingest,
+            ConnectCodes connectCodes, DeviceKeys deviceKeys) {
         this.json = json;
         this.syncRuns = syncRuns;
         this.runs = runs;
         this.ingest = ingest;
+        this.connectCodes = connectCodes;
+        this.deviceKeys = deviceKeys;
     }
 
     private static LocalDateTime now() {
@@ -82,6 +91,22 @@ public class SyncApiController {
         FinishRun body = json.read(json.body(request), FinishRun.class);
         String status = ingest.finishRun(run.getId(), body, now());
         return ResponseEntity.ok(Map.of("status", status));
+    }
+
+    /**
+     * Connect's trade-in: the one-time code from the Connect page and the app's verifier, for a new device key and the
+     * account's email. No device key is needed here (SyncApiConfig); anything wrong with the code is 400 invalid_code.
+     */
+    @PostMapping("/connect")
+    ResponseEntity<Map<String, Object>> connect(HttpServletRequest request) throws IOException {
+        ConnectRequest body = json.read(json.body(request), ConnectRequest.class);
+        Optional<ConnectCodes.Pending> pending = connectCodes.redeem(body.code(), body.verifier());
+        if (pending.isEmpty()) {
+            return error(HttpStatus.BAD_REQUEST, "invalid_code");
+        }
+        String key = deviceKeys.create(pending.get().userId(), pending.get().name(), now()).rawKey();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(Map.of("key", key, "email", pending.get().email()));
     }
 
     @ExceptionHandler(SyncRuns.RunInProgress.class)
