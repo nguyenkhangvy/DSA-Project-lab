@@ -1,3 +1,3 @@
 """School-Life-Assistant's laptop agent."""
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

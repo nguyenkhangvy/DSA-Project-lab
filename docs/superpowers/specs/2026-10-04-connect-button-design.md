@@ -3,7 +3,7 @@
 **Date:** 2026-10-04
 **Scope:** setup step 1 and Accounts → Website get a **Connect** button: the browser opens the website, the student logs in (or creates an account) and presses **Connect** there, and the app receives its device key by itself; registering returns to the page that asked for login; pasting a key stays as a backup
 **Owner:** Nguyen Khang Vy
-**Status:** Draft, waiting for review
+**Status:** Built (see docs/superpowers/plans/2026-10-04-connect-button.md)
 **Builds on:** [Easy install](2026-10-02-easy-install-design.md), [Accounts window](2026-10-01-accounts-window-design.md), [Java website](2026-09-26-java-website-design.md). Everything there stays the same unless this document says otherwise.
 
 ---
