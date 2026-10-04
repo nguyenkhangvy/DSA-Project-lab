@@ -6,8 +6,9 @@ import logging
 
 import pytest
 
-from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, PASSWORD, SERVER, STUDENT, Fakes
+from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, NEW_KEY, PASSWORD, SERVER, STUDENT, Fakes
 from sla_agent import accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
+from sla_agent.connect import Cancelled
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ServerUnreachable, UnexpectedAnswer
 from sla_agent.log import setup_logging
 from sla_agent.outlook_reader import MISSING
@@ -523,3 +524,109 @@ def test_the_last_page_lists_blackboard_and_outlook_once_set_up(root, fakes):
 
     assert steps.page.lines == [setup_steps.ALL_SET, f"✓ EduSoft: {STUDENT}", f"✓ Blackboard: {BB_USER}",
                                 f"✓ Outlook: {ME}"]
+
+
+# ---- step 1: Connect (spec 2026-10-04-connect-button-design.md) -------------------------------------------------
+
+
+def test_step_1_leads_with_connect_and_keeps_paste_a_key_instead(root, fakes):
+    _, steps = start(root, fakes)
+
+    assert steps.page.connect_button.cget("text") == "Connect"
+    assert steps.page.paste_frame.grid_info() == {}  # the key box waits under Paste a key instead
+    steps.page.paste_link.invoke()
+    assert steps.page.paste_frame.grid_info()
+
+
+def test_connect_brings_back_a_key_and_next_turns_on(root, fakes, monkeypatch):
+    monkeypatch.setenv("COMPUTERNAME", "LAPTOP-AN")
+    _, steps = start(root, fakes)
+
+    steps.page.connect_button.invoke()
+
+    assert fakes.browsed == [f"{SERVER}/school/devices/connect?name=LAPTOP-AN"]
+    assert steps.page.answer.get() == f"✓ Connected to {ME}."
+    assert steps.accepted == (SERVER, NEW_KEY)
+    assert not disabled(steps.page.next_button)
+
+
+def test_step_2_saves_the_key_connect_brought_back(root, fakes):
+    _, steps = start(root, fakes)
+    steps.page.connect_button.invoke()
+    steps.page.next_button.invoke()
+    steps.values["student_id"].set(STUDENT)
+    steps.values["password"].set(PASSWORD)
+
+    steps.page.next_button.invoke()
+
+    assert credentials.load_device_key(SERVER) == NEW_KEY
+
+
+def test_while_connect_waits_the_page_says_to_finish_in_the_browser(root, fakes):
+    held = []
+    _, steps = start(root, fakes, run=lambda work, done: held.append((work, done)))
+
+    steps.page.connect_button.invoke()
+
+    assert steps.page.answer.get() == setup_steps.WAITING
+    assert disabled(steps.page.next_button)
+
+
+def test_only_the_newest_press_of_connect_counts(root, fakes):  # Review Focus 3
+    held = []
+    _, steps = start(root, fakes, run=lambda work, done: held.append((work, done)))
+    steps.page.connect_button.invoke()
+    fakes.answer = Cancelled()
+    steps.page.connect_button.invoke()
+    (first_work, first_done), (second_work, second_done) = held
+
+    assert fakes.connections[0].closed  # the first listener stopped
+    first_done(first_work())  # the first press's late answer is dropped
+    assert steps.page.answer.get() == setup_steps.WAITING
+    second_done(second_work())
+    assert steps.page.answer.get() == "✗ " + accounts.CONNECT_CANCELLED
+
+
+def test_cancel_on_the_website_says_so_and_saves_nothing(root, fakes):
+    fakes.answer = Cancelled()
+    _, steps = start(root, fakes)
+
+    steps.page.connect_button.invoke()
+
+    assert steps.page.answer.get() == "✗ " + accounts.CONNECT_CANCELLED
+    assert disabled(steps.page.next_button)
+    assert steps.accepted is None
+
+
+def test_a_laptop_that_cant_listen_says_to_paste_a_key(root, fakes):
+    fakes.listen_error = OSError("blocked")
+    _, steps = start(root, fakes)
+
+    steps.page.connect_button.invoke()
+
+    assert steps.page.answer.get() == "✗ " + accounts.CONNECT_UNAVAILABLE
+    assert fakes.browsed == []
+
+
+def test_leaving_step_1_stops_listening(root, fakes):
+    held = []
+    _, steps = start(root, fakes, run=lambda work, done: held.append((work, done)))
+    steps.page.connect_button.invoke()
+    steps.values["key"].set(KEY)  # a key pasted meanwhile
+    work, done = held.pop()  # its check
+    done(work())
+
+    steps.page.next_button.invoke()
+
+    assert fakes.connections[0].closed
+
+
+def test_closing_the_window_stops_listening(root, fakes, monkeypatch):  # Review Focus 1
+    held = []
+    app, steps = start(root, fakes, run=lambda work, done: held.append((work, done)))
+    steps.page.connect_button.invoke()
+    monkeypatch.setattr(root, "destroy", lambda: None)  # the root fixture destroys it after the test
+
+    app.close()
+
+    assert fakes.connections[0].closed

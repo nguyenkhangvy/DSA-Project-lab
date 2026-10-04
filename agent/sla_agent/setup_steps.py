@@ -1,11 +1,13 @@
 """The setup pages (spec 2026-10-02-easy-install-design.md, 3): a laptop that isn't set up gets one page per step,
-each with its own guide, instead of one long form. Step 1 connects to the website with a device key and saves
-nothing; step 2 checks EduSoft, then saves both and turns on automatic sync; steps 3 and 4 add Blackboard and
-Outlook, or skip them; the last page asks about the Desktop icon and opens School-Life-Assistant.
+each with its own guide, instead of one long form. Step 1 connects to the website with Connect (spec
+2026-10-04-connect-button-design.md) or a pasted device key, and saves nothing; step 2 checks EduSoft, then saves
+both and turns on automatic sync; steps 3 and 4 add Blackboard and Outlook, or skip them; the last page asks about
+the Desktop icon and opens School-Life-Assistant.
 
 The pages only collect what the student types and show the answers; accounts.py checks and saves, each check on a
 worker thread (app.run), as Accounts does."""
 
+import logging
 import tkinter as tk
 import webbrowser
 from tkinter import ttk
@@ -16,6 +18,8 @@ from sla_agent.log import protect
 from sla_agent.outlook_page import OutlookPage
 from sla_agent.state import load_state
 from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, text_line
+
+log = logging.getLogger(__name__)
 
 LOCAL_ADDRESS = "http://localhost:5000"  # a developer's own site, running from source
 ONLINE_ADDRESS = "https://school-life-assistant.duckdns.org"  # the website students use
@@ -34,6 +38,9 @@ ALL_SET = "✓ All set! This laptop checks in every minute, and everything syncs
 SYNC_REPAIR = "Automatic sync isn't on yet: press Repair next to it in Accounts."
 SKIPPED = "skipped: set it up later in Accounts"
 DESKTOP_QUESTION = "Put a School-Life-Assistant icon on your Desktop, to open it quickly?"
+CONNECT_LINE = "Press Connect. Your browser opens: log in (or create an account), then press Connect there."
+WAITING = "Finish in your browser…"
+PASTE_INSTEAD = "Paste a key instead"
 
 
 def default_address():
@@ -60,6 +67,7 @@ class SetupSteps:
         self.values["address"].set(state.server_url or default_address())
         self.values["student_id"].set(state.student_id or "")
         self.accepted = None  # (address, key)
+        self.connecting = None  # the connection of the newest press of Connect
         self.checking = None  # the (address, key) whose check counts: a newer change drops older answers
         self.address_open = False  # Change was pressed: the address box shows
         self.results = {}  # step -> Result
@@ -71,6 +79,8 @@ class SetupSteps:
 
     def show(self, page_class):
         if self.page is not None:
+            if isinstance(self.page, SitePage):
+                self.app.stop_listening()  # leaving step 1 (a key pasted meanwhile): Connect's wait ends
             self.page.frame.destroy()
         page_class(self)  # it makes itself self.page before it builds anything
 
@@ -145,25 +155,45 @@ class Page:
 
 
 class SitePage(Page):
-    """Step 1: the device key, with its guide. Nothing is saved yet: a key the website accepts turns Next on."""
+    """Step 1: Connect (spec 2026-10-04-connect-button-design.md, 2), or a device key pasted under Paste a key instead,
+    with today's guide (spec 2026-10-02-easy-install-design.md, 3). Nothing is saved yet: a key the website accepts
+    turns Next on."""
 
     title = "Connect to the website"
 
     def __init__(self, steps):
         super().__init__(steps)
-        for text in SITE_STEPS:
-            self.add_line(text)
-        self.open_button = ttk.Button(self.frame, text="Open the website", command=self.open_site)
-        self.open_button.grid(row=self.next_row(), column=0, columnspan=3, sticky="w", pady=(4, 8))
-        self.paste_button = ttk.Button(self.frame, text="Paste", command=self.paste)
-        self.paste_button.grid(row=self.row, column=2, padx=(8, 0))
-        self.add_field("Device key", "key", secret=True)
+        self.add_line(CONNECT_LINE)
+        self.connect_button = ttk.Button(self.frame, text="Connect", command=self.connect)
+        self.connect_button.grid(row=self.next_row(), column=0, columnspan=3, sticky="w", pady=(4, 8))
         self.add_answer()
         self.address_row = self.next_row()
         self.address_box = self.change_button = None
         self.show_address()
+        self.paste_link = ttk.Button(self.frame, text=PASTE_INSTEAD, style="Toolbutton", command=self.show_paste)
+        self.paste_link.grid(row=self.next_row(), column=0, columnspan=3, sticky="w", pady=(8, 0))
+        self.paste_frame = self.paste_area()
+        self.paste_frame.grid(row=self.next_row(), column=0, columnspan=3, sticky="ew")
+        self.paste_frame.grid_remove()  # until Paste a key instead
         [self.next_button] = self.add_bar(("Next →", lambda: steps.show(EdusoftPage)))
         self.key_changed()  # coming Back from step 2, the accepted key is still there
+
+    def paste_area(self):
+        """Today's guide, Open the website, the key box and Paste, in a frame that Paste a key instead shows."""
+        area = ttk.Frame(self.frame)
+        area.columnconfigure(1, weight=1)
+        for row, text in enumerate(SITE_STEPS):
+            text_line(area, text, row)
+        self.open_button = ttk.Button(area, text="Open the website", command=self.open_site)
+        self.open_button.grid(row=len(SITE_STEPS), column=0, columnspan=3, sticky="w", pady=(4, 8))
+        key_row = len(SITE_STEPS) + 1
+        self.paste_button = ttk.Button(area, text="Paste", command=self.paste)
+        self.paste_button.grid(row=key_row, column=2, padx=(8, 0))
+        field(area, "Device key", self.steps.values["key"], key_row, secret=True)
+        return area
+
+    def show_paste(self):
+        self.paste_frame.grid()
 
     def show_address(self):
         """"Website: <address>" with Change, or, once Change was pressed, the address box. Enter, or leaving the
@@ -233,6 +263,34 @@ class SitePage(Page):
             self.steps.accepted = (address, key)
             self.free(self.next_button)
         self.answer.set(mark(result))
+
+    def connect(self):
+        """Connect: listen, open the browser, and wait for the key (accounts.connect_laptop) on a worker thread."""
+        address = self.steps.values["address"].get().strip()
+        try:
+            connection = self.app.listen()
+        except OSError as error:
+            log.warning("Connect: can't listen on 127.0.0.1 (%s)", error)
+            self.answer.set(mark(Result(False, accounts.CONNECT_UNAVAILABLE)))
+            return
+        self.steps.connecting = connection
+        self.answer.set(WAITING)
+        self.app.run(lambda: accounts.connect_laptop(address, connection, self.app.tools),
+                     lambda answer: self.connected(address, connection, answer))
+
+    def connected(self, address, connection, answer):
+        """Connect's answer: (Result, key), or a bare Result when something unexpected went wrong (window_parts)."""
+        if not self.current() or self.steps.connecting is not connection:  # left, or Connect pressed again
+            return
+        result, key = answer if isinstance(answer, tuple) else (answer, "")
+        if not result.ok:
+            if result.message:  # an empty one: closed meanwhile, nothing to say
+                self.answer.set(mark(result))
+            return
+        self.steps.accepted = (address, key)
+        self.steps.values["key"].set(key)  # key_changed finds it accepted and turns Next on
+        self.answer.set(mark(result))
+        self.app.bring_forward()
 
 
 class EdusoftPage(Page):

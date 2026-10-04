@@ -14,7 +14,7 @@ from tkinter import ttk
 from sla_agent import __version__, accounts
 from sla_agent.log import protect
 from sla_agent.outlook_page import OutlookPage
-from sla_agent.setup_steps import SetupSteps
+from sla_agent.setup_steps import PASTE_INSTEAD, WAITING, SetupSteps
 from sla_agent.state import load_state
 from sla_agent.window_parts import CHECKING, answer_line, field, heading, mark, run_in_background
 
@@ -38,19 +38,24 @@ def local_time(iso):
 
 
 class App:
-    """The window: the setup pages (setup_steps.SetupSteps) or Accounts (AccountsScreen), rebuilt after each save."""
+    """The window: the setup pages (setup_steps.SetupSteps) or Accounts (AccountsScreen), rebuilt after each save. It
+    holds Connect's listener, one at a time: a new press of Connect closes the old one, and rebuilding, leaving step 1,
+    cancelling the Website editor or closing the window stops it (spec 2026-10-04-connect-button-design.md, 5.3)."""
 
     def __init__(self, root, tools, run=None, notice=""):
         self.root, self.tools = root, tools
         self.run = run or run_in_background(root)
+        self.connection = None  # Connect's listener (connect.Connection), while it waits
         root.title(TITLE)
         root.minsize(560, 0)
         root.columnconfigure(0, weight=1)
+        root.protocol("WM_DELETE_WINDOW", self.close)
         self.body = None
         self.screen = None
         self.show(notice)
 
     def show(self, notice=""):
+        self.stop_listening()
         if self.body is not None:
             self.body.destroy()
         self.body = ttk.Frame(self.root, padding=16)
@@ -61,6 +66,30 @@ class App:
             self.screen = AccountsScreen(self, state, notice)
         else:
             self.screen = SetupSteps(self, state)
+
+    def listen(self):
+        """A new listener for Connect (tools.listen), closing the one before. Raises OSError when it can't listen."""
+        self.stop_listening()
+        self.connection = self.tools.listen()
+        return self.connection
+
+    def stop_listening(self):
+        """Ends Connect's wait, if one is running: its answer comes back Closed and is dropped."""
+        if self.connection is not None:
+            self.connection.close()
+            self.connection = None
+
+    def bring_forward(self):
+        """Back in front of the browser after Connect (Windows may only flash the taskbar button)."""
+        self.root.lift()
+        self.root.attributes("-topmost", True)
+        self.root.after(200, lambda: self.root.attributes("-topmost", False))
+
+    def close(self):
+        """The window's ✕. Connect's wait runs on a thread that isn't a daemon, so it is ended first; otherwise the app
+        would stay in the background until the wait ran out."""
+        self.stop_listening()
+        self.root.destroy()
 
 
 class AccountsScreen:
@@ -156,7 +185,7 @@ class Editor:
     """One account's fields under its row, with Check and save and Cancel; Outlook's is the Outlook page."""
 
     FIELDS = {
-        "site": (("Address", "address", False), ("Device key", "key", True)),
+        "site": (("Address", "address", False),),
         "edusoft": (("Student ID", "student_id", False), ("Password", "password", True)),
         "blackboard": (("Username", "username", False), ("Password", "password", True)),
         "outlook": (),
@@ -174,6 +203,9 @@ class Editor:
         for index, (label, name, secret) in enumerate(self.FIELDS[row]):
             self.values[name] = tk.StringVar(self.frame, start.get(name, ""))
             field(self.frame, label, self.values[name], index, secret=secret)
+        self.connecting = None  # Website: the connection of the newest press of Connect
+        if row == "site":
+            self.add_connect()
         if row == "outlook":
             self.values["outlook"] = tk.StringVar(self.frame, state.outlook_account or "")
             self.outlook = OutlookPage(screen.app, self.frame, self.values["outlook"], skippable=False)
@@ -184,6 +216,47 @@ class Editor:
         self.save_button.grid(row=0, column=0)
         self.cancel_button = ttk.Button(buttons, text="Cancel", command=self.cancel)
         self.cancel_button.grid(row=0, column=1, padx=(8, 0))
+
+    def add_connect(self):
+        """Website: Connect next to the address, and today's key box under Paste a key instead (spec
+        2026-10-04-connect-button-design.md, 2)."""
+        self.connect_button = ttk.Button(self.frame, text="Connect", command=self.connect)
+        self.connect_button.grid(row=0, column=2, padx=(8, 0))
+        self.values["key"] = tk.StringVar(self.frame)
+        self.paste_link = ttk.Button(self.frame, text=PASTE_INSTEAD, style="Toolbutton", command=self.show_paste)
+        self.paste_link.grid(row=1, column=0, columnspan=3, sticky="w")
+        self.key_row = ttk.Frame(self.frame)
+        self.key_row.grid(row=2, column=0, columnspan=3, sticky="ew")
+        self.key_row.columnconfigure(1, weight=1)
+        field(self.key_row, "Device key", self.values["key"], 0, secret=True)
+        self.key_row.grid_remove()  # until Paste a key instead
+
+    def show_paste(self):
+        self.key_row.grid()
+
+    def connect(self):
+        app = self.screen.app
+        address = self.values["address"].get().strip()
+        try:
+            connection = app.listen()
+        except OSError as error:
+            log.warning("Connect: can't listen on 127.0.0.1 (%s)", error)
+            self.screen.answers["site"].set(mark(accounts.Result(False, accounts.CONNECT_UNAVAILABLE)))
+            return
+        self.connecting = connection
+        self.screen.answers["site"].set(WAITING)
+        tools, state = app.tools, load_state()
+        app.run(lambda: accounts.connect_site(state, address, connection, tools),
+                lambda result: self.connected(connection, result))
+
+    def connected(self, connection, result):
+        if self.connecting is not connection or not self.frame.winfo_exists():  # pressed again, or closed
+            return
+        if not result.message:  # closed meanwhile: nothing to say
+            return
+        if result.ok:
+            self.screen.app.bring_forward()
+        self.saved(result)
 
     def save(self):
         value = {name: variable.get() for name, variable in self.values.items()}
@@ -214,6 +287,7 @@ class Editor:
         self.cancel_button.state(["!disabled"])
 
     def cancel(self):
+        self.screen.app.stop_listening()
         self.frame.destroy()
         self.screen.answers[self.row].set("")
         self.screen.closed()
