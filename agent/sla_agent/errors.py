@@ -70,6 +70,10 @@ class UpdateRequired(ServerError):
     """The website no longer accepts this version of the agent (HTTP 426): it must update itself first."""
 
 
+class ConnectRefused(ServerError):
+    """The website refused Connect's one-time code (HTTP 400): expired, already used, or the wrong verifier."""
+
+
 class OutlookNotSetUp(AgentError):
     """Classic Outlook is missing, has no account, or the account chosen at setup is gone."""
 

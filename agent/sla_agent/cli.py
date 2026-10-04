@@ -20,6 +20,7 @@ import getpass
 import json
 import logging
 import sys
+import webbrowser
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -28,6 +29,7 @@ from sla_contract.schema import EDUSOFT_SECTIONS, FinishRun
 from sla_agent import accounts, app_window, credentials, launcher, mail_link, selfcheck, shortcuts, update
 from sla_agent.blackboard_client import BlackboardClient
 from sla_agent.blackboard_reader import read_blackboard
+from sla_agent.connect import Connection
 from sla_agent.edusoft_client import EduSoftClient
 from sla_agent.errors import (
     AgentError,
@@ -61,6 +63,7 @@ from sla_agent.scheduler import (
     task_program,
 )
 from sla_agent.server_client import ServerClient, check_server_url
+from sla_agent.server_client import connect as trade_in
 from sla_agent.state import agent_home, load_state, save_state
 from sla_agent.sync import PAUSE_MESSAGES, collect_iupay, everything_paused, run_mail_sync, run_sync
 
@@ -106,7 +109,8 @@ def tools():
         task_program=task_program, register_mail_link=mail_link.register,
         register_window_link=mail_link.register_window, make_shortcuts=shortcuts.make,
         add_desktop_shortcut=shortcuts.add_desktop, has_desktop_shortcut=shortcuts.on_desktop,
-        has_window_link=mail_link.window_registered, open_site=app_window.open_app)
+        has_window_link=mail_link.window_registered, open_site=app_window.open_app,
+        listen=Connection, open_browser=webbrowser.open, connect=trade_in)
 
 
 def say(message):

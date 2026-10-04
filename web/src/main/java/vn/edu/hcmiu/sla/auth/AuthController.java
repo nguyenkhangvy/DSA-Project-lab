@@ -12,6 +12,9 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,7 +23,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/** Register and the login page. Spring Security itself handles POST /auth/login and POST /auth/logout. */
+/**
+ * Register and the login page. Spring Security itself handles POST /auth/login and POST /auth/logout. A new account
+ * is logged in and goes back to the page that asked for login, as login does: the Connect page, for a classmate who
+ * had no account yet (spec 2026-10-04-connect-button-design.md, 4.3).
+ */
 @Controller
 @RequestMapping("/auth")
 public class AuthController {
@@ -28,6 +35,8 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder passwords;
     private final SecurityContextRepository logins;
+    /** Where Spring Security keeps the page that asked for login: its default, the one login reads. */
+    private final RequestCache asked = new HttpSessionRequestCache();
 
     public AuthController(UserRepository users, PasswordEncoder passwords, SecurityContextRepository logins) {
         this.users = users;
@@ -61,7 +70,8 @@ public class AuthController {
         User user = users.save(new User(form.getEmail(), form.getDisplayName(),
                 passwords.encode(form.getPassword()), LocalDateTime.now(ZoneOffset.UTC)));
         logIn(AppUser.of(user), request, response);
-        return "redirect:/";
+        SavedRequest page = asked.getRequest(request, response);
+        return "redirect:" + (page != null ? page.getRedirectUrl() : "/");
     }
 
     private void logIn(AppUser user, HttpServletRequest request, HttpServletResponse response) {

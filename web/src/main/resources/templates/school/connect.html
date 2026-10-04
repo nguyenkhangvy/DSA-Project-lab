@@ -1,0 +1,31 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head>
+  <title>Connect this laptop · School-Life-Assistant</title>
+</head>
+<body>
+<main>
+  <h1>Connect this laptop</h1>
+
+  <section class="card" th:if="${fromApp}">
+    <p>Connect this laptop? <strong th:text="${laptop}">LAPTOP-AN</strong> will upload your timetable, exams and
+       tuition to the account <strong th:text="${email}">an@example.com</strong>.</p>
+    <form method="post" th:action="@{/school/devices/connect}">
+      <input type="hidden" name="port" th:value="${appPort}">
+      <input type="hidden" name="state" th:value="${appState}">
+      <input type="hidden" name="challenge" th:value="${appChallenge}">
+      <input type="hidden" name="name" th:value="${laptop}">
+      <div class="form-actions">
+        <button type="submit" class="button" name="action" value="connect">Connect</button>
+        <button type="submit" class="link-button" name="action" value="cancel">Cancel</button>
+      </div>
+    </form>
+    <p class="muted">Not your account? Press Cancel, log out, then press Connect in School-Life-Assistant again.</p>
+  </section>
+
+  <section class="card" th:unless="${fromApp}">
+    <p>This link didn't come from School-Life-Assistant. Press Connect in the app again.</p>
+  </section>
+</main>
+</body>
+</html>

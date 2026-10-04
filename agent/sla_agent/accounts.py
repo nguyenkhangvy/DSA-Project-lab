@@ -7,15 +7,18 @@ is checked once before it is saved, and one that fails changes nothing. Password
 Windows Credential Manager (credentials.py)."""
 
 import logging
+import os
 import re
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Callable
 
 from sla_agent import credentials, launcher
+from sla_agent.connect import Cancelled, Closed, TimedOut
 from sla_agent.errors import (
     AgentError,
     BadCredentials,
+    ConnectRefused,
     DeviceKeyRejected,
     ExtraVerification,
     ServerError,
@@ -34,6 +37,12 @@ SYNC_ON = "Automatic sync is on: this laptop checks in every minute while you're
 DESKTOP_ICON_ADDED = "The School-Life-Assistant icon is on your Desktop."
 SITE_ACCEPTED = "The website accepted this key."
 DEVICE_KEY = re.compile(r"sla_[A-Za-z0-9_-]{43}")  # the website's keys: sla_ and 32 random bytes, URL-safe Base64
+SITE_SAVED = "Saved. This laptop now syncs with {}."
+CONNECT_WAIT = 5 * 60  # seconds for the student to log in, or to create an account first
+CONNECT_CANCELLED = "You pressed Cancel on the website. Nothing was saved."
+CONNECT_TIMED_OUT = "Nothing came back from the website. Press Connect to try again."
+CONNECT_REFUSED = "The website didn't accept the connection. Press Connect to try again. Nothing was saved."
+CONNECT_UNAVAILABLE = "Connect isn't working on this laptop. Use Paste a key instead."
 
 
 @dataclass(frozen=True)
@@ -63,6 +72,9 @@ class Tools:
     has_desktop_shortcut: Callable  # () -> whether the Desktop icon is there
     has_window_link: Callable  # () -> whether the sla-agent: link type is registered
     open_site: Callable  # (address) -> opens the website as an app (app_window.open_app)
+    listen: Callable  # () -> connect.Connection, listening on 127.0.0.1 for Connect; raises OSError
+    open_browser: Callable  # (url) -> opens the default browser at url
+    connect: Callable  # (address, code, verifier) -> ConnectResult: Connect's trade-in; raises ConnectRefused, ServerError
 
 
 def _clean(address):
@@ -71,6 +83,16 @@ def _clean(address):
 
 
 # ---- checks (save nothing) -------------------------------------------------------
+
+
+def _trouble(address, error, doing):
+    """The sentence for a website that answered with an error page (e.g. a host's "service suspended" page: its HTML
+    goes to the log only) or couldn't be reached."""
+    if isinstance(error, UnexpectedAnswer):
+        log.warning("%s: %s", doing, error)
+        return Result(False, f"The website at {address} isn't working right now (HTTP {error.status}). "
+                             "Try again later. Nothing was saved.")
+    return Result(False, f"Couldn't reach the web app: {error} Nothing was saved.")
 
 
 def check_site(address, key, tools):
@@ -88,12 +110,8 @@ def check_site(address, key, tools):
     except DeviceKeyRejected:
         return Result(False, "The web app rejected this device key. Create a new one on the Devices page. "
                              "Nothing was saved.")
-    except UnexpectedAnswer as error:  # e.g. a host's "service suspended" page: its HTML goes to the log only
-        log.warning("Checking the device key: %s", error)
-        return Result(False, f"The website at {address} isn't working right now (HTTP {error.status}). "
-                             "Try again later. Nothing was saved.")
     except ServerError as error:
-        return Result(False, f"Couldn't reach the web app: {error} Nothing was saved.")
+        return _trouble(address, error, "Checking the device key")
     return Result(True, SITE_ACCEPTED)
 
 
@@ -166,7 +184,60 @@ def change_site(state, address, key, tools):
     if not checked.ok:
         return checked
     _save(state, lambda current: _keep_site(current, address, key))
-    return Result(True, f"Saved. This laptop now syncs with {state.server_url}.")
+    return Result(True, SITE_SAVED.format(state.server_url))
+
+
+# ---- Connect (spec 2026-10-04-connect-button-design.md) ---------------------------------------------------
+
+
+def computer_name():
+    """This laptop's name on the Devices page: Windows' computer name (e.g. LAPTOP-KHANG), else "My laptop"."""
+    return os.environ.get("COMPUTERNAME", "").strip() or "My laptop"
+
+
+def connect_laptop(address, connection, tools, wait=CONNECT_WAIT):
+    """Connect: open the website's Connect page for `connection` (connect.Connection), wait for the browser to come
+    back, trade the code for a device key and check it, as a pasted key is checked. Saves nothing.
+
+    Returns (Result, key); the key is "" unless the result is ok. A connection closed meanwhile (Connect pressed
+    again, the page left, the window closed) gives an empty message: nobody shows it."""
+    address = _clean(address)
+    try:
+        check_server_url(address)
+    except ValueError as error:
+        connection.close()
+        return Result(False, str(error)), ""
+    tools.open_browser(connection.url(address, computer_name()))
+    try:
+        code = connection.wait(wait)
+    except Cancelled:
+        return Result(False, CONNECT_CANCELLED), ""
+    except TimedOut:
+        return Result(False, CONNECT_TIMED_OUT), ""
+    except Closed:
+        return Result(False, ""), ""
+    protect(code)
+    protect(connection.verifier)
+    try:
+        connected = tools.connect(address, code, connection.verifier)
+    except ConnectRefused:
+        return Result(False, CONNECT_REFUSED), ""
+    except ServerError as error:
+        return _trouble(address, error, "Connecting"), ""
+    protect(connected.key)
+    checked = check_site(address, connected.key, tools)
+    if not checked.ok:
+        return checked, ""
+    return Result(True, f"Connected to {connected.email}."), connected.key
+
+
+def connect_site(state, address, connection, tools):
+    """Accounts → Website → Connect: connect, then save the new key at once, as change_site does."""
+    result, key = connect_laptop(address, connection, tools)
+    if not result.ok:
+        return result
+    _save(state, lambda current: _keep_site(current, address, key))
+    return Result(True, SITE_SAVED.format(state.server_url))
 
 
 def change_edusoft(state, student_id, password, tools):

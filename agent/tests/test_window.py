@@ -4,8 +4,9 @@ thread (run_at_once)."""
 
 import pytest
 
-from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, ME, SERVER, STUDENT, Fakes, set_up
+from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, NEW_KEY, SERVER, STUDENT, Fakes, set_up
 from sla_agent import __version__, accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
+from sla_agent.connect import Cancelled
 from sla_agent.errors import BadCredentials
 from sla_agent.outlook_reader import MISSING
 from sla_agent.state import save_state
@@ -227,3 +228,57 @@ def test_accounts_has_a_button_that_opens_the_website_as_an_app(root, fakes):
     app.screen.open_button.invoke()
 
     assert fakes.opened == [SERVER]
+
+
+# ---- Website: Connect (spec 2026-10-04-connect-button-design.md) -------------------------------------------------
+
+
+def test_accounts_website_connect_saves_the_new_key_at_once(root, fakes):
+    set_up()
+    app = open_window(root, fakes)
+    app.screen.open("site")
+
+    app.screen.editor.connect_button.invoke()
+
+    assert app.screen.editor is None
+    assert app.screen.notice.get() == f"✓ Saved. This laptop now syncs with {SERVER}."
+    assert credentials.load_device_key(SERVER) == NEW_KEY
+
+
+def test_accounts_website_keeps_paste_a_key_instead(root, fakes):
+    set_up()
+    app = open_window(root, fakes)
+    app.screen.open("site")
+    editor = app.screen.editor
+
+    assert editor.key_row.grid_info() == {}
+    editor.paste_link.invoke()
+    assert editor.key_row.grid_info()
+    editor.values["key"].set(NEW_KEY)
+    editor.save()
+
+    assert credentials.load_device_key(SERVER) == NEW_KEY
+
+
+def test_a_website_connect_that_fails_keeps_the_old_key_and_says_why(root, fakes):
+    set_up()
+    fakes.answer = Cancelled()
+    app = open_window(root, fakes)
+    app.screen.open("site")
+
+    app.screen.editor.connect_button.invoke()
+
+    assert app.screen.answers["site"].get() == "✗ " + accounts.CONNECT_CANCELLED
+    assert credentials.load_device_key(SERVER) == KEY
+
+
+def test_cancelling_the_website_editor_stops_listening(root, fakes):
+    set_up()
+    held = []
+    app = open_window(root, fakes, run=lambda work, done: held.append((work, done)))
+    app.screen.open("site")
+    app.screen.editor.connect_button.invoke()
+
+    app.screen.editor.cancel()
+
+    assert fakes.connections[0].closed

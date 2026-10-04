@@ -317,3 +317,21 @@ class StartResult(BaseModel):
 
 class FinishResult(BaseModel):
     status: Literal["success", "partial", "failed"]
+
+
+# ---- Connect this laptop (spec 2026-10-04-connect-button-design.md, 3) --------------------------------------
+# The trade-in: the app sends the one-time code the browser brought back and the verifier only it knows; the website
+# answers with this laptop's new device key and the account it belongs to. The Java twin is SyncContract.ConnectRequest.
+
+Secret = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{43}$")]  # 32 random bytes, URL-safe Base64 without padding
+DeviceKey = Annotated[str, Field(pattern=r"^sla_[A-Za-z0-9_-]{43}$")]
+
+
+class ConnectRequest(_Strict):
+    code: Secret
+    verifier: Secret
+
+
+class ConnectResult(BaseModel):
+    key: DeviceKey
+    email: str

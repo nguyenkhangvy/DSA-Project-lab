@@ -78,6 +78,17 @@ final class Payloads {
         return JSON.writeValueAsBytes(payload);
     }
 
+    /** A file in contract/samples/ as a map, e.g. "connect/request.json". */
+    static Map<String, Object> sample(String name) {
+        return read(name);
+    }
+
+    /** A JSON object from the website, e.g. an API answer, as a map. */
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> parse(String json) {
+        return JSON.readValue(json, Map.class);
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, Object> read(String name) {
         try {
