@@ -13,7 +13,7 @@ Stack: Java 17 and Spring Boot with Thymeleaf pages, MySQL 8, a little JavaScrip
 1. Open the download page, https://nguyenkhangvy.github.io/School-Life-Assistant/ (English or Tiếng Việt), and press **Download for Windows**. School → Devices on the website has the same button.
 2. Open the downloaded `School-Life-Assistant.exe`. If the browser warns about it, keep it; if Windows says “Windows protected your PC”, press **More info**, then **Run anyway**. It needs no administrator rights.
 3. The School-Life-Assistant window walks you through four steps:
-   1. Connect to the website. It shows how to get a device key from School → Devices, and fills the key in when you copy it.
+   1. Connect to the website: press **Connect**, log in (or create an account) in the browser, and press **Connect** there. There's no key to copy.
    2. EduSoft.
    3. Blackboard, if you want it.
    4. Outlook (classic), if you want it. If Outlook (classic) isn't on your laptop, it shows how to install it.
@@ -80,7 +80,7 @@ Online, the site is https://school-life-assistant.duckdns.org. It runs from `web
 
 1. **The database.** On aiven.io, create a MySQL service on the **Free** plan (it only lets you pick an area: choose **Asia Pacific**), wait until it says *Running*, and copy its **Service URI** (`mysql://avnadmin:…@…/defaultdb?ssl-mode=REQUIRED`). Don't pick a paid plan: it only runs while Aiven's trial credit lasts. If the password itself has an `@`, write that one as `%40`; the `@` before the server's name stays.
 2. **The site.** On an AWS Lightsail server, as in "Always on: AWS Lightsail" below. Render runs the same site for free with no server to look after, but it sleeps ("Or for free: Render").
-3. **The laptops.** Each student creates an account on the online site and installs School-Life-Assistant from School → Devices (see "Install on your laptop"). A laptop that runs the agent from source enters the online address (**Change** on the setup's first page) and a device key from School → Devices, or, when already set up, presses **Change** next to Website in Accounts.
+3. **The laptops.** Each student creates an account on the online site and installs School-Life-Assistant from School → Devices (see "Install on your laptop"). A laptop that runs the agent from source enters the online address (**Change** on the setup's first page) and presses **Connect**, or, when already set up, presses **Change** next to Website in Accounts, enters the address and presses **Connect**.
 
 ### Always on: AWS Lightsail
 
@@ -109,7 +109,7 @@ A Lightsail server never sleeps, so the site opens at once. Caddy gives it HTTPS
 
    (`--branch main`: GitHub's default branch for this repository isn't `main`.) Write the DuckDNS address after `SITE_ADDRESS=` and the Service URI after `DATABASE_URL=`, keeping both names and their `=`, then save with Ctrl+O, Enter, Ctrl+X. `cat .env` should show the two lines.
 6. **Start it.** `docker compose up -d --build`. The build takes a few minutes; then the address opens the site. For the first minute Caddy answers *502* while the site starts. If it stays like that, `docker compose logs caddy` (the HTTPS certificate: usually port 443 not open, or DuckDNS pointing elsewhere) and `docker compose logs web` (the site: usually a wrong `DATABASE_URL`) say why.
-7. **Your laptop.** On the new site, create a device key in School → Devices; then in School-Life-Assistant's Accounts, press **Change** next to Website and enter the new address and the key.
+7. **Your laptop.** In School-Life-Assistant's Accounts, press **Change** next to Website, enter the new address, and press **Connect**.
 8. **Backups.** Run `crontab -e` (choose nano if asked) and add this line. Every night at 02:00 in Vietnam (19:00 on the server's UTC clock) it saves the database in `~/sla-backups`, keeping the last 14:
 
    ```
@@ -171,9 +171,7 @@ Students install the agent from School → Devices (see "Install on your laptop"
    `Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned` first (it only affects that window).
    Your prompt starts with `(.venv)` once it worked.
 
-2. **Get a device key.** With the site running, open School → Devices, add your laptop and copy its key. It is shown only once.
-
-3. **Set it up:** double-click `School-Life-Assistant.cmd` in the project folder. The setup pages open, with the web app address `http://localhost:5000`: paste the device key (step 1), enter your EduSoft student ID and password (step 2), then your Blackboard login and the Outlook account to read, or skip them (steps 3 and 4). Each login is checked once, and nothing is saved if one is wrong. Step 2 turns on automatic sync (every minute while you're logged in to Windows; a full sync every 30 minutes, or soon after you press "Sync now") and adds School-Life-Assistant to the Start menu; the last page asks whether to add it to your Desktop too.
+2. **Set it up:** with the site running, double-click `School-Life-Assistant.cmd` in the project folder. The setup pages open, with the web app address `http://localhost:5000`: press **Connect** and log in to your site in the browser (step 1), enter your EduSoft student ID and password (step 2), then your Blackboard login and the Outlook account to read, or skip them (steps 3 and 4). Each login is checked once, and nothing is saved if one is wrong. Step 2 turns on automatic sync (every minute while you're logged in to Windows; a full sync every 30 minutes, or soon after you press "Sync now") and adds School-Life-Assistant to the Start menu; the last page asks whether to add it to your Desktop too.
 
 **Change an account later:** open School-Life-Assistant from the Start menu, or press **Open Accounts on this laptop** on School → Accounts, then press **Change** next to the account. A wrong new password changes nothing. Prefer the terminal? `sla-agent setup` still works. Set up before this window existed? Double-click `School-Life-Assistant.cmd` once: it adds the Start menu entry and makes the website's button work.
 
