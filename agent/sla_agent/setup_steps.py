@@ -261,6 +261,7 @@ class SitePage(Page):
             return
         if result.ok:
             self.steps.accepted = (address, key)
+            self.app.stop_listening()  # a key is accepted: a Connect still waiting must not overwrite this tick
             self.free(self.next_button)
         self.answer.set(mark(result))
 

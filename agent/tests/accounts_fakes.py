@@ -3,6 +3,7 @@
 from sla_contract.schema import ConnectResult
 
 from agent.tests.fakes import FakeBlackboard, FakeEduSoft, FakeServer
+from sla_agent.connect import Closed
 from sla_agent import accounts, credentials
 from sla_agent.outlook_reader import SIGNED_IN
 from sla_agent.state import State, load_state, save_state
@@ -21,7 +22,8 @@ NEW_KEY = "sla_new-key-0123456789-abcdefghijklmnopqrstuvwx"  # the key Connect b
 
 class FakeConnection:
     """connect.Connection without a listener: wait() gives `answer`, a code, or raises it when it is an exception
-    instance (connect.Cancelled(), TimedOut(), Closed())."""
+    instance (connect.Cancelled(), TimedOut(), Closed()). Closed before the browser came back, it raises Closed, as
+    the real one does."""
 
     verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
 
@@ -33,6 +35,8 @@ class FakeConnection:
 
     def wait(self, timeout):
         self.waits.append(timeout)
+        if self.closed:
+            raise Closed()
         if isinstance(self.answer, Exception):
             raise self.answer
         return self.answer

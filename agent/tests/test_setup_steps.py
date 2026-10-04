@@ -8,7 +8,7 @@ import pytest
 
 from agent.tests.accounts_fakes import BB_PASSWORD, BB_USER, KEY, ME, NEW_KEY, PASSWORD, SERVER, STUDENT, Fakes
 from sla_agent import accounts, credentials, launcher, outlook_page, setup_steps, window, window_parts
-from sla_agent.connect import Cancelled
+from sla_agent.connect import Cancelled, TimedOut
 from sla_agent.errors import BadCredentials, DeviceKeyRejected, ServerUnreachable, UnexpectedAnswer
 from sla_agent.log import setup_logging
 from sla_agent.outlook_reader import MISSING
@@ -585,6 +585,23 @@ def test_only_the_newest_press_of_connect_counts(root, fakes):  # Review Focus 3
     assert steps.page.answer.get() == setup_steps.WAITING
     second_done(second_work())
     assert steps.page.answer.get() == "✗ " + accounts.CONNECT_CANCELLED
+
+
+def test_a_key_pasted_while_connect_waits_ends_the_wait_and_keeps_its_tick(root, fakes):
+    held = []
+    _, steps = start(root, fakes, run=lambda work, done: held.append((work, done)))
+    fakes.answer = TimedOut()  # the browser never comes back
+    steps.page.connect_button.invoke()
+    connect_work, connect_done = held.pop()
+    steps.values["key"].set(KEY)  # Paste a key instead, meanwhile
+    check_work, check_done = held.pop()
+    check_done(check_work())  # the website accepts it
+
+    connect_done(connect_work())  # Connect's wait ends afterwards
+
+    assert fakes.connections[0].closed
+    assert steps.page.answer.get() == "✓ " + accounts.SITE_ACCEPTED
+    assert not disabled(steps.page.next_button)
 
 
 def test_cancel_on_the_website_says_so_and_saves_nothing(root, fakes):
