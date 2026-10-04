@@ -7,16 +7,30 @@ import pytest
 from agent.tests.accounts_fakes import (
     BB_PASSWORD,
     BB_USER,
+    CODE,
     KEY,
     ME,
+    NEW_KEY,
     PASSWORD,
     SERVER,
     STUDENT,
+    FakeConnection,
     Fakes,
     set_up,
 )
+from sla_contract.schema import ConnectResult
+
 from sla_agent import accounts, credentials, launcher
-from sla_agent.errors import BadCredentials, DeviceKeyRejected, ExtraVerification, OutlookNotSetUp, UnexpectedAnswer
+from sla_agent.connect import Cancelled, Closed, TimedOut
+from sla_agent.errors import (
+    BadCredentials,
+    ConnectRefused,
+    DeviceKeyRejected,
+    ExtraVerification,
+    OutlookNotSetUp,
+    ServerUnreachable,
+    UnexpectedAnswer,
+)
 from sla_agent.log import setup_logging
 from sla_agent.scheduler import SchedulerError
 from sla_agent.state import State, load_state, save_state
@@ -364,3 +378,119 @@ def test_the_built_app_sees_a_task_that_runs_another_copy(fakes, tmp_path, monke
 
     fakes.program = fakes.me
     assert accounts.sync_task_state(fakes.tools()) == "on"
+
+
+# ---- Connect (spec 2026-10-04-connect-button-design.md) -------------------------------------------------------
+
+
+def read_log(log_path, tmp_path):
+    for handler in logging.getLogger().handlers[:]:
+        if str(tmp_path) in getattr(handler, "baseFilename", ""):
+            handler.flush()
+            logging.getLogger().removeHandler(handler)
+            handler.close()
+    return log_path.read_text(encoding="utf-8")
+
+
+def test_connect_opens_the_connect_page_and_brings_back_a_checked_key(fakes, monkeypatch):
+    monkeypatch.setenv("COMPUTERNAME", "LAPTOP-AN")
+    connection = FakeConnection()
+
+    result, key = accounts.connect_laptop(SERVER + "/", connection, fakes.tools())
+
+    assert result == accounts.Result(True, f"Connected to {ME}.")
+    assert key == NEW_KEY
+    assert fakes.browsed == [f"{SERVER}/school/devices/connect?name=LAPTOP-AN"]
+    assert connection.waits == [accounts.CONNECT_WAIT]
+    assert fakes.trades == [(SERVER, CODE, FakeConnection.verifier)]
+    assert fakes.servers == [(SERVER, NEW_KEY)]  # checked like a pasted key
+    assert credentials.load_device_key(SERVER) is None  # nothing saved
+
+
+def test_a_laptop_without_a_computer_name_is_my_laptop(fakes, monkeypatch):
+    monkeypatch.delenv("COMPUTERNAME", raising=False)
+
+    accounts.connect_laptop(SERVER, FakeConnection(), fakes.tools())
+
+    assert fakes.browsed == [f"{SERVER}/school/devices/connect?name=My laptop"]
+
+
+@pytest.mark.parametrize("answer, message", [
+    (Cancelled(), accounts.CONNECT_CANCELLED),
+    (TimedOut(), accounts.CONNECT_TIMED_OUT),
+    (Closed(), ""),  # an older press of Connect, or a page left: nobody shows it
+], ids=["cancelled", "timed-out", "closed"])
+def test_no_code_from_the_browser_says_why_and_trades_nothing(fakes, answer, message):
+    result, key = accounts.connect_laptop(SERVER, FakeConnection(answer), fakes.tools())
+
+    assert (result, key) == (accounts.Result(False, message), "")
+    assert fakes.trades == []
+
+
+@pytest.mark.parametrize("error, message", [
+    (ConnectRefused("The website didn't accept the connection."), accounts.CONNECT_REFUSED),
+    (UnexpectedAnswer("The web app answered HTTP 502: <html>Bad gateway</html>", 502),
+     "The website at https://sla.example.com isn't working right now (HTTP 502). Try again later. Nothing was saved."),
+    (ServerUnreachable("The web app couldn't be reached (ConnectionError)."),
+     "Couldn't reach the web app: The web app couldn't be reached (ConnectionError). Nothing was saved."),
+], ids=["refused", "error-page", "unreachable"])
+def test_a_trade_in_that_fails_says_why_and_saves_nothing(fakes, error, message):  # Review Focus 5
+    fakes.trade = error
+
+    result, key = accounts.connect_laptop(SERVER, FakeConnection(), fakes.tools())
+
+    assert (result, key) == (accounts.Result(False, message), "")
+    assert credentials.load_device_key(SERVER) is None
+
+
+def test_a_key_the_check_refuses_is_not_brought_back(fakes):
+    fakes.server.check_error = DeviceKeyRejected("rejected")
+
+    result, key = accounts.connect_laptop(SERVER, FakeConnection(), fakes.tools())
+
+    assert not result.ok
+    assert key == ""
+
+
+def test_connect_refuses_a_plain_http_address_without_opening_the_browser(fakes):
+    connection = FakeConnection()
+
+    result, key = accounts.connect_laptop("http://sla.example.com", connection, fakes.tools())
+
+    assert not result.ok and "https://" in result.message and key == ""
+    assert fakes.browsed == []
+    assert connection.closed
+
+
+def test_connect_in_accounts_saves_the_new_key_at_once(fakes):
+    state = set_up()
+
+    result = accounts.connect_site(state, "https://new.example.com", FakeConnection(), fakes.tools())
+
+    assert result == accounts.Result(True, "Saved. This laptop now syncs with https://new.example.com.")
+    assert credentials.load_device_key("https://new.example.com") == NEW_KEY
+    assert credentials.load_device_key(SERVER) is None
+    assert load_state().server_url == "https://new.example.com"
+
+
+def test_connect_in_accounts_that_fails_keeps_the_old_key(fakes):
+    state = set_up()
+
+    result = accounts.connect_site(state, SERVER, FakeConnection(Cancelled()), fakes.tools())
+
+    assert result == accounts.Result(False, accounts.CONNECT_CANCELLED)
+    assert credentials.load_device_key(SERVER) == KEY
+
+
+def test_connects_secrets_never_reach_the_log_file(fakes, tmp_path):
+    log_path = setup_logging(tmp_path / "logs")
+    fakes.trade = UnexpectedAnswer(f"The web app answered HTTP 502: {CODE} {FakeConnection.verifier}", 502)
+    accounts.connect_laptop(SERVER, FakeConnection(), fakes.tools())
+    fakes.trade = ConnectResult(key=NEW_KEY, email=ME)
+    fakes.server.check_error = UnexpectedAnswer(f"The web app answered HTTP 502: {NEW_KEY}", 502)
+    accounts.connect_laptop(SERVER, FakeConnection(), fakes.tools())
+
+    text = read_log(log_path, tmp_path)
+
+    assert "***" in text
+    assert CODE not in text and FakeConnection.verifier not in text and NEW_KEY not in text

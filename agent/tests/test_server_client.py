@@ -6,6 +6,7 @@ import responses
 from sla_contract.schema import FinishRun
 
 from sla_agent.errors import (
+    ConnectRefused,
     DeviceKeyRejected,
     RunInProgress,
     ServerError,
@@ -13,7 +14,7 @@ from sla_agent.errors import (
     UnexpectedAnswer,
     UpdateRequired,
 )
-from sla_agent.server_client import ServerClient
+from sla_agent.server_client import ServerClient, connect
 
 BASE = "https://sla.example.com"
 API = f"{BASE}/api/school/sync"
@@ -115,3 +116,44 @@ def test_a_version_the_website_no_longer_accepts_raises_update_required(server):
 
     with pytest.raises(UpdateRequired, match="too old"):
         server.check()
+
+
+# ---- Connect's trade-in (spec 2026-10-04-connect-button-design.md, 3, step 5) ----------------------------------
+
+CODE = "c0de-0123456789_abcdefghijklmnopqrstuvwxyzA"
+VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+NEW_KEY = "sla_new-key-0123456789-abcdefghijklmnopqrstuvwx"
+
+
+@responses.activate
+def test_connect_trades_the_code_for_a_key_without_sending_a_device_key():
+    responses.post(f"{API}/connect", json={"key": NEW_KEY, "email": "an@example.com"})
+
+    result = connect(BASE, CODE, VERIFIER)
+
+    assert (result.key, result.email) == (NEW_KEY, "an@example.com")
+    request = responses.calls[0].request
+    assert json.loads(request.body) == {"code": CODE, "verifier": VERIFIER}
+    assert "Authorization" not in request.headers
+    assert request.headers["User-Agent"].startswith("SchoolLifeAssistant/")
+
+
+@responses.activate
+def test_a_code_the_website_refuses_raises_connect_refused():
+    responses.post(f"{API}/connect", status=400, json={"error": "invalid_code"})
+
+    with pytest.raises(ConnectRefused):
+        connect(BASE, CODE, VERIFIER)
+
+
+@responses.activate
+def test_something_that_isnt_a_code_is_refused_without_being_sent():
+    with pytest.raises(ConnectRefused):
+        connect(BASE, "not a code", VERIFIER)
+
+    assert len(responses.calls) == 0
+
+
+def test_connect_refuses_a_plain_http_address():
+    with pytest.raises(ValueError):
+        connect("http://sla.example.com", CODE, VERIFIER)

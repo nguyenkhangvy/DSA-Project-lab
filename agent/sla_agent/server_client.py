@@ -1,12 +1,20 @@
-"""Talks to our own web app's sync API with the device key."""
+"""Talks to our own web app's sync API: with the device key, or, for Connect's trade-in, before there is one."""
 
 from urllib.parse import urlsplit
 
 import requests
-from sla_contract.schema import CheckResult, FinishResult, StartResult, StartRun
+from pydantic import ValidationError
+from sla_contract.schema import CheckResult, ConnectRequest, ConnectResult, FinishResult, StartResult, StartRun
 
 from sla_agent.edusoft_client import USER_AGENT
-from sla_agent.errors import DeviceKeyRejected, RunInProgress, ServerUnreachable, UnexpectedAnswer, UpdateRequired
+from sla_agent.errors import (
+    ConnectRefused,
+    DeviceKeyRejected,
+    RunInProgress,
+    ServerUnreachable,
+    UnexpectedAnswer,
+    UpdateRequired,
+)
 from sla_agent.log import protect
 
 LOCAL_HOSTS = ("localhost", "127.0.0.1")
@@ -31,7 +39,9 @@ class ServerClient:
         protect(device_key)
         self.api = base_url.rstrip("/") + "/api/school/sync"
         self.session = session or requests.Session()
-        self.session.headers.update({"Authorization": f"Bearer {device_key}", "User-Agent": USER_AGENT})
+        self.session.headers.update({"User-Agent": USER_AGENT})
+        if device_key:  # Connect's trade-in comes before the laptop has one
+            self.session.headers["Authorization"] = f"Bearer {device_key}"
 
     def _call(self, method, path, body=None):
         try:
@@ -63,3 +73,27 @@ class ServerClient:
     def finish(self, run_id, result):
         body = result.model_dump(mode="json", exclude_none=True)
         return FinishResult.model_validate(self._call("POST", f"/runs/{run_id}/finish", body)).status
+
+    def connect(self, code, verifier):
+        """Connect's trade-in (spec 2026-10-04-connect-button-design.md, 3, step 5): the one-time code the browser
+        brought back and the verifier, for this laptop's new device key and the account's email."""
+        protect(code)
+        protect(verifier)
+        try:
+            body = ConnectRequest(code=code, verifier=verifier).model_dump()
+        except ValidationError:
+            raise ConnectRefused("The browser brought back something that isn't a Connect code.") from None
+        try:
+            answer = self._call("POST", "/connect", body)
+        except UnexpectedAnswer as error:
+            if error.status == 400:
+                raise ConnectRefused("The website didn't accept the connection.") from None
+            raise
+        result = ConnectResult.model_validate(answer)
+        protect(result.key)
+        return result
+
+
+def connect(address, code, verifier):
+    """Connect's trade-in with the website at `address`, without a device key (accounts.Tools.connect)."""
+    return ServerClient(address, None).connect(code, verifier)
