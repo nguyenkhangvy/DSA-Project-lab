@@ -113,6 +113,11 @@ class DevicesPageTest {
     }
 
     @Test
+    void theInstallCardSaysThereIsNoKeyToCopy() throws Exception {
+        assertThat(devicesPage()).contains("Open it and press <strong>Connect</strong>: there's no key to copy.");
+    }
+
+    @Test
     void aDeviceNeedsAName() throws Exception {
         String html = addDevice("   ").andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 

@@ -103,4 +103,14 @@ class RegisterTest {
         mvc.perform(post("/auth/register").param("email", "an@example.com"))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void registeringGoesBackToThePageThatAskedForLogin() throws Exception {  // Review Focus 4
+        MockHttpSession session = new MockHttpSession();
+        mvc.perform(get("/school/devices/connect").queryParam("port", "51234").session(session))
+                .andExpect(redirectedUrl("/auth/login"));
+
+        mvc.perform(register("an@example.com", "An", "correct-horse-8", "correct-horse-8").session(session))
+                .andExpect(redirectedUrl("http://localhost/school/devices/connect?port=51234&continue"));
+    }
 }
