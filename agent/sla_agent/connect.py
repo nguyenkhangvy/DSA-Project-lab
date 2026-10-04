@@ -113,13 +113,13 @@ def _callback(connection):
             parts = urlsplit(self.path)
             query = parse_qs(parts.query)
             code = query.get("code", [""])[0]
-            protect(code)
             state = query.get("state", [""])[0].encode("utf-8")
             ours = parts.path == "/callback" and hmac.compare_digest(state, connection.state.encode("ascii"))
             if ours and query.get("error") == ["cancelled"]:
                 self._page(CANCELLED)
                 connection._answered("cancelled")
             elif ours and code:
+                protect(code)  # only ours: a stray request must not change what the log hides
                 self._page(DONE)
                 connection._answered("code", code)
             else:

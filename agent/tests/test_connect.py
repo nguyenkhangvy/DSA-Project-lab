@@ -122,6 +122,13 @@ def test_close_can_be_called_again(connection):
     connection.close()
 
 
+def test_a_stray_request_changes_nothing_not_even_what_the_log_hides(connection):
+    come_back(connection, code="Traceback", state="not-the-state")
+    come_back(connection, path="/favicon.ico", code="favicon-probe")
+
+    assert redact("Traceback: favicon-probe") == "Traceback: favicon-probe"
+
+
 def test_the_code_and_the_secrets_are_kept_out_of_the_log(connection):
     come_back(connection, code=CODE, state=connection.state)
     connection.wait(5)
