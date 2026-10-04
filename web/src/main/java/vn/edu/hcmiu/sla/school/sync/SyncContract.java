@@ -40,6 +40,16 @@ public final class SyncContract {
     public record StartRun(@NotNull @Pattern(regexp = "scheduled|manual|import|mail") String trigger) {
     }
 
+    // ---- Connect this laptop (spec 2026-10-04-connect-button-design.md, 3) --------------
+
+    /** A Connect code, state, verifier or challenge: 32 random bytes, URL-safe Base64 without padding. */
+    public static final String CONNECT_SECRET = "[A-Za-z0-9_-]{43}";
+
+    /** The trade-in: the one-time code the browser brought back, and the verifier only the app knows. */
+    public record ConnectRequest(@NotNull @Pattern(regexp = CONNECT_SECRET) String code,
+            @NotNull @Pattern(regexp = CONNECT_SECRET) String verifier) {
+    }
+
     // ---- EduSoft ----------------------------------------------------------------
 
     public record ClassMeeting(@NotNull OffsetDateTime startAt, @NotNull OffsetDateTime endAt,

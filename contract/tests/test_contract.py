@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from sla_contract.schema import FinishRun, StartRun
+from sla_contract.schema import ConnectRequest, ConnectResult, FinishRun, StartRun
 
 SAMPLES = Path(__file__).resolve().parents[1] / "samples"
 BB = "https://blackboard.hcmiu.edu.vn"
@@ -351,3 +351,29 @@ def test_every_trigger_the_agent_sends_is_accepted(trigger):
 def test_an_unknown_trigger_is_refused():
     with pytest.raises(ValidationError):
         StartRun(trigger="hourly")
+
+
+# ---- Connect this laptop: the trade-in (contract/samples/connect/; the Java tests read the same files) ---------
+
+
+def test_the_connect_samples_are_accepted():
+    request = ConnectRequest.model_validate(_sample("connect/request.json"))
+    answer = ConnectResult.model_validate(_sample("connect/result.json"))
+
+    assert len(request.code) == len(request.verifier) == 43
+    assert answer.key.startswith("sla_")
+
+
+@pytest.mark.parametrize("change", [
+    {"code": "short"},
+    {"verifier": "v" * 42 + "!"},
+    {"device_key": "sla_" + "k" * 43},  # nothing else may come along
+], ids=["short-code", "bad-verifier", "extra-field"])
+def test_a_connect_request_with_anything_else_is_refused(change):
+    with pytest.raises(ValidationError):
+        ConnectRequest.model_validate({**_sample("connect/request.json"), **change})
+
+
+def test_a_connect_answer_without_a_device_key_is_refused():
+    with pytest.raises(ValidationError):
+        ConnectResult.model_validate({**_sample("connect/result.json"), "key": "not-a-key"})

@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import vn.edu.hcmiu.sla.school.sync.SyncContract.ConnectRequest;
 import vn.edu.hcmiu.sla.school.sync.SyncContract.FinishRun;
 
 /** Java twin of tests/test_contract.py: the website accepts and refuses exactly what the agent's format allows. */
@@ -493,6 +495,33 @@ class SyncContractTest {
     @Test
     void brokenJsonIsRefused() {
         assertThatThrownBy(() -> json.read("{\"trigger\": ".getBytes(), SyncContract.StartRun.class))
+                .isInstanceOf(SyncJson.Invalid.class);
+    }
+
+    // ---- Connect this laptop: contract/samples/connect/, the Python tests read the same files --------
+
+    @Test
+    void theConnectSampleIsAccepted() {
+        ConnectRequest request = json.read(bytes(Payloads.sample("connect/request.json")), ConnectRequest.class);
+
+        assertThat(request.code()).hasSize(43);
+        assertThat(request.verifier()).hasSize(43);
+    }
+
+    static Stream<Arguments> badConnectRequests() {
+        return Stream.of(
+                Arguments.of("short-code", Map.of("code", "short")),
+                Arguments.of("bad-verifier", Map.of("verifier", "v".repeat(42) + "!")),
+                Arguments.of("extra-field", Map.of("device_key", "sla_" + "k".repeat(43))));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("badConnectRequests")
+    void aConnectRequestWithAnythingElseIsRefused(String name, Map<String, Object> change) {
+        Map<String, Object> request = new LinkedHashMap<>(Payloads.sample("connect/request.json"));
+        request.putAll(change);
+
+        assertThatThrownBy(() -> json.read(bytes(request), ConnectRequest.class))
                 .isInstanceOf(SyncJson.Invalid.class);
     }
 }
